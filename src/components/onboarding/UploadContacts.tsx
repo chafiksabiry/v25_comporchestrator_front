@@ -2268,36 +2268,19 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/disconnect`, {
+      ZohoService.getInstance().resetConfiguration();
+      setHasZohoConfig(false);
+      setHasZohoAccessToken(false);
+      setRealtimeLeads([]);
+      setParsedLeads([]);
+
+      await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/disconnect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${gigId}:${userId}`,
         },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        throw new Error(errorData.message || 'Failed to disconnect from Zoho');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Reset Zoho service configuration
-        const zohoService = ZohoService.getInstance();
-        zohoService.resetConfiguration();
-
-        setHasZohoConfig(false);
-        setHasZohoAccessToken(false);
-
-        // Clear any cached Zoho data
-        setRealtimeLeads([]);
-        setParsedLeads([]);
-      } else {
-        throw new Error(data.message || 'Failed to disconnect from Zoho');
-      }
+      }).catch(() => null);
     } catch (error) {
       console.error('Error in handleZohoDisconnect:', error);
       toast.error((error as any)?.message || 'Failed to disconnect from Zoho');
@@ -2375,6 +2358,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error(data.error || 'Failed to exchange code for tokens');
       }
 
+      if (data.access_token) {
+        ZohoService.getInstance().saveBrowserSession(data);
+      }
+      setHasZohoAccessToken(true);
       setHasZohoConfig(true);
 
     } catch (error: any) {
@@ -2435,11 +2422,26 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setZohoModuleMenuOpen(false);
     setIsImportingZoho(true);
     try {
+      const zoho = ZohoService.getInstance();
+      const accessToken = await zoho.getValidAccessToken();
+      if (!accessToken) {
+        setHasZohoAccessToken(false);
+        toast.error('Connectez Zoho dans ce navigateur.');
+        return;
+      }
+      const userId = Cookies.get('userId');
       const params = new URLSearchParams({ module: moduleName });
-      const response = await fetchZohoWithAutoRefresh(
+      const response = await fetch(
         `${import.meta.env.VITE_DASHBOARD_API}/zoho/records/table?${params.toString()}`,
-        { method: 'GET' },
-        selectedGigId
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${selectedGigId}:${userId}`,
+            'X-Zoho-Token': accessToken,
+            'X-Zoho-Api-Domain': zoho.getApiDomain(),
+          },
+        }
       );
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.success) {
