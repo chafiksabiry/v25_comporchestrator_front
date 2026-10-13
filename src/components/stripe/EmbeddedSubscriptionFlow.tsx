@@ -359,44 +359,38 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
                 <span className="text-xs font-bold text-gray-400">{t('subscriptionPlan.perMonth')}</span>
               </div>
               {(() => {
-                const meta = metadataLines(plan.metadata);
-                const feats = Array.isArray(plan.features) ? plan.features : [];
+                const feats = Array.isArray(plan.features)
+                  ? plan.features.map((feat) => String(feat || '').trim()).filter(Boolean)
+                  : [];
+                const meta = feats.length > 0 ? [] : metadataLines(plan.metadata);
                 if (!meta.length && !feats.length) return null;
                 return (
-                  <div className="mt-4 flex-1 space-y-3">
-                    {meta.length > 0 && (
-                      <ul className="space-y-2">
-                        {meta.map(({ key, value }) => (
-                          <li
-                            key={`${plan._id}-meta-${key}`}
-                            className="flex items-start gap-2 text-xs text-gray-800 font-semibold"
-                          >
-                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
-                            <span>
-                              <span className="text-gray-500 font-bold uppercase tracking-wide text-[10px]">
-                                {label(key)}
-                              </span>
-                              {': '}
-                              <span className="text-gray-900">{label(value)}</span>
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {feats.length > 0 && (
-                      <ul className="space-y-2">
-                        {feats.map((feat, i) => (
-                          <li
-                            key={`${plan._id}-feat-${i}`}
-                            className="flex items-start gap-2 text-xs text-gray-700 font-medium"
-                          >
-                            <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
-                            <span>{label(feat)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  <ul className="mt-4 flex-1 space-y-2">
+                    {meta.map(({ key, value }) => (
+                      <li
+                        key={`${plan._id}-meta-${key}`}
+                        className="flex items-start gap-2 text-xs text-gray-800 font-semibold"
+                      >
+                        <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                        <span>
+                          <span className="text-gray-500 font-bold uppercase tracking-wide text-[10px]">
+                            {label(key)}
+                          </span>
+                          {': '}
+                          <span className="text-gray-900">{label(value)}</span>
+                        </span>
+                      </li>
+                    ))}
+                    {feats.map((feat, i) => (
+                      <li
+                        key={`${plan._id}-feat-${i}`}
+                        className="flex items-start gap-2 text-xs text-gray-700 font-medium"
+                      >
+                        <Check className="h-4 w-4 text-harx-500 shrink-0 mt-0.5" />
+                        <span>{label(feat)}</span>
+                      </li>
+                    ))}
+                  </ul>
                 );
               })()}
               <button
