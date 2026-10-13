@@ -377,7 +377,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
     if (import.meta.env.VITE_API_TRAINING_URL) {
       return import.meta.env.VITE_API_TRAINING_URL;
     }
-    return 'https://v25platformtrainingbackend-production.up.railway.app';
+    return 'https://v25platformtrainingbackend-recette.up.railway.app';
   };
   const API_BASE = getApiBaseUrl();
 

@@ -55,7 +55,7 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
       try {
         const apiBase =
           import.meta.env.VITE_COMPANY_API_URL ||
-          "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+          "https://v25searchcompanywizardbackend-recette.up.railway.app/api";
         await axios.get(`${apiBase}/companies/${fallbackCompanyId}/details`);
         setExistingCompanyId(fallbackCompanyId);
       } catch {

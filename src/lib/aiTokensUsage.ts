@@ -30,7 +30,7 @@ function getGigsApiBase(): string {
   return String(
     import.meta.env.VITE_GIGS_API ||
       import.meta.env.VITE_API_URL_GIGS ||
-      'https://v25gigsmanualcreationbackend-production.up.railway.app/api'
+      'https://v25gigsmanualcreationbackend-recette.up.railway.app/api'
   ).replace(/\/$/, '');
 }
 

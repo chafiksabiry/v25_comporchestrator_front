@@ -27,7 +27,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const apiUrl = (import.meta as any).env?.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-recette.up.railway.app';
     const socketInstance = io(apiUrl, {
       transports: ['websocket'],
     });

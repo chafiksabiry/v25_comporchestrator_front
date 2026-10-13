@@ -23,11 +23,11 @@
  * the canonical Railway URL as the safe fallback.
  */
 export const DEFAULT_DASH_CALLS_API =
-  'https://v25dashcallsbackend-production.up.railway.app/api';
+  'https://v25dashcallsbackend-recette.up.railway.app/api';
 
 /** Default basic-CRUD backend (Railway dashboard). */
 export const DEFAULT_CALLS_CRUD_API =
-  'https://v25dashboardbackend-production.up.railway.app/api';
+  'https://v25dashboardbackend-recette.up.railway.app/api';
 
 type WinEnv = {
   __HARX_ENV__?: {
@@ -53,7 +53,7 @@ function withApiSuffix(raw: string): string {
 /**
  * Base URL for basic CRUD on calls (`v25_dashboard_backend`).
  * Already includes `/api`. Example return:
- *   `https://v25dashboardbackend-production.up.railway.app/api`
+ *   `https://v25dashboardbackend-recette.up.railway.app/api`
  */
 export function getCallsApiBase(): string {
   return withApiSuffix(readEnv('VITE_API_URL_CALL') || DEFAULT_CALLS_CRUD_API);
@@ -62,7 +62,7 @@ export function getCallsApiBase(): string {
 /**
  * Base URL for AI analyze + analytics (`v25_dash_calls_backend`).
  * Always lives on its own host, never falls back to the CRUD backend.
- * Example return: `https://v25dashcallsbackend-production.up.railway.app/api`
+ * Example return: `https://v25dashcallsbackend-recette.up.railway.app/api`
  */
 export function getDashCallsApiBase(): string {
   return withApiSuffix(

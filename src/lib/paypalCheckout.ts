@@ -1,7 +1,7 @@
 export type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
 const RETURN_ORIGINS = new Set([
-  'https://harx26comporchestratorfront-dev.netlify.app',
+  'https://harx26comporchestrator-recette.netlify.app',
   'https://harxv25comporchestratorfront.netlify.app',
   'http://localhost:5004',
   'http://127.0.0.1:5004',
@@ -14,7 +14,7 @@ export function getOrchestratorApiBase(): string {
     import.meta.env.VITE_API_BASE_URL
     || import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL
     || import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL
-    || 'https://v25comporchestratorback-production.up.railway.app/api';
+    || 'https://v25comporchestratorback-recette.up.railway.app/api';
   const base = String(raw).replace(/\/$/, '');
   return base.endsWith('/api') ? base : `${base}/api`;
 }

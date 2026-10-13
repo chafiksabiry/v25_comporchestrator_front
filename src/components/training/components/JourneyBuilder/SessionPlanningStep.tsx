@@ -39,7 +39,7 @@ export default function SessionPlanningStep({
         const GIGS_API =
           import.meta.env.VITE_API_URL_GIGS ||
           import.meta.env.VITE_GIGS_API ||
-          'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+          'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
         const token = localStorage.getItem('token') || '';
         const gigRes = await fetch(`${GIGS_API}/gigs/${gigId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},

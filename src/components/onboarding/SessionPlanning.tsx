@@ -191,7 +191,7 @@ const updateOnboardingProgress = async () => {
     const companyId = Cookies.get('companyId');
     if (!companyId) return;
 
-    const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+    const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
     const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`;
 
 
@@ -261,7 +261,7 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
       }
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+        const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
         const response = await axios.get(`${apiUrl}/gigs/company/${companyId}?populate=companyId`);
 
         const gigData = (response.data as any).data || response.data;

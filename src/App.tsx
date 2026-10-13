@@ -641,7 +641,7 @@ function AppContent() {
     if (!companyId) return;
     const apiUrl =
       (import.meta as any).env?.VITE_COMPANY_API_URL ||
-      'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+      'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
     fetch(`${apiUrl}/onboarding/companies/${companyId}/onboarding`)
       .then((r) => r.json())
       .then((data) => {

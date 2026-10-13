@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const COMPANY_API = 'https://v25searchcompanywizardbackend-production.up.railway.app/api/companies';
+const COMPANY_API = 'https://v25searchcompanywizardbackend-recette.up.railway.app/api/companies';
 
 export function getCompanyIdFromCookies(): string | undefined {
   return Cookies.get('companyId') || localStorage.getItem('companyId') || undefined;

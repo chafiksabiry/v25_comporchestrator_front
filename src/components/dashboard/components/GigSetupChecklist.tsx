@@ -149,25 +149,25 @@ function envOr(key: string, fallback: string): string {
 }
 
 const GIGS_API = () =>
-  envOr('VITE_API_URL_GIGS', envOr('VITE_GIGS_API', 'https://v25gigsmanualcreationbackend-production.up.railway.app/api'));
+  envOr('VITE_API_URL_GIGS', envOr('VITE_GIGS_API', 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api'));
 const PHONE_API = () =>
-  envOr('VITE_API_BASE_URL', 'https://v25gigsmanualcreationbackend-production.up.railway.app/api');
+  envOr('VITE_API_BASE_URL', 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api');
 const DASHBOARD_API = () =>
-  envOr('VITE_DASHBOARD_API', 'https://v25dashboardbackend-production.up.railway.app/api');
+  envOr('VITE_DASHBOARD_API', 'https://v25dashboardbackend-recette.up.railway.app/api');
 const KB_API = () => {
-  const base = envOr('VITE_BACKEND_KNOWLEDGEBASE_API', 'https://v25knowledgebasebackend-production.up.railway.app');
+  const base = envOr('VITE_BACKEND_KNOWLEDGEBASE_API', 'https://v25knowledgebasebackend-recette.up.railway.app');
   return base.endsWith('/api') ? base : `${base}/api`;
 };
 const TRAINING_API = () => {
   const base = envOr(
     'VITE_TRAINING_BACKEND_URL',
-    'https://v25platformtrainingbackend-production.up.railway.app'
+    'https://v25platformtrainingbackend-recette.up.railway.app'
   );
   return base.endsWith('/api') ? base : `${base}/api`;
 };
 /** Same endpoint family used by `schedulerService.ts` (time-slots + matching). */
 const MATCHING_API = () =>
-  envOr('VITE_MATCHING_API_URL', 'https://v25matchingbackend-production.up.railway.app/api');
+  envOr('VITE_MATCHING_API_URL', 'https://v25matchingbackend-recette.up.railway.app/api');
 
 /** Best-effort fetch that resolves to `false` on any error. The banner
  *  should never crash the dashboard if a side-service is down — we just

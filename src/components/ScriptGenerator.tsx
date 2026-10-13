@@ -469,7 +469,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     const stepId = Number(import.meta.env.VITE_CALL_SCRIPT_ONBOARDING_STEP_ID || 9);
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
-      'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+      'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/`;
 
     // Call Script is step 9 in phase 3 (after KB=7, E-learning=8).

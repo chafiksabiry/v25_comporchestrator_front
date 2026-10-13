@@ -12,7 +12,7 @@ const callsApiOrigin =
     ? (window as unknown as { __HARX_ENV__?: { VITE_API_URL_CALL?: string } })
         .__HARX_ENV__?.VITE_API_URL_CALL
     : undefined) ||
-  'https://v25dashcallsbackend-production.up.railway.app/api';
+  'https://v25dashcallsbackend-recette.up.railway.app/api';
 
 export const env = envSchema.parse({
   API_URL: import.meta.env.VITE_COMPANY_API_URL,

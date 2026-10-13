@@ -88,7 +88,7 @@ interface ManualTrainingSimulatorProps {
 const API_BASE = import.meta.env.VITE_API_TRAINING_URL ||
   (() => {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    return isLocal ? 'http://localhost:5010' : 'https://v25platformtrainingbackend-production.up.railway.app';
+    return isLocal ? 'http://localhost:5010' : 'https://v25platformtrainingbackend-recette.up.railway.app';
   })();
 
 export default function ManualTrainingSimulator({

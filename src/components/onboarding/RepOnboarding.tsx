@@ -812,7 +812,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     
     return isLocal 
       ? 'http://localhost:5010' 
-      : 'https://v25platformtrainingbackend-production.up.railway.app';
+      : 'https://v25platformtrainingbackend-recette.up.railway.app';
   };
 
   const handleDeleteJourney = async (journey: any) => {
@@ -876,7 +876,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
-      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+      "https://v25searchcompanywizardbackend-recette.up.railway.app/api";
     const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
     const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
 

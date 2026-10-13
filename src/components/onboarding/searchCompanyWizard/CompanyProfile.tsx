@@ -282,7 +282,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
   const markStepCompleted = async (companyId: string) => {
     const apiUrl =
       import.meta.env.VITE_COMPANY_API_URL ||
-      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+      "https://v25searchcompanywizardbackend-recette.up.railway.app/api";
     await axios.put(`${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`, {
       status: "completed",
     });

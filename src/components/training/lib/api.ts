@@ -21,7 +21,7 @@ class ApiClientClass {
     } else {
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
       const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      this.baseURL = isLocal ? 'http://localhost:5010' : 'https://v25platformtrainingbackend-production.up.railway.app';
+      this.baseURL = isLocal ? 'http://localhost:5010' : 'https://v25platformtrainingbackend-recette.up.railway.app';
     }
   }
 
