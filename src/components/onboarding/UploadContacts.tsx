@@ -544,7 +544,7 @@ function LeadTableRow({
           <button
             type="button"
             onClick={() => onView({ ...lead })}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-sky-600 shadow-sm transition-all duration-200 hover:border-sky-300 hover:bg-sky-100 hover:text-sky-700"
             title={viewTitle}
           >
             <Eye className="h-3.5 w-3.5" />
@@ -552,7 +552,7 @@ function LeadTableRow({
           <button
             type="button"
             onClick={() => onEdit({ ...lead })}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 shadow-sm transition-all duration-200 hover:border-amber-300 hover:bg-amber-100 hover:text-amber-700"
             title={editTitle}
           >
             <Edit className="h-3.5 w-3.5" />
@@ -561,7 +561,7 @@ function LeadTableRow({
             <button
               type="button"
               onClick={() => onArchive(lead._id as string)}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 shadow-sm transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition-all duration-200 hover:border-rose-300 hover:bg-rose-100 hover:text-rose-700"
               title={archiveTitle}
             >
               <Trash2 className="h-3.5 w-3.5" />
