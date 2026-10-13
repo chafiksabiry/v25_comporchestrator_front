@@ -668,7 +668,7 @@ export default function OperationsDashboard() {
           fetch(`${backUrl}/api/subscriptions/current/${companyId}`).catch(() => null),
           fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
           authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
-          fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -4750,7 +4750,7 @@ function WalletView({
       try {
         const [walletRes, repTxRes, balRes] = await Promise.all([
           authFetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
-          fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
+          authFetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
           authFetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
         ]);
 

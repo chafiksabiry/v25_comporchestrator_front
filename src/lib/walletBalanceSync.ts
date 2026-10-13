@@ -31,7 +31,7 @@ export async function fetchCompanyWalletSnapshot(
     const [walletRes, minutesRes, escrowRes] = await Promise.all([
       authFetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
       authFetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
-      fetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
+      authFetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
     ]);
 
     let balance = 0;

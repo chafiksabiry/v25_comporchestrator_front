@@ -32,6 +32,7 @@ import { markGigStepDone } from '../../../services/gigSetupSync';
 import { providerForDestinationCountry } from '../../../utils/phoneProvider';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
+import { authFetch } from '../../../lib/authFetch';
 
 type CheckoutStep = 'select' | 'paypal' | 'processing' | 'success';
 
@@ -818,7 +819,7 @@ export function PhoneNumberPanel() {
       }
 
       // 2. Fetch gigs details for dropdown association
-      const gigsRes = await fetch(`${apiBaseUrl}/escrow/gigs-and-reps/${companyId}`);
+      const gigsRes = await authFetch(`${apiBaseUrl}/escrow/gigs-and-reps/${companyId}`);
       if (gigsRes.ok) {
         const gigsResult = await gigsRes.json();
         if (gigsResult.success && gigsResult.data) {

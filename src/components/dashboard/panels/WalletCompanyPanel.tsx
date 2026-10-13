@@ -250,7 +250,7 @@ export function WalletCompanyPanel() {
       // "Validés" / "Refusés" tabs. Each row is a real commission booked by
       // the backend (validated call, sale or bonus).
       try {
-        const repTxRes = await fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
+        const repTxRes = await authFetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
         if (repTxRes.ok) {
           const repTxData = await repTxRes.json();
           if (repTxData.success && Array.isArray(repTxData.data)) {

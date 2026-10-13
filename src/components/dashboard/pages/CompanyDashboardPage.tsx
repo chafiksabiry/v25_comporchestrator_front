@@ -122,7 +122,10 @@ export function CompanyDashboardPage() {
       }
 
       try {
-        const res = await axios.get(`${orchestratorBase}/escrow/calls/${cid}`);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${orchestratorBase}/escrow/calls/${cid}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         const payload = res.data?.data;
         setCalls(Array.isArray(payload) ? payload : []);
       } catch {
