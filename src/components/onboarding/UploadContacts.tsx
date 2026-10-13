@@ -539,7 +539,7 @@ function LeadTableRow({
           {statusLabel}
         </span>
       </td>
-      <td className={`whitespace-nowrap px-1 py-2.5 align-middle border-y bg-white/80 rounded-r-2xl border-r ${rowBorder}`}>
+      <td className={`sticky right-0 z-20 whitespace-nowrap bg-white px-1 py-2.5 align-middle border-y rounded-r-2xl border-r shadow-[-8px_0_10px_-8px_rgba(15,23,42,0.28)] group-hover:bg-white ${rowBorder}`}>
         <div className="flex items-center justify-center gap-0.5">
           <button
             type="button"
@@ -4694,7 +4694,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.status')}
                     </th>
-                    <th scope="col" className="w-20 px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
+                    <th scope="col" className="sticky right-0 z-[60] w-20 min-w-[5.5rem] bg-white px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 shadow-[-8px_0_10px_-8px_rgba(15,23,42,0.35)]">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
