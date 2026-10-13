@@ -1,8 +1,38 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { Loader2, Mail, Plus, RefreshCw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
+import {
+  Activity,
+  BookOpen,
+  Bot,
+  Briefcase,
+  Calendar,
+  ClipboardCheck,
+  Coins,
+  CreditCard,
+  GraduationCap,
+  LayoutDashboard,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Phone,
+  PhoneCall,
+  Plug,
+  Plus,
+  RefreshCw,
+  ScrollText,
+  Search,
+  Settings,
+  Shield,
+  Trash2,
+  TrendingUp,
+  UserPlus,
+  UserCog,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import Cookies from 'js-cookie';
 import {
   PERMISSION_GROUPS,
+  allPermissionKeys,
   emptyPermissions,
   permissionsForPreset,
   type PermissionMap,
@@ -34,6 +64,36 @@ function statusLabel(status: string) {
   return status || '—';
 }
 
+const GROUP_META: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; info: string }> = {
+  gigs: { icon: Briefcase, info: 'Créer, modifier, activer ou supprimer les missions.' },
+  leads: { icon: UserPlus, info: 'Voir et importer les prospects, les modifier ou les archiver.' },
+  telephony: { icon: Phone, info: 'Numéros, recherche, achat, affectation et appel test.' },
+  scripts: { icon: ScrollText, info: 'Scripts d’appel générés pour les missions.' },
+  knowledge: { icon: BookOpen, info: 'Documents consultés pendant l’appel.' },
+  matching: { icon: Users, info: 'Candidatures REP : invitation et décision.' },
+  training: { icon: GraduationCap, info: 'Parcours et modules de formation.' },
+  calls: { icon: PhoneCall, info: 'Journal, écoute, validation et export des appels.' },
+  dashboard: { icon: LayoutDashboard, info: 'Tableau de bord de l’entreprise.' },
+  agents: { icon: UserCog, info: 'Comptes agents du centre d’appels.' },
+  planning: { icon: Calendar, info: 'Créneaux et planification des sessions.' },
+  emails: { icon: Mail, info: 'Campagnes et envoi d’e-mails.' },
+  chat: { icon: MessageSquare, info: 'Messagerie en direct avec les prospects.' },
+  voice: { icon: Bot, info: 'Assistant vocal et sa configuration.' },
+  activation: { icon: Plug, info: 'Mise en ligne d’un gig et ses intégrations.' },
+  quality: { icon: ClipboardCheck, info: 'Contrôle qualité des appels.' },
+  operations: { icon: Activity, info: 'Suivi opérationnel du jour.' },
+  analytics: { icon: TrendingUp, info: 'Indicateurs et tendances.' },
+  wallet: { icon: Wallet, info: 'Solde, dépôts et retraits.' },
+  subscription: { icon: CreditCard, info: 'Plan en cours et changement d’offre.' },
+  billing: { icon: Coins, info: 'Jetons IA et achats.' },
+  members: { icon: Shield, info: 'Invitations, rôles et retrait d’un membre.' },
+  settings: { icon: Settings, info: 'Réglages de l’entreprise.' },
+};
+
+function countOn(value: PermissionMap) {
+  return Object.values(value).filter(Boolean).length;
+}
+
 function PermissionGrid({
   value,
   disabled,
@@ -43,6 +103,16 @@ function PermissionGrid({
   disabled?: boolean;
   onChange?: (next: PermissionMap) => void;
 }) {
+  const [query, setQuery] = useState('');
+  const total = allPermissionKeys().length;
+  const granted = countOn(value);
+  const needle = query.trim().toLowerCase();
+  const groups = PERMISSION_GROUPS.filter((group) => {
+    if (!needle) return true;
+    if (group.label.toLowerCase().includes(needle)) return true;
+    return group.actions.some((action) => action.label.toLowerCase().includes(needle));
+  });
+
   const toggle = (key: string) => {
     if (disabled || !onChange) return;
     onChange({ ...value, [key]: !value[key] });
@@ -55,50 +125,96 @@ function PermissionGrid({
     for (const key of keys) next[key] = !allOn;
     onChange(next);
   };
+  const setAll = (on: boolean) => {
+    if (disabled || !onChange) return;
+    onChange(Object.fromEntries(allPermissionKeys().map((key) => [key, on])));
+  };
 
   return (
     <div className="space-y-3">
-      {PERMISSION_GROUPS.map((group) => {
-        const keys = group.actions.map((action) => `${group.id}.${action.id}`);
-        const allOn = keys.every((key) => value[key]);
-        return (
-          <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-xs font-black uppercase tracking-wide text-slate-700">{group.label}</p>
-              {!disabled ? (
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.id, group.actions)}
-                  className="text-[11px] font-bold text-harx-600 hover:underline"
-                >
-                  {allOn ? 'Tout retirer' : 'Tout cocher'}
-                </button>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {group.actions.map((action) => {
-                const key = `${group.id}.${action.id}`;
-                const on = Boolean(value[key]);
-                return (
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="relative min-w-[200px] flex-1">
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Chercher une fonctionnalité"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-800"
+          />
+        </label>
+        <span className="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-black text-white">
+          {granted}/{total}
+        </span>
+        {!disabled ? (
+          <>
+            <button type="button" onClick={() => setAll(true)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+              Tout autoriser
+            </button>
+            <button type="button" onClick={() => setAll(false)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+              Tout retirer
+            </button>
+          </>
+        ) : null}
+      </div>
+      {groups.length === 0 ? (
+        <p className="text-sm font-semibold text-slate-500">Aucune fonctionnalité ne correspond à « {query.trim()} ».</p>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {groups.map((group) => {
+          const meta = GROUP_META[group.id];
+          const Icon = meta?.icon || Shield;
+          const keys = group.actions.map((action) => `${group.id}.${action.id}`);
+          const onCount = keys.filter((key) => value[key]).length;
+          const allOn = onCount === keys.length;
+          return (
+            <div key={group.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-start gap-2">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                    <Icon size={16} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-800">{group.label}</p>
+                    <p className="text-[11px] font-medium leading-snug text-slate-500">{meta?.info}</p>
+                  </div>
+                </div>
+                {!disabled ? (
                   <button
-                    key={key}
                     type="button"
-                    disabled={disabled}
-                    onClick={() => toggle(key)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${
-                      on
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                        : 'border-slate-200 bg-white text-slate-500'
-                    } ${disabled ? 'cursor-default' : 'hover:border-slate-300'}`}
+                    onClick={() => toggleGroup(group.id, group.actions)}
+                    className="shrink-0 text-[11px] font-bold text-rose-600 hover:underline"
                   >
-                    {action.label}
+                    {allOn ? 'Retirer' : 'Tout'}
                   </button>
-                );
-              })}
+                ) : (
+                  <span className="text-[11px] font-bold text-slate-400">{onCount}/{keys.length}</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.actions.map((action) => {
+                  const key = `${group.id}.${action.id}`;
+                  const on = Boolean(value[key]);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => toggle(key)}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${
+                        on
+                          ? 'border-rose-500 bg-rose-500 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-500'
+                      } ${disabled ? 'cursor-default' : 'hover:border-rose-300'}`}
+                    >
+                      {action.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -127,6 +243,7 @@ export default function CompanyMembersPage() {
   const [roleName, setRoleName] = useState('');
   const [roleRights, setRoleRights] = useState<PermissionMap>(() => emptyPermissions());
   const [savingRole, setSavingRole] = useState(false);
+  const [memberQuery, setMemberQuery] = useState('');
 
   const load = useCallback(async (silent = false) => {
     if (!companyId) {
@@ -345,33 +462,68 @@ export default function CompanyMembersPage() {
     () => Object.values(rights).filter(Boolean).length,
     [rights]
   );
+  const teamStats = useMemo(() => {
+    const people = members.filter((member) => !member.isOwner);
+    return {
+      total: members.length,
+      online: people.filter((member) => member.online).length,
+      waiting: people.filter((member) => member.status === 'invited' || member.status === 'pending').length,
+      roles: roles.length,
+    };
+  }, [members, roles.length]);
+  const visibleMembers = useMemo(() => {
+    const needle = memberQuery.trim().toLowerCase();
+    if (!needle) return members;
+    return members.filter((member) =>
+      `${member.fullName} ${member.email} ${member.roleName || ''} ${member.preset}`.toLowerCase().includes(needle)
+    );
+  }, [members, memberQuery]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-12">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Équipe</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Invitez d'autres e-mails sur cette entreprise et choisissez ce que chacun peut faire : gigs, prospects, téléphonie, et le reste.
-          </p>
+    <div className="mx-auto max-w-6xl space-y-5 pb-12">
+      <div className="overflow-hidden rounded-3xl bg-slate-950 text-white">
+        <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-5">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-300">Entreprise</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight">Équipe</h1>
+            <p className="mt-1 max-w-2xl text-sm text-slate-300">
+              Invitez des collègues, créez des rôles, et choisissez chaque fonctionnalité qu’ils peuvent ouvrir.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
+            >
+              <RefreshCw size={14} />
+              Actualiser
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95"
+            >
+              <Plus size={14} />
+              Inviter
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw size={14} />
-            Actualiser
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95"
-          >
-            <Plus size={14} />
-            Inviter
-          </button>
+        <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
+          {[
+            { label: 'Personnes', value: teamStats.total, icon: Users },
+            { label: 'En ligne', value: teamStats.online, icon: Activity },
+            { label: 'Invitations', value: teamStats.waiting, icon: Mail },
+            { label: 'Rôles', value: teamStats.roles, icon: Shield },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-3 bg-slate-950 px-4 py-3">
+              <item.icon size={16} className="text-rose-300" />
+              <div>
+                <p className="text-lg font-black leading-none">{item.value}</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">{item.label}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -386,18 +538,23 @@ export default function CompanyMembersPage() {
         </div>
       ) : null}
 
-      <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="space-y-3 rounded-3xl border border-rose-100 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">Rôles</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Créez un rôle et cochez chaque fonctionnalité : tableau de bord, gigs, prospects, appels, planification, e-mails, chat, qualité, portefeuille, abonnement.
-            </p>
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+              <Shield size={18} />
+            </span>
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">Rôles</h2>
+              <p className="mt-1 max-w-xl text-xs text-slate-500">
+                Un rôle mémorise une combinaison de droits. Vous le réutilisez à l’invitation et dans Droits.
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={() => setShowRoleForm((open) => !open)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2 text-sm font-bold text-white hover:bg-slate-800"
           >
             <Shield size={14} />
             {showRoleForm ? 'Fermer' : 'Nouveau rôle'}
@@ -408,8 +565,10 @@ export default function CompanyMembersPage() {
         ) : (
           <div className="flex flex-wrap gap-2">
             {roles.map((role) => (
-              <span key={role._id} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700">
+              <span key={role._id} className="inline-flex items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900">
+                <Shield size={12} />
                 {role.name}
+                <span className="font-semibold text-rose-500">{countOn(role.permissions)} droits</span>
                 <button
                   type="button"
                   onClick={() => void onDeleteRole(role)}
@@ -560,18 +719,35 @@ export default function CompanyMembersPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {members.length === 0 ? (
+          <label className="relative block">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={memberQuery}
+              onChange={(event) => setMemberQuery(event.target.value)}
+              placeholder="Chercher un membre, un e-mail ou un rôle"
+              className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-800"
+            />
+          </label>
+          {visibleMembers.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center">
               <Users className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-semibold text-slate-500">Aucun membre pour le moment.</p>
+              <p className="text-sm font-semibold text-slate-500">
+                {memberQuery.trim() ? 'Aucun membre ne correspond à cette recherche.' : 'Aucun membre pour le moment.'}
+              </p>
             </div>
           ) : null}
-          {members.map((member) => {
+          {visibleMembers.map((member) => {
             const editing = editingId === member.userId;
             return (
-              <article key={member.userId} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <article key={member.userId} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black text-white ${
+                      member.isOwner ? 'bg-slate-950' : 'bg-gradient-harx'
+                    }`}>
+                      {(member.fullName || member.email || '?').slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-black text-slate-900">{member.fullName || member.email}</h3>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
@@ -596,6 +772,7 @@ export default function CompanyMembersPage() {
                       ) : null}
                     </div>
                     <p className="mt-1 text-xs font-medium text-slate-500">{member.email}</p>
+                    </div>
                   </div>
                   {!member.isOwner ? (
                     <div className="flex items-center gap-2">
