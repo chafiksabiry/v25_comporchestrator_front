@@ -60,6 +60,8 @@ interface InteractiveScriptCockpitProps {
   onStageChange?: (stageIndex: number, stage: InteractiveStage) => void;
   /** After the user leaves a stage they changed, later stages can be realigned. */
   onStageCommit?: (stageIndex: number) => void;
+  /** Header language. Switching it replaces the text without counting as an edit. */
+  contentLanguage?: 'fr' | 'en';
   /** @deprecated use onStageChange — still supported for replica-only edits */
   onReplicaChange?: (stageIndex: number, introReplica: string) => void;
   /** Optional sample lead values for live preview of tokens. */
@@ -82,6 +84,7 @@ export function InteractiveScriptCockpit({
   contactVariables = [],
   onStageChange,
   onStageCommit,
+  contentLanguage,
   onReplicaChange,
   previewLead = null,
 }: InteractiveScriptCockpitProps) {
@@ -198,7 +201,7 @@ export function InteractiveScriptCockpit({
   useEffect(() => {
     onStageIndexChange?.(currentStageIdx);
     enteredSnapshot.current = JSON.stringify(stages[currentStageIdx] || null);
-  }, [currentStageIdx, onStageIndexChange]);
+  }, [currentStageIdx, onStageIndexChange, contentLanguage]);
 
   useEffect(() => {
     if (committedIndex.current == null || committedIndex.current === currentStageIdx) return;

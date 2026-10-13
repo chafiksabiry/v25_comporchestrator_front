@@ -215,8 +215,48 @@ function scriptsForGig<T extends { gigId?: unknown; gig?: { _id?: string } | str
   return scripts.filter((script) => scriptGigId(script) === id);
 }
 
+type StagePack = { fr: InteractiveStage[] | null; en: InteractiveStage[] | null };
+
+function uiScriptLanguage(language: string | undefined): 'fr' | 'en' {
+  return String(language || '').toLowerCase().startsWith('en') ? 'en' : 'fr';
+}
+
+function asStageList(value: unknown): InteractiveStage[] | null {
+  return Array.isArray(value) && value.length > 0 ? (value as InteractiveStage[]) : null;
+}
+
+function packFromGenerated(data: any): StagePack {
+  const by = data?.stagesByLanguage || data?.data?.stagesByLanguage;
+  const fr = asStageList(by?.fr);
+  const en = asStageList(by?.en);
+  if (fr || en) return { fr, en };
+  return { fr: asStageList(data?.stages || data?.data?.stages), en: null };
+}
+
+function packFromPlaybook(playbook: any): StagePack {
+  const by = playbook?.stagesByLanguage;
+  const fallback = asStageList(playbook?.stages);
+  return {
+    fr: asStageList(by?.fr) || fallback,
+    en: asStageList(by?.en),
+  };
+}
+
+function stagesForLanguage(pack: StagePack, lang: 'fr' | 'en'): InteractiveStage[] | null {
+  return pack[lang] || pack.fr || pack.en;
+}
+
+function languageActuallyShown(pack: StagePack, lang: 'fr' | 'en'): 'fr' | 'en' {
+  if (pack[lang]?.length) return lang;
+  if (pack.fr?.length) return 'fr';
+  return 'en';
+}
+
 const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const uiLang = uiScriptLanguage(i18n.language);
+  const uiLangRef = useRef(uiLang);
+  uiLangRef.current = uiLang;
   // `useLocation` lets us know whether ScriptGenerator is mounted under
   // the dashboard shell (`/dashboard/script-generator`) or inside the
   // orchestrator switch (no router path → no `/dashboard/` prefix). We
@@ -253,6 +293,20 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [activeInteractiveStages, setActiveInteractiveStages] = useState<InteractiveStage[] | null>(null);
   const interactiveStagesRef = useRef(activeInteractiveStages);
   interactiveStagesRef.current = activeInteractiveStages;
+  const [stagePack, setStagePack] = useState<StagePack>({ fr: null, en: null });
+  const stagePackRef = useRef(stagePack);
+  stagePackRef.current = stagePack;
+
+  const applyStagePack = (pack: StagePack) => {
+    stagePackRef.current = pack;
+    setStagePack(pack);
+    setActiveInteractiveStages(stagesForLanguage(pack, uiLangRef.current));
+  };
+
+  useEffect(() => {
+    const shown = stagesForLanguage(stagePackRef.current, uiLang);
+    if (shown?.length) setActiveInteractiveStages(shown);
+  }, [uiLang]);
   const [activeInteractiveTitle, setActiveInteractiveTitle] = useState<string>('');
   const [interactiveStageIdx, setInteractiveStageIdx] = useState(0);
   const [relatedTrainings, setRelatedTrainings] = useState<any[]>([]);
@@ -393,10 +447,18 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   );
 
   const handleStageChange = (stageIndex: number, stage: InteractiveStage) => {
+    const lang = languageActuallyShown(stagePackRef.current, uiLangRef.current);
+    setStagePack((prev) => {
+      const current = prev[lang];
+      if (!current || stageIndex < 0 || stageIndex >= current.length) return prev;
+      const next = { ...prev, [lang]: current.map((item, index) => (index === stageIndex ? stage : item)) };
+      stagePackRef.current = next;
+      return next;
+    });
     setActiveInteractiveStages((prev) => {
       if (!prev || prev.length === 0) return prev;
       if (stageIndex < 0 || stageIndex >= prev.length) return prev;
-      return prev.map((s, i) => (i === stageIndex ? stage : s));
+      return prev.map((item, index) => (index === stageIndex ? stage : item));
     });
   };
 
@@ -700,7 +762,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     } else {
       scriptLoadIntentRef.current = 'new';
       pendingOpenScriptRef.current = null;
-      setActiveInteractiveStages(null);
+      applyStagePack({ fr: null, en: null });
       setActiveInteractiveTitle('');
     }
 
@@ -768,22 +830,19 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         }
       }
 
-      const scriptLanguage = resolveGigContentLanguage(selectedGig);
-      const baseContexte = [
-        bilingualGenerationInstruction(scriptLanguage),
-        scriptLanguage === 'fr'
-          ? 'Générer un script interactif structuré en 8 étapes basées sur la mission.'
-          : 'Generate an interactive call script in 8 stages based on this gig.',
-      ].join('\n\n');
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
-        outputLanguage: scriptLanguage,
-        contentLanguage: scriptLanguage,
-        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
-        contexte: [baseContexte, contactVariablesPrompt].filter(Boolean).join('\n\n'),
+        langueTon: 'professionnel et direct',
+        outputLanguage: 'fr',
+        contentLanguage: 'fr',
+        alsoGenerateLanguage: 'en',
+        contexte: [
+          'Écris toutes les phrases du script en français uniquement. La version anglaise est enregistrée à part.',
+          "Générer un script interactif structuré en 8 étapes basées sur la mission.",
+          contactVariablesPrompt,
+        ].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
         contactVariables,
@@ -791,12 +850,13 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
-      const generatedStages = data?.stages || data?.data?.stages;
+      const generatedPack = packFromGenerated(data);
+      const generatedStages = stagesForLanguage(generatedPack, uiLangRef.current);
       if (scriptApplySeqRef.current !== applySeq || selectedGigIdRef.current !== gigIdAtStart) {
         return;
       }
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
-        setActiveInteractiveStages(generatedStages);
+        applyStagePack(generatedPack);
         setActiveInteractiveTitle(selectedGig.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
         const backendBilled = applyBackendAiUsage(data?.usage, companyId);
         if (!backendBilled) {
@@ -862,16 +922,14 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         activeInteractiveStages.length - 1
       );
 
-      const scriptLanguage = resolveGigContentLanguage(selectedGig);
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
-        outputLanguage: scriptLanguage,
-        contentLanguage: scriptLanguage,
-        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
-        contexte: [bilingualGenerationInstruction(scriptLanguage), promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
+        langueTon: uiLangRef.current === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: uiLangRef.current,
+        contentLanguage: uiLangRef.current,
+        contexte: [promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
         editMode: 'targeted',
@@ -882,9 +940,10 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
-      const generatedStages = data?.stages || data?.data?.stages;
+      const generatedPack = packFromGenerated(data);
+      const generatedStages = stagesForLanguage(generatedPack, uiLangRef.current);
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
-        setActiveInteractiveStages(generatedStages);
+        applyStagePack(generatedPack);
         setActiveInteractiveTitle(selectedGig.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
         const backendBilled = applyBackendAiUsage(data?.usage, companyId);
         if (!backendBilled) {
@@ -925,8 +984,9 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: 'professionnel et direct',
-        contexte: 'The user edited this stage. Keep it exactly. Realign only the later stages that no longer follow it.',
+        langueTon: uiLangRef.current === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: uiLangRef.current,
+        contexte: 'The user edited this stage. Keep it exactly, in the same language. Realign only the later stages that no longer follow it.',
         trainings: relatedTrainings,
         isInteractiveRequest: true,
         editMode: 'realign',
@@ -936,9 +996,10 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       };
       await assertCompanyHasAiTokens(1, companyId, { allowFirstGigFree: true });
       const { data } = await apiClient.post('/rag/generate-script', payload);
-      const generatedStages = data?.stages || data?.data?.stages;
+      const generatedPack = packFromGenerated(data);
+      const generatedStages = stagesForLanguage(generatedPack, uiLangRef.current);
       if (Array.isArray(generatedStages) && generatedStages.length > 0) {
-        setActiveInteractiveStages(generatedStages);
+        applyStagePack(generatedPack);
         const backendBilled = applyBackendAiUsage(data?.usage, companyId);
         if (!backendBilled) {
           void chargeCompanyAiUsage({
@@ -979,19 +1040,26 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         }))
         .filter((iframe) => iframe.url.length > 0);
 
+      const pack = stagePackRef.current;
+      const frenchStages = pack.fr?.length ? pack.fr : activeInteractiveStages;
+      const englishStages = pack.en?.length ? pack.en : null;
       const payload = {
         gigId: selectedGig._id,
         targetClient: 'general',
-        language: 'simple et direct',
+        language: 'fr,en',
         details: 'Généré via le Cockpit Interactif',
-        script: activeInteractiveStages.map(s => ({
+        script: (frenchStages || []).map(s => ({
           phase: s.label,
           actor: 'agent',
           replica: s.introReplica
         })),
         playbook: {
           title: activeInteractiveTitle || selectedGig.title,
-          stages: activeInteractiveStages,
+          stages: frenchStages,
+          stagesByLanguage: {
+            ...(frenchStages ? { fr: frenchStages } : {}),
+            ...(englishStages ? { en: englishStages } : {}),
+          },
           iframes: cleanedIframes
         },
         isActive: true,
@@ -1273,13 +1341,13 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     setValidatedScriptIds((prev) => ({ ...prev, [item._id]: Boolean(item?.isActive) }));
     setIsAutoGenerateWizardActive(false);
 
-    // Load active interactive stages from saved script playbook stages
-    const stages = (item.playbook as any)?.stages;
+    const pack = packFromPlaybook(item.playbook);
+    const stages = stagesForLanguage(pack, uiLangRef.current);
     if (Array.isArray(stages) && stages.length > 0) {
-      setActiveInteractiveStages(stages);
+      applyStagePack(pack);
       setActiveInteractiveTitle(item.playbook?.title || selectedGig?.title || scriptChromeLabels(resolveGigContentLanguage(selectedGig)).fallbackTitle);
     } else {
-      setActiveInteractiveStages(null);
+      applyStagePack({ fr: null, en: null });
     }
 
     // Rehydrate saved iframes (legacy scripts without this field stay empty).
@@ -1901,6 +1969,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     <InteractiveScriptCockpit
                       scriptTitle={activeInteractiveTitle || selectedGig?.title || scriptLabels.fallbackTitle}
                       stages={activeInteractiveStages}
+                      contentLanguage={uiLang}
                       isInline={true}
                       onValidate={handleSaveAndValidateInteractiveScript}
                       isValidating={isSending}
