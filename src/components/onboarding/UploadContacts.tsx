@@ -787,6 +787,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
+  const [zohoModuleMenuOpen, setZohoModuleMenuOpen] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
@@ -2423,16 +2424,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     return text;
   };
 
+  const ZOHO_IMPORT_MODULES = ['Leads', 'Deals', 'Contacts'] as const;
+
   /** Pull Zoho rows, then run the same analyze → mapping → preview path as a file. */
-  const handleSyncZoho = async () => {
+  const handleSyncZoho = async (moduleName: (typeof ZOHO_IMPORT_MODULES)[number]) => {
     if (!selectedGigId) {
       toast.error(t('uploadContacts.errors.selectGigFirst'));
       return;
     }
+    setZohoModuleMenuOpen(false);
     setIsImportingZoho(true);
     try {
+      const params = new URLSearchParams({ module: moduleName });
       const response = await fetchZohoWithAutoRefresh(
-        `${import.meta.env.VITE_DASHBOARD_API}/zoho/records/table`,
+        `${import.meta.env.VITE_DASHBOARD_API}/zoho/records/table?${params.toString()}`,
         { method: 'GET' },
         selectedGigId
       );
@@ -2449,8 +2454,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const csv = [headers, ...rows.map((row) => headers.map((header) => row[header] ?? ''))]
         .map((cols) => cols.map(csvCell).join(','))
         .join('\n');
-      const moduleName = String(data.data?.module || 'zoho');
-      const file = new File([csv], `zoho-${moduleName}.csv`, { type: 'text/csv' });
+      const importedModule = String(data.data?.module || moduleName);
+      const file = new File([csv], `zoho-${importedModule}.csv`, { type: 'text/csv' });
       await beginFileImport(file);
     } catch (error: any) {
       console.error('Error preparing Zoho import:', error);
@@ -3345,10 +3350,40 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
             {/* Action Button - Pushed to bottom */}
             <div className="mt-auto relative z-20">
+              {zohoModuleMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-30 cursor-default"
+                    aria-label={t('uploadContacts.zohoMapping.cancel')}
+                    onClick={() => setZohoModuleMenuOpen(false)}
+                  />
+                  <div className="absolute bottom-full left-0 right-0 z-40 mb-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+                    {ZOHO_IMPORT_MODULES.map((moduleName) => (
+                      <button
+                        key={moduleName}
+                        type="button"
+                        onClick={() => { void handleSyncZoho(moduleName); }}
+                        className="flex w-full items-center px-4 py-3 text-left text-sm font-bold text-gray-800 hover:bg-harx-50"
+                      >
+                        {moduleName}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <button
-                onClick={() => { void handleSyncZoho(); }}
+                type="button"
+                onClick={() => {
+                  if (!hasZohoAccessToken || isImportingZoho) return;
+                  if (!selectedGigId) {
+                    toast.error(t('uploadContacts.errors.selectGigFirst'));
+                    return;
+                  }
+                  setZohoModuleMenuOpen((open) => !open);
+                }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gradient-harx text-white font-black py-4 px-6 rounded-xl transition-all duration-500 disabled:opacity-50"
+                className="relative z-40 flex w-full items-center justify-center bg-gradient-harx text-white font-black py-4 px-6 rounded-xl transition-all duration-500 disabled:opacity-50"
               >
                 {isImportingZoho ? (
                   <>
@@ -3362,6 +3397,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 ) : (
                   <>
                     {t('uploadContacts.import.syncZoho')}
+                    <ChevronDown className={`ml-3 h-5 w-5 transition-transform ${zohoModuleMenuOpen ? 'rotate-180' : ''}`} />
                   </>
                 )}
               </button>
