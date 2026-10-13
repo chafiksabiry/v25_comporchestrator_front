@@ -35,7 +35,6 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
-import ZohoFieldMappingModal from './ZohoFieldMappingModal';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { useTranslation } from 'react-i18next';
 
@@ -788,7 +787,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
-  const [zohoMappingOpen, setZohoMappingOpen] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
@@ -1841,9 +1839,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     openMappingFromAnalyze(analyzeResult, mode, preservedLeads, preservedFiltered);
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+  const beginFileImport = async (file: File) => {
       // Check if a gig is selected before processing
       if (!selectedGigId) {
         toast.error(t('uploadContacts.errors.selectGigFirst'));
@@ -1939,7 +1935,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setUploadProgress(0);
         setIsProcessing(false);
       }
-    }
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await beginFileImport(file);
   };
 
   const toggleChannel = (channelId: string) => {
@@ -2416,87 +2417,44 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     return response;
   };
 
-  // Remplacer tous les fetch vers l'API Zoho par fetchZohoWithAutoRefresh
-  // Exemple pour handleImportFromZoho :
-  const handleImportFromZoho = async () => {
+  const csvCell = (value: unknown) => {
+    const text = String(value ?? '');
+    if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  };
+
+  /** Pull Zoho rows, then run the same analyze → mapping → preview path as a file. */
+  const handleSyncZoho = async () => {
     if (!selectedGigId) {
-      toast.error('Please select a gig first');
+      toast.error(t('uploadContacts.errors.selectGigFirst'));
       return;
     }
     setIsImportingZoho(true);
-    setRealtimeLeads([]);
     try {
-      const userId = Cookies.get('userId');
-      const companyId = Cookies.get('companyId');
-      if (!companyId) {
-        toast.error(t('uploadContacts.errors.companyConfigNotFound'));
+      const response = await fetchZohoWithAutoRefresh(
+        `${import.meta.env.VITE_DASHBOARD_API}/zoho/records/table`,
+        { method: 'GET' },
+        selectedGigId
+      );
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || t('uploadContacts.errors.importError'));
+      }
+      const headers: string[] = Array.isArray(data.data?.headers) ? data.data.headers : [];
+      const rows: Array<Record<string, string>> = Array.isArray(data.data?.rows) ? data.data.rows : [];
+      if (!headers.length || !rows.length) {
+        toast.error(t('uploadContacts.errors.noValidLeads'));
         return;
       }
-      const zohoService = ZohoService.getInstance();
-      const accessToken = await zohoService.getValidAccessToken();
-      if (!accessToken) {
-        toast.error(t('uploadContacts.errors.zohoConfigNotFound'));
-        return;
-      }
-      setParsedLeads([]);
-      const selectedGig = gigs.find(gig => gig._id === selectedGigId);
-      if (!selectedGig) {
-        toast.error(t('uploadContacts.errors.gigNotFound'));
-        return;
-      }
-      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-      const checkResponse = await fetchZohoWithAutoRefresh(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: userId,
-          companyId: companyId,
-          gigId: selectedGigId
-        })
-      }, selectedGigId);
-      if (!checkResponse.ok) {
-        const errorData = await checkResponse.json().catch(() => null);
-        throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
-      }
-      const data = await checkResponse.json();
-      if (!data.success) {
-        throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${selectedGig.title}`);
-      }
-      if (!data.data || !Array.isArray(data.data.leads)) {
-        setRealtimeLeads([]);
-        setParsedLeads([]);
-        await fetchLeads(1, '');
-        return;
-      }
-      const leadsFromApi = data.data.leads;
-      
-      setRealtimeLeads(leadsFromApi);
-      setParsedLeads(leadsFromApi);
-      
-      await fetchLeads(1, '');
-
-      // D├®clencher une mise ├á jour de l'├®tat d'onboarding pour marquer le step 5 comme compl├®t├®
-      if (leadsFromApi.length > 0) {
-        try {
-          const companyId = Cookies.get('companyId');
-          if (companyId) {
-            await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
-              { status: 'completed' }
-            );
-            await notifyUploadContactsStepSynced();
-          }
-        } catch (error) {
-          console.error('Error updating onboarding progress after Zoho import:', error);
-        }
-      }
+      const csv = [headers, ...rows.map((row) => headers.map((header) => row[header] ?? ''))]
+        .map((cols) => cols.map(csvCell).join(','))
+        .join('\n');
+      const moduleName = String(data.data?.module || 'zoho');
+      const file = new File([csv], `zoho-${moduleName}.csv`, { type: 'text/csv' });
+      await beginFileImport(file);
     } catch (error: any) {
-      console.error('Error in handleImportFromZoho:', error);
-      toast.error(error.message || t('uploadContacts.errors.importError'));
+      console.error('Error preparing Zoho import:', error);
+      toast.error(error?.message || t('uploadContacts.errors.importError'));
     } finally {
       setIsImportingZoho(false);
     }
@@ -3388,13 +3346,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             {/* Action Button - Pushed to bottom */}
             <div className="mt-auto relative z-20">
               <button
-                onClick={() => {
-                  if (!selectedGigId) {
-                    toast.error('Please select a gig first');
-                    return;
-                  }
-                  setZohoMappingOpen(true);
-                }}
+                onClick={() => { void handleSyncZoho(); }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
                 className="w-full bg-gradient-harx text-white font-black py-4 px-6 rounded-xl transition-all duration-500 disabled:opacity-50"
               >
@@ -4870,16 +4822,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
       )}
-
-      <ZohoFieldMappingModal
-        open={zohoMappingOpen}
-        gigId={selectedGigId || ''}
-        onClose={() => setZohoMappingOpen(false)}
-        onSaved={() => {
-          setZohoMappingOpen(false);
-          void handleImportFromZoho();
-        }}
-      />
 
       {viewingLeadDetail && (
         <LeadDetailModal
