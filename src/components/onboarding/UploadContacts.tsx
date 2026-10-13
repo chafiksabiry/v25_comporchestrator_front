@@ -539,32 +539,32 @@ function LeadTableRow({
           {statusLabel}
         </span>
       </td>
-      <td className={`sticky right-0 z-20 whitespace-nowrap bg-white px-1 py-2.5 align-middle border-y rounded-r-2xl border-r shadow-[-8px_0_10px_-8px_rgba(15,23,42,0.28)] group-hover:bg-white ${rowBorder}`}>
-        <div className="flex items-center justify-center gap-0.5">
+      <td className={`sticky right-0 z-20 w-[6.75rem] min-w-[6.75rem] whitespace-nowrap border-y border-r bg-white px-1.5 py-2 align-middle rounded-r-2xl before:pointer-events-none before:absolute before:inset-y-0 before:-left-8 before:w-8 before:bg-gradient-to-r before:from-transparent before:to-white group-hover:bg-white ${rowBorder}`}>
+        <div className="relative z-[1] flex items-center justify-center gap-1">
           <button
             type="button"
             onClick={() => onView({ ...lead })}
-            className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-transparent hover:bg-gradient-harx hover:text-white"
             title={viewTitle}
           >
-            <Eye className="h-3 w-3" />
+            <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={() => onEdit({ ...lead })}
-            className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
             title={editTitle}
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3.5 w-3.5" />
           </button>
           {onArchive && lead._id ? (
             <button
               type="button"
               onClick={() => onArchive(lead._id as string)}
-              className="inline-flex items-center justify-center rounded-md border border-slate-200/80 bg-white p-1 text-slate-400 transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 shadow-sm transition-all duration-200 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
               title={archiveTitle}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           ) : null}
         </div>
@@ -4694,7 +4694,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     <th scope="col" className="max-w-0 overflow-hidden px-2 py-2 text-left text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {t('uploadContacts.list.table.status')}
                     </th>
-                    <th scope="col" className="sticky right-0 z-[60] w-20 min-w-[5.5rem] bg-white px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 shadow-[-8px_0_10px_-8px_rgba(15,23,42,0.35)]">
+                    <th scope="col" className="sticky right-0 z-[60] w-[6.75rem] min-w-[6.75rem] bg-white/95 px-1 py-2 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-400 backdrop-blur-sm before:pointer-events-none before:absolute before:inset-y-0 before:-left-8 before:w-8 before:bg-gradient-to-r before:from-transparent before:to-white">
                       {t('uploadContacts.list.table.actions')}
                     </th>
                   </tr>
