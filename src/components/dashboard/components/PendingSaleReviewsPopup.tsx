@@ -105,7 +105,7 @@ export function PendingSaleReviewsPopup() {
                     <Dialog.Title className="text-base font-semibold text-gray-900">
                       {t(
                         'escrow.pendingReviews.title',
-                        'Ventes en attente de votre validation'
+                        'Commissions en attente de votre validation'
                       )}
                     </Dialog.Title>
                   </div>
@@ -122,7 +122,7 @@ export function PendingSaleReviewsPopup() {
                 <p className="mt-2 text-sm text-gray-600">
                   {t(
                     'escrow.pendingReviews.explain',
-                    "L'IA a détecté {{count}} vente(s) non encore validée(s). Passé le délai indiqué, le REP sera automatiquement crédité.",
+                    "{{count}} vente(s) ou rendez-vous/rappel(s) détecté(s) n'ont pas encore été validé(s). Passé le délai indiqué, le REP sera automatiquement crédité.",
                     { count: reviews.length }
                   )}
                 </p>
