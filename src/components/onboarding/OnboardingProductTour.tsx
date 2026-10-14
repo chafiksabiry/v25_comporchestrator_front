@@ -20,6 +20,14 @@ export interface TourStep {
   title: string;
   description: string;
   prefer?: 'top' | 'bottom';
+  /**
+   * 'click' — this step points at a real action (a button to press). The
+   * tour advances only once the user actually clicks that element, instead
+   * of via the "Suivant" button — so each step reflects real progress
+   * rather than letting the whole tour be click-through'd in one go.
+   * Omit (default) for steps that merely point at something to read.
+   */
+  advanceOn?: 'click';
 }
 
 interface Props {
@@ -75,6 +83,19 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
     if (step >= total - 1) close();
     else setStep(s => s + 1);
   }, [step, total, close]);
+
+  // Steps marked advanceOn: 'click' only move forward once the user performs
+  // the real action the bubble points at (e.g. actually pressing "Démarrer
+  // l'Étape"), not via the tour's own "Suivant" button. The click still
+  // reaches the underlying button normally — this only observes it.
+  useEffect(() => {
+    if (!visible || !current || current.advanceOn !== 'click') return;
+    const el = document.querySelector<HTMLElement>(`[data-tour="${current.target}"]`);
+    if (!el) return;
+    const handleClick = () => next();
+    el.addEventListener('click', handleClick);
+    return () => el.removeEventListener('click', handleClick);
+  }, [visible, current, next]);
 
   if (!visible || !current) return null;
 
@@ -214,6 +235,11 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
                 >
                   Passer
                 </button>
+                {current.advanceOn === 'click' ? (
+                  <span className="flex items-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-4 py-1.5 text-xs font-bold text-gray-400">
+                    À vous de jouer
+                  </span>
+                ) : (
                 <button
                   type="button"
                   onClick={next}
@@ -222,6 +248,7 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
                   {isLast ? 'Terminer' : 'Suivant'}
                   {!isLast && <ArrowRight size={12} />}
                 </button>
+                )}
               </div>
             </div>
           </div>
