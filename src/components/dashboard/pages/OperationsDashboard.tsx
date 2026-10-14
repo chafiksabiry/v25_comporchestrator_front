@@ -1427,12 +1427,12 @@ export default function OperationsDashboard() {
 
   const donutHasData = outcomeBuckets.some((b) => b.count > 0);
 
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: t('opsDashboard.tabs.overview', 'Vue globale'), icon: <BarChart3 size={14} /> },
-    { id: 'leads', label: t('opsDashboard.tabs.leads', 'Leads'), icon: <Users size={14} /> },
-    { id: 'calls', label: t('opsDashboard.tabs.calls', 'Appels'), icon: <PhoneCall size={14} /> },
-    { id: 'agents', label: t('opsDashboard.tabs.agents', 'Agents'), icon: <UserCheck size={14} /> },
-    { id: 'wallet', label: t('opsDashboard.tabs.wallet', 'Wallet'), icon: <Wallet size={14} /> },
+  const tabs: { id: TabId; label: string; icon: React.ReactNode; active: string; idleIcon: string }[] = [
+    { id: 'overview', label: t('opsDashboard.tabs.overview', 'Vue globale'), icon: <BarChart3 size={14} />, active: 'border-slate-900 bg-slate-900 text-white', idleIcon: 'text-rose-500' },
+    { id: 'leads', label: t('opsDashboard.tabs.leads', 'Leads'), icon: <Users size={14} />, active: 'border-sky-600 bg-sky-600 text-white', idleIcon: 'text-sky-500' },
+    { id: 'calls', label: t('opsDashboard.tabs.calls', 'Appels'), icon: <PhoneCall size={14} />, active: 'border-violet-600 bg-violet-600 text-white', idleIcon: 'text-violet-500' },
+    { id: 'agents', label: t('opsDashboard.tabs.agents', 'Agents'), icon: <UserCheck size={14} />, active: 'border-emerald-600 bg-emerald-600 text-white', idleIcon: 'text-emerald-500' },
+    { id: 'wallet', label: t('opsDashboard.tabs.wallet', 'Wallet'), icon: <Wallet size={14} />, active: 'border-rose-500 bg-rose-500 text-white', idleIcon: 'text-rose-500' },
   ];
 
   const fmtDuration = (sec: number) => formatBilledMinutesFromSeconds(sec);
@@ -1704,11 +1704,11 @@ export default function OperationsDashboard() {
               onClick={() => setTab(tabItem.id)}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
                 active
-                  ? 'border-harx-ink bg-harx-ink text-white shadow-harx'
-                  : 'border-harx-border bg-white text-slate-600 hover:border-slate-300 hover:bg-white'
+                  ? `${tabItem.active} shadow-harx`
+                  : 'border-harx-border bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <span className={active ? 'text-white' : 'text-slate-400'}>{tabItem.icon}</span>
+              <span className={active ? 'text-white' : tabItem.idleIcon}>{tabItem.icon}</span>
               {tabItem.label}
             </button>
           );
@@ -3433,8 +3433,8 @@ function OverviewView({
 
         {/* 2) Leads base — real company count (no hardcoded fallback). */}
         <KpiCard
-          tone="default"
-          icon={<Users size={14} className="text-slate-500" />}
+          tone="sky"
+          icon={<Users size={14} />}
           label={t('opsDashboard.overview.kpi.leadsBase', 'Leads base')}
           value={fmtNum(leadsBase)}
           sub={`${coveragePct.toFixed(0)}% ${t('opsDashboard.overview.kpi.covered', 'couverts')}`}
@@ -3444,8 +3444,8 @@ function OverviewView({
 
         {/* 3) Appels aujourd'hui — with delta vs yesterday from series7d */}
         <KpiCard
-          tone="default"
-          icon={<PhoneCall size={14} className="text-slate-500" />}
+          tone="violet"
+          icon={<PhoneCall size={14} />}
           label={callsKpiLabel}
           value={fmtNum(stats.total)}
           sub={fmtDelta(vsYesterdayPct)}
@@ -3455,8 +3455,8 @@ function OverviewView({
 
         {/* 4) Appels sérieux */}
         <KpiCard
-          tone="default"
-          icon={<CheckCircle2 size={14} className="text-emerald-500" />}
+          tone="emerald"
+          icon={<CheckCircle2 size={14} />}
           label={t('opsDashboard.overview.kpi.seriousCalls', 'Appels sérieux')}
           value={fmtNum(stats.serious)}
           sub={`${stats.pctSerious.toFixed(1)}% ${t('opsDashboard.overview.kpi.rate', 'taux')}`}
@@ -3466,8 +3466,8 @@ function OverviewView({
 
         {/* 5) Transactions today */}
         <KpiCard
-          tone="default"
-          icon={<TrendingUp size={14} className="text-slate-500" />}
+          tone="amber"
+          icon={<TrendingUp size={14} />}
           label={t('opsDashboard.overview.kpi.transactions', 'Transactions')}
           value={fmtNum(transactionsToday)}
           sub={`${conversionPct.toFixed(1)}% ${t('opsDashboard.overview.kpi.conversion', 'conversion')}`}
@@ -3477,8 +3477,8 @@ function OverviewView({
 
         {/* 6) Score qualité — avg validByAIPct across reps (month). */}
         <KpiCard
-          tone="default"
-          icon={<Star size={14} className="text-slate-500" />}
+          tone="cyan"
+          icon={<Star size={14} />}
           label={t('opsDashboard.overview.kpi.quality', 'Score qualité')}
           value={qualityScore !== null ? `${qualityScore}/100` : '—'}
           sub={t('opsDashboard.overview.kpi.qualitySub', 'moyenne équipe')}
@@ -3513,10 +3513,12 @@ function OverviewView({
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Couverture leads */}
-        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
+        <section className="rounded-harx border border-sky-200 bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-harx-ink">
-              <Users size={14} className="text-harx-500" />
+            <div className="flex items-center gap-2 text-sm font-black text-sky-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500 text-white">
+                <Users size={14} />
+              </span>
               {t('opsDashboard.overview.coverage.title', 'Couverture leads')}
             </div>
             <button
@@ -3559,10 +3561,12 @@ function OverviewView({
         </section>
 
         {/* Résultats d'appels (aujourd'hui) */}
-        <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
+        <section className="rounded-harx border border-violet-200 bg-white p-5 shadow-harx">
           <header className="mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
-              <PieChart size={14} className="text-harx-500" />
+            <div className="flex items-center gap-2 text-sm font-black text-violet-900">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500 text-white">
+                <PieChart size={14} />
+              </span>
               {outcomesTitle}
             </div>
           </header>
@@ -5540,6 +5544,75 @@ function Row({
 
 /* ---------------- Sub-components ---------------- */
 
+const KPI_TONES = {
+  default: {
+    card: 'border-harx-border bg-white',
+    icon: 'bg-slate-100 text-slate-500',
+    label: 'text-slate-500',
+    value: 'text-harx-ink',
+    sub: 'text-slate-400',
+    ring: 'ring-slate-400/40',
+  },
+  primary: {
+    card: 'border-[1.5px] border-rose-300 bg-rose-50',
+    icon: 'bg-rose-500 text-white',
+    label: 'text-rose-700',
+    value: 'text-rose-950',
+    sub: 'text-rose-400',
+    ring: 'ring-rose-400/40',
+  },
+  dark: {
+    card: 'border-harx-ink bg-harx-ink text-white',
+    icon: 'bg-white/10 text-white',
+    label: 'text-slate-300',
+    value: 'text-white',
+    sub: 'text-slate-400',
+    ring: 'ring-white/30',
+  },
+  sky: {
+    card: 'border-sky-200 bg-sky-50',
+    icon: 'bg-sky-500 text-white',
+    label: 'text-sky-700',
+    value: 'text-sky-950',
+    sub: 'text-sky-500',
+    ring: 'ring-sky-400/40',
+  },
+  violet: {
+    card: 'border-violet-200 bg-violet-50',
+    icon: 'bg-violet-500 text-white',
+    label: 'text-violet-700',
+    value: 'text-violet-950',
+    sub: 'text-violet-500',
+    ring: 'ring-violet-400/40',
+  },
+  emerald: {
+    card: 'border-emerald-200 bg-emerald-50',
+    icon: 'bg-emerald-500 text-white',
+    label: 'text-emerald-700',
+    value: 'text-emerald-950',
+    sub: 'text-emerald-600',
+    ring: 'ring-emerald-400/40',
+  },
+  amber: {
+    card: 'border-amber-200 bg-amber-50',
+    icon: 'bg-amber-500 text-white',
+    label: 'text-amber-800',
+    value: 'text-amber-950',
+    sub: 'text-amber-600',
+    ring: 'ring-amber-400/40',
+  },
+  cyan: {
+    card: 'border-cyan-200 bg-cyan-50',
+    icon: 'bg-cyan-500 text-white',
+    label: 'text-cyan-800',
+    value: 'text-cyan-950',
+    sub: 'text-cyan-600',
+    ring: 'ring-cyan-400/40',
+  },
+} as const;
+
+type KpiTone = keyof typeof KPI_TONES;
+
 function KpiCard({
   icon,
   label,
@@ -5555,36 +5628,17 @@ function KpiCard({
   value: string;
   sub: string;
   subTone?: 'rose';
-  tone: 'default' | 'primary' | 'dark';
+  tone: KpiTone;
   onClick?: () => void;
   selected?: boolean;
 }) {
-  const baseTone =
-    tone === 'primary'
-      ? 'border-[1.5px] border-harx-500 bg-harx-50'
-      : tone === 'dark'
-      ? 'border-harx-ink bg-harx-ink text-white'
-      : 'border-harx-border bg-white';
-
-  const selectedTone = selected
-    ? 'ring-2 ring-harx-500/40 border-harx-500 shadow-harx-md'
-    : '';
-
-  const labelColor =
-    tone === 'dark' ? 'text-slate-300' : tone === 'primary' ? 'text-harx-700' : 'text-slate-500';
-  const valueColor = tone === 'dark' ? 'text-white' : 'text-harx-ink';
-  const iconBg =
-    tone === 'dark'
-      ? 'bg-white/10 text-white'
-      : tone === 'primary'
-      ? 'bg-harx-500/10 text-harx-600'
-      : 'bg-slate-100 text-slate-500';
-  const subColor =
-    subTone === 'rose'
-      ? 'text-rose-300'
-      : tone === 'dark'
-      ? 'text-slate-400'
-      : 'text-slate-400';
+  const palette = KPI_TONES[tone] ?? KPI_TONES.default;
+  const baseTone = palette.card;
+  const selectedTone = selected ? `ring-2 ${palette.ring} shadow-harx-md` : '';
+  const labelColor = palette.label;
+  const valueColor = palette.value;
+  const iconBg = palette.icon;
+  const subColor = subTone === 'rose' ? 'text-rose-500' : palette.sub;
 
   const interactiveClass = onClick
     ? 'cursor-pointer text-left hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harx-500/40'
