@@ -495,7 +495,7 @@ export function MasterSidebar({
         <button
           type="button"
           onClick={handleLogoutMaster}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-rose-300 hover:text-white hover:bg-white/5 transition-all ${isCollapsed ? 'justify-center' : ''}`}
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl bg-gradient-harx text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition-all ${isCollapsed ? 'justify-center' : ''}`}
         >
           <LogOut size={20} className="shrink-0" />
           {!isCollapsed && (
