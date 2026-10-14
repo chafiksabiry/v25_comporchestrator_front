@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity,
   BookOpen,
@@ -51,18 +52,7 @@ import {
   type CompanyRole,
 } from '../../../services/companyMembersApi';
 
-const PRESETS: { id: Exclude<PresetId, 'owner' | 'custom'>; label: string; hint: string }[] = [
-  { id: 'admin', label: 'Admin', hint: 'Tous les droits' },
-  { id: 'operator', label: 'Opérateur', hint: 'Quotidien, sans achat ni suppression' },
-  { id: 'readonly', label: 'Lecture seule', hint: 'Consultation uniquement' },
-];
-
-function statusLabel(status: string) {
-  if (status === 'invited') return 'Invité';
-  if (status === 'active') return 'Membre';
-  if (status === 'pending') return 'E-mail en attente';
-  return status || '—';
-}
+const PRESET_IDS: Exclude<PresetId, 'owner' | 'custom'>[] = ['admin', 'operator', 'readonly'];
 
 const GROUP_META: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; info: string }> = {
   gigs: { icon: Briefcase, info: 'Créer, modifier, activer ou supprimer les missions.' },
@@ -103,14 +93,22 @@ function PermissionGrid({
   disabled?: boolean;
   onChange?: (next: PermissionMap) => void;
 }) {
+  const { t } = useTranslation();
+  const actionLabel = (groupId: string, actionId: string) => {
+    if (groupId === 'knowledge' && actionId === 'create') return t('teamPage.actionOverride.knowledgeCreate');
+    if (groupId === 'voice' && actionId === 'edit') return t('teamPage.actionOverride.voiceEdit');
+    if (groupId === 'members' && actionId === 'edit') return t('teamPage.actionOverride.membersEdit');
+    return t(`teamPage.actions.${actionId}`);
+  };
+  const groupLabel = (groupId: string) => t(`teamPage.groups.${groupId}`);
   const [query, setQuery] = useState('');
   const total = allPermissionKeys().length;
   const granted = countOn(value);
   const needle = query.trim().toLowerCase();
   const groups = PERMISSION_GROUPS.filter((group) => {
     if (!needle) return true;
-    if (group.label.toLowerCase().includes(needle)) return true;
-    return group.actions.some((action) => action.label.toLowerCase().includes(needle));
+    if (groupLabel(group.id).toLowerCase().includes(needle)) return true;
+    return group.actions.some((action) => actionLabel(group.id, action.id).toLowerCase().includes(needle));
   });
 
   const toggle = (key: string) => {
@@ -138,7 +136,7 @@ function PermissionGrid({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Chercher une fonctionnalité"
+            placeholder={t('teamPage.searchFeatures')}
             className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-800"
           />
         </label>
@@ -148,16 +146,16 @@ function PermissionGrid({
         {!disabled ? (
           <>
             <button type="button" onClick={() => setAll(true)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
-              Tout autoriser
+              {t('teamPage.allowAll')}
             </button>
             <button type="button" onClick={() => setAll(false)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
-              Tout retirer
+              {t('teamPage.clearAll')}
             </button>
           </>
         ) : null}
       </div>
       {groups.length === 0 ? (
-        <p className="text-sm font-semibold text-slate-500">Aucune fonctionnalité ne correspond à « {query.trim()} ».</p>
+        <p className="text-sm font-semibold text-slate-500">{t('teamPage.noFeature', { query: query.trim() })}</p>
       ) : null}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {groups.map((group) => {
@@ -174,8 +172,8 @@ function PermissionGrid({
                     <Icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-800">{group.label}</p>
-                    <p className="text-[11px] font-medium leading-snug text-slate-500">{meta?.info}</p>
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-800">{groupLabel(group.id)}</p>
+                    <p className="text-[11px] font-medium leading-snug text-slate-500">{t(`teamPage.info.${group.id}`)}</p>
                   </div>
                 </div>
                 {!disabled ? (
@@ -184,7 +182,7 @@ function PermissionGrid({
                     onClick={() => toggleGroup(group.id, group.actions)}
                     className="shrink-0 text-[11px] font-bold text-rose-600 hover:underline"
                   >
-                    {allOn ? 'Retirer' : 'Tout'}
+                    {allOn ? t('teamPage.clearGroup') : t('teamPage.grantGroup')}
                   </button>
                 ) : (
                   <span className="text-[11px] font-bold text-slate-400">{onCount}/{keys.length}</span>
@@ -206,7 +204,7 @@ function PermissionGrid({
                           : 'border-slate-200 bg-slate-50 text-slate-500'
                       } ${disabled ? 'cursor-default' : 'hover:border-rose-300'}`}
                     >
-                      {action.label}
+                      {actionLabel(group.id, action.id)}
                     </button>
                   );
                 })}
@@ -220,7 +218,15 @@ function PermissionGrid({
 }
 
 export default function CompanyMembersPage() {
+  const { t } = useTranslation();
   const companyId = Cookies.get('companyId') || localStorage.getItem('companyId') || '';
+  const presetLabel = (id: string) => t(`teamPage.presets.${id}`, id);
+  const statusLabel = (status: string) => {
+    if (status === 'invited') return t('teamPage.statusInvited');
+    if (status === 'active') return t('teamPage.statusMember');
+    if (status === 'pending') return t('teamPage.statusPending');
+    return status || '—';
+  };
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [roles, setRoles] = useState<CompanyRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,7 +253,7 @@ export default function CompanyMembersPage() {
 
   const load = useCallback(async (silent = false) => {
     if (!companyId) {
-      setError('Aucune entreprise associée à ce compte.');
+      setError(t('teamPage.noCompany'));
       setLoading(false);
       return;
     }
@@ -261,11 +267,11 @@ export default function CompanyMembersPage() {
       setMembers(nextMembers);
       setRoles(nextRoles);
     } catch (e: any) {
-      if (!silent) setError(e?.message || 'Impossible de charger l\'équipe.');
+      if (!silent) setError(e?.message || t('teamPage.loadFailed'));
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [companyId]);
+  }, [companyId, t]);
 
   useEffect(() => {
     void load();
@@ -326,9 +332,9 @@ export default function CompanyMembersPage() {
       setRoleName('');
       setRoleRights(emptyPermissions());
       setShowRoleForm(false);
-      setSuccess(`Rôle « ${created.name} » créé.`);
+      setSuccess(t('teamPage.roleCreated', { name: created.name }));
     } catch (err: any) {
-      setError(err?.message || 'Création du rôle impossible.');
+      setError(err?.message || t('teamPage.createRoleFailed'));
     } finally {
       setSavingRole(false);
     }
@@ -336,15 +342,15 @@ export default function CompanyMembersPage() {
 
   const onDeleteRole = async (role: CompanyRole) => {
     if (!companyId) return;
-    if (!window.confirm(`Supprimer le rôle « ${role.name} » ? Les membres gardent leurs droits actuels.`)) return;
+    if (!window.confirm(t('teamPage.confirmDeleteRole', { name: role.name }))) return;
     setError(null);
     try {
       await deleteCompanyRole(companyId, role._id);
       setRoles((prev) => prev.filter((item) => item._id !== role._id));
       if (selectedRoleId === role._id) setSelectedRoleId(null);
-      setSuccess(`Rôle « ${role.name} » supprimé.`);
+      setSuccess(t('teamPage.roleDeleted', { name: role.name }));
     } catch (err: any) {
-      setError(err?.message || 'Suppression du rôle impossible.');
+      setError(err?.message || t('teamPage.deleteRoleFailed'));
     }
   };
 
@@ -352,7 +358,7 @@ export default function CompanyMembersPage() {
     e.preventDefault();
     if (!companyId) return;
     if (roles.length === 0) {
-      setError('Créez un rôle avant d’inviter un membre.');
+      setError(t('teamPage.inviteLocked'));
       return;
     }
     setSaving(true);
@@ -370,20 +376,20 @@ export default function CompanyMembersPage() {
         permissions: rights,
       });
       if (result.emailSent) {
-        setSuccess(`Invitation envoyée à ${form.email.trim()}.`);
+        setSuccess(t('teamPage.inviteSent', { email: form.email.trim() }));
       } else {
         setError(
-          `E-mail non envoyé à ${form.email.trim()}. ${result.emailError || 'Vérifiez la configuration Brevo.'}`
+          t('teamPage.emailNotSent', { email: form.email.trim(), detail: result.emailError || t('teamPage.checkMail') })
         );
         if (result.temporaryPassword) {
-          setSuccess(`Mot de passe temporaire : ${result.temporaryPassword}`);
+          setSuccess(t('teamPage.tempPassword', { password: result.temporaryPassword }));
         }
       }
       setForm({ firstName: '', lastName: '', email: '', phone: '' });
       setShowForm(false);
       await load();
     } catch (err: any) {
-      setError(err?.message || 'Invitation impossible.');
+      setError(err?.message || t('teamPage.inviteFailed'));
     } finally {
       setSaving(false);
     }
@@ -408,10 +414,10 @@ export default function CompanyMembersPage() {
         roleId: editRoleId,
       });
       setEditingId(null);
-      setSuccess('Droits mis à jour.');
+      setSuccess(t('teamPage.rightsUpdated'));
       await load();
     } catch (err: any) {
-      setError(err?.message || 'Mise à jour impossible.');
+      setError(err?.message || t('teamPage.updateFailed'));
     } finally {
       setBusyId(null);
     }
@@ -421,7 +427,7 @@ export default function CompanyMembersPage() {
     if (!companyId) return;
     const email = reinviteEmail.trim();
     if (!email) {
-      setError('Indiquez un e-mail.');
+      setError(t('teamPage.emailRequired'));
       return;
     }
     setBusyId(member.userId);
@@ -430,17 +436,17 @@ export default function CompanyMembersPage() {
     try {
       const result = await reinviteCompanyMember(companyId, member.userId, email);
       if (result.emailSent) {
-        setSuccess(`Invitation renvoyée à ${email}.`);
+        setSuccess(t('teamPage.reinviteSent', { email }));
         setReinviteId(null);
       } else {
-        setError(`E-mail non envoyé à ${email}. ${result.emailError || 'Vérifiez la configuration Brevo.'}`);
+        setError(t('teamPage.emailNotSent', { email, detail: result.emailError || t('teamPage.checkMail') }));
         if (result.temporaryPassword) {
-          setSuccess(`Mot de passe temporaire : ${result.temporaryPassword}`);
+          setSuccess(t('teamPage.tempPassword', { password: result.temporaryPassword }));
         }
       }
       await load();
     } catch (err: any) {
-      setError(err?.message || 'Renvoi impossible.');
+      setError(err?.message || t('teamPage.reinviteFailed'));
     } finally {
       setBusyId(null);
     }
@@ -448,15 +454,15 @@ export default function CompanyMembersPage() {
 
   const onRemove = async (member: CompanyMember) => {
     if (!companyId || member.isOwner) return;
-    if (!window.confirm(`Retirer ${member.fullName || member.email} de l'entreprise ?`)) return;
+    if (!window.confirm(t('teamPage.confirmRemove', { name: member.fullName || member.email }))) return;
     setBusyId(member.userId);
     setError(null);
     try {
       await removeCompanyMember(companyId, member.userId);
-      setSuccess('Membre retiré.');
+      setSuccess(t('teamPage.memberRemoved'));
       await load();
     } catch (err: any) {
-      setError(err?.message || 'Suppression impossible.');
+      setError(err?.message || t('teamPage.removeFailed'));
     } finally {
       setBusyId(null);
     }
@@ -488,10 +494,10 @@ export default function CompanyMembersPage() {
       <div className="overflow-hidden rounded-3xl bg-slate-950 text-white">
         <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-5">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-300">Entreprise</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight">Équipe</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-300">{t('teamPage.eyebrow')}</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight">{t('teamPage.title')}</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-300">
-              Invitez des collègues, créez des rôles, et choisissez chaque fonctionnalité qu’ils peuvent ouvrir.
+              {t('teamPage.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -501,12 +507,12 @@ export default function CompanyMembersPage() {
               className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
             >
               <RefreshCw size={14} />
-              Actualiser
+              {t('teamPage.refresh')}
             </button>
             <button
               type="button"
               disabled={roles.length === 0}
-              title={roles.length === 0 ? 'Créez un rôle avant d’inviter un membre.' : undefined}
+              title={roles.length === 0 ? t('teamPage.inviteLocked') : undefined}
               onClick={() => {
                 if (roles.length === 0) return;
                 setShowForm((v) => !v);
@@ -514,16 +520,16 @@ export default function CompanyMembersPage() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus size={14} />
-              Inviter
+              {t('teamPage.invite')}
             </button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
           {[
-            { label: 'Personnes', value: teamStats.total, icon: Users },
-            { label: 'En ligne', value: teamStats.online, icon: Activity },
-            { label: 'Invitations', value: teamStats.waiting, icon: Mail },
-            { label: 'Rôles', value: teamStats.roles, icon: Shield },
+            { label: t('teamPage.people'), value: teamStats.total, icon: Users },
+            { label: t('teamPage.online'), value: teamStats.online, icon: Activity },
+            { label: t('teamPage.invitations'), value: teamStats.waiting, icon: Mail },
+            { label: t('teamPage.roles'), value: teamStats.roles, icon: Shield },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-3 bg-slate-950 px-4 py-3">
               <item.icon size={16} className="text-rose-300" />
@@ -554,9 +560,9 @@ export default function CompanyMembersPage() {
               <Shield size={18} />
             </span>
             <div>
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">Rôles</h2>
+              <h2 className="text-sm font-black uppercase tracking-wide text-slate-900">{t('teamPage.roles')}</h2>
               <p className="mt-1 max-w-xl text-xs text-slate-500">
-                Un rôle mémorise une combinaison de droits. Vous le réutilisez à l’invitation et dans Droits.
+                {t('teamPage.rolesHint')}
               </p>
             </div>
           </div>
@@ -566,23 +572,23 @@ export default function CompanyMembersPage() {
             className="inline-flex items-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2 text-sm font-bold text-white hover:bg-slate-800"
           >
             <Shield size={14} />
-            {showRoleForm ? 'Fermer' : 'Nouveau rôle'}
+            {showRoleForm ? t('teamPage.close') : t('teamPage.newRole')}
           </button>
         </div>
         {roles.length === 0 ? (
-          <p className="text-sm font-semibold text-slate-500">Aucun rôle enregistré. Créez un rôle avant d’inviter un membre.</p>
+          <p className="text-sm font-semibold text-slate-500">{t('teamPage.noRoles')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {roles.map((role) => (
               <span key={role._id} className="inline-flex items-center gap-2 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900">
                 <Shield size={12} />
                 {role.name}
-                <span className="font-semibold text-rose-500">{countOn(role.permissions)} droits</span>
+                <span className="font-semibold text-rose-500">{t('teamPage.rightsCount', { count: countOn(role.permissions) })}</span>
                 <button
                   type="button"
                   onClick={() => void onDeleteRole(role)}
                   className="text-rose-600 hover:text-rose-800"
-                  aria-label={`Supprimer ${role.name}`}
+                  aria-label={t('teamPage.deleteRole', { name: role.name })}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -593,12 +599,12 @@ export default function CompanyMembersPage() {
         {showRoleForm ? (
           <form onSubmit={onCreateRole} className="space-y-3 border-t border-slate-100 pt-3">
             <label className="block text-xs font-bold text-slate-600">
-              Nom du rôle
+              {t('teamPage.roleName')}
               <input
                 required
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
-                placeholder="Ex. Superviseur, Finance, Recrutement"
+                placeholder={t('teamPage.rolePlaceholder')}
                 className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900"
               />
             </label>
@@ -609,7 +615,7 @@ export default function CompanyMembersPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white disabled:opacity-60"
             >
               {savingRole ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              Enregistrer le rôle
+              {t('teamPage.saveRole')}
             </button>
           </form>
         ) : null}
@@ -619,11 +625,11 @@ export default function CompanyMembersPage() {
         <form onSubmit={onInvite} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-harx-600">
             <UserPlus size={16} />
-            <h2 className="text-sm font-black uppercase tracking-wide">Nouvelle invitation</h2>
+            <h2 className="text-sm font-black uppercase tracking-wide">{t('teamPage.newInvite')}</h2>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block text-xs font-bold text-slate-600">
-              Prénom
+              {t('teamPage.firstName')}
               <input
                 required
                 value={form.firstName}
@@ -632,7 +638,7 @@ export default function CompanyMembersPage() {
               />
             </label>
             <label className="block text-xs font-bold text-slate-600">
-              Nom
+              {t('teamPage.lastName')}
               <input
                 value={form.lastName}
                 onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
@@ -640,7 +646,7 @@ export default function CompanyMembersPage() {
               />
             </label>
             <label className="block text-xs font-bold text-slate-600">
-              E-mail
+              {t('teamPage.email')}
               <input
                 required
                 type="email"
@@ -650,7 +656,7 @@ export default function CompanyMembersPage() {
               />
             </label>
             <label className="block text-xs font-bold text-slate-600">
-              Téléphone
+              {t('teamPage.phone')}
               <input
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -660,22 +666,22 @@ export default function CompanyMembersPage() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-bold text-slate-600">Profil de départ</p>
+            <p className="mb-2 text-xs font-bold text-slate-600">{t('teamPage.startingProfile')}</p>
             <div className="flex flex-wrap gap-2">
-              {PRESETS.map((item) => (
+              {PRESET_IDS.map((id) => (
                 <button
-                  key={item.id}
+                  key={id}
                   type="button"
-                  onClick={() => applyPreset(item.id)}
+                  onClick={() => applyPreset(id)}
                   className={`rounded-xl border px-3 py-2 text-left ${
-                    preset === item.id && !selectedRoleId
+                    preset === id && !selectedRoleId
                       ? 'border-slate-900 bg-slate-900 text-white'
                       : 'border-slate-200 bg-white text-slate-700'
                   }`}
                 >
-                  <span className="block text-xs font-black uppercase">{item.label}</span>
-                  <span className={`block text-[11px] ${preset === item.id && !selectedRoleId ? 'text-white/70' : 'text-slate-500'}`}>
-                    {item.hint}
+                  <span className="block text-xs font-black uppercase">{presetLabel(id)}</span>
+                  <span className={`block text-[11px] ${preset === id && !selectedRoleId ? 'text-white/70' : 'text-slate-500'}`}>
+                    {t(`teamPage.presets.${id}Hint`)}
                   </span>
                 </button>
               ))}
@@ -692,7 +698,7 @@ export default function CompanyMembersPage() {
                 >
                   <span className="block text-xs font-black uppercase">{role.name}</span>
                   <span className={`block text-[11px] ${selectedRoleId === role._id ? 'text-white/70' : 'text-slate-500'}`}>
-                    Rôle enregistré
+                    {t('teamPage.savedRole')}
                   </span>
                 </button>
               ))}
@@ -708,14 +714,14 @@ export default function CompanyMembersPage() {
           />
 
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold text-slate-500">{grantedCount} droit(s) coché(s)</p>
+            <p className="text-xs font-semibold text-slate-500">{t('teamPage.checkedRights', { count: grantedCount })}</p>
             <button
               type="submit"
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-black text-white disabled:opacity-60"
             >
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
-              Envoyer l'invitation
+              {t('teamPage.sendInvite')}
             </button>
           </div>
         </form>
@@ -724,7 +730,7 @@ export default function CompanyMembersPage() {
       {loading ? (
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
           <Loader2 size={16} className="animate-spin" />
-          Chargement de l'équipe…
+          {t('teamPage.loading')}
         </div>
       ) : (
         <div className="space-y-3">
@@ -733,7 +739,7 @@ export default function CompanyMembersPage() {
             <input
               value={memberQuery}
               onChange={(event) => setMemberQuery(event.target.value)}
-              placeholder="Chercher un membre, un e-mail ou un rôle"
+              placeholder={t('teamPage.searchMembers')}
               className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm font-medium text-slate-800"
             />
           </label>
@@ -741,7 +747,7 @@ export default function CompanyMembersPage() {
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center">
               <Users className="mx-auto mb-2 h-8 w-8 text-slate-300" />
               <p className="text-sm font-semibold text-slate-500">
-                {memberQuery.trim() ? 'Aucun membre ne correspond à cette recherche.' : 'Aucun membre pour le moment.'}
+                {memberQuery.trim() ? t('teamPage.noSearch') : t('teamPage.noMembers')}
               </p>
             </div>
           ) : null}
@@ -760,14 +766,14 @@ export default function CompanyMembersPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-black text-slate-900">{member.fullName || member.email}</h3>
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-600">
-                        {member.isOwner ? 'Propriétaire' : (member.roleName || member.preset)}
+                        {member.isOwner ? t('teamPage.owner') : (member.roleName || presetLabel(member.preset))}
                       </span>
                       <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
                         member.isOwner || member.status === 'active'
                           ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                           : 'border-amber-200 bg-amber-50 text-amber-800'
                       }`}>
-                        {member.isOwner ? 'Actif' : statusLabel(member.status)}
+                        {member.isOwner ? t('teamPage.active') : statusLabel(member.status)}
                       </span>
                       {!member.isOwner && member.status === 'active' ? (
                         <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
@@ -776,7 +782,7 @@ export default function CompanyMembersPage() {
                             : 'border-slate-200 bg-slate-50 text-slate-500'
                         }`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${member.online ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                          {member.online ? 'En ligne' : 'Hors ligne'}
+                          {member.online ? t('teamPage.online') : t('teamPage.offline')}
                         </span>
                       ) : null}
                     </div>
@@ -800,7 +806,7 @@ export default function CompanyMembersPage() {
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
                         >
                           <Mail size={12} />
-                          {reinviteId === member.userId ? 'Fermer' : 'Réinviter'}
+                          {reinviteId === member.userId ? t('teamPage.close') : t('teamPage.reinvite')}
                         </button>
                       ) : null}
                       <button
@@ -808,7 +814,7 @@ export default function CompanyMembersPage() {
                         onClick={() => (editing ? setEditingId(null) : startEdit(member))}
                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
                       >
-                        {editing ? 'Fermer' : 'Droits'}
+                        {editing ? t('teamPage.close') : t('teamPage.rights')}
                       </button>
                       <button
                         type="button"
@@ -817,7 +823,7 @@ export default function CompanyMembersPage() {
                         className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50"
                       >
                         <Trash2 size={12} />
-                        Retirer
+                        {t('teamPage.remove')}
                       </button>
                     </div>
                   ) : null}
@@ -831,7 +837,7 @@ export default function CompanyMembersPage() {
                     }}
                   >
                     <label className="min-w-[240px] flex-1 text-xs font-bold text-slate-600">
-                      E-mail
+                      {t('teamPage.email')}
                       <input
                         required
                         type="email"
@@ -846,29 +852,29 @@ export default function CompanyMembersPage() {
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-black uppercase text-white disabled:opacity-60"
                     >
                       {busyId === member.userId ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
-                      Renvoyer
+                      {t('teamPage.resend')}
                     </button>
                   </form>
                 ) : null}
                 {editing ? (
                   <div className="mt-4 space-y-3">
                     <div className="flex flex-wrap gap-2">
-                      {PRESETS.map((item) => (
+                      {PRESET_IDS.map((id) => (
                         <button
-                          key={item.id}
+                          key={id}
                           type="button"
                           onClick={() => {
-                            setEditPreset(item.id);
+                            setEditPreset(id);
                             setEditRoleId(null);
-                            setEditRights(permissionsForPreset(item.id));
+                            setEditRights(permissionsForPreset(id));
                           }}
                           className={`rounded-lg border px-2.5 py-1 text-[11px] font-black uppercase ${
-                            editPreset === item.id
+                            editPreset === id
                               ? 'border-slate-900 bg-slate-900 text-white'
                               : 'border-slate-200 text-slate-600'
                           }`}
                         >
-                          {item.label}
+                          {presetLabel(id)}
                         </button>
                       ))}
                       {roles.map((role) => (
@@ -904,7 +910,7 @@ export default function CompanyMembersPage() {
                       className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black uppercase text-white"
                     >
                       {busyId === member.userId ? <Loader2 size={12} className="animate-spin" /> : null}
-                      Enregistrer
+                      {t('teamPage.save')}
                     </button>
                   </div>
                 ) : null}
