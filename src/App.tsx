@@ -108,17 +108,18 @@ function AppContent() {
   const { t } = useTranslation();
   const location = useLocation();
   const [activeProject, setActiveProject] = useState<ProjectView>(() => {
+    // A finished company must not paint the orchestrator while the URL is still
+    // /orchestrator. The route is replaced once the shell is ready.
+    if (isOnboardingFullyCompleted()) {
+      return 'dashboard';
+    }
     if (location.pathname.includes('/orchestrator')) {
       return 'comporchestrator';
     }
-    // Dashboard URLs stay closed until every required onboarding step is done.
-    if (!isOnboardingFullyCompleted()) {
+    if (location.pathname.includes('/dashboard') || location.pathname !== '/' && location.pathname !== '') {
       return 'comporchestrator';
     }
-    if (location.pathname.includes('/dashboard') || location.pathname !== '/' && location.pathname !== '') {
-      return 'dashboard';
-    }
-    return 'dashboard';
+    return 'comporchestrator';
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -170,6 +171,9 @@ function AppContent() {
   const [onboardingComplete, setOnboardingComplete] = useState(() =>
     isOnboardingFullyCompleted()
   );
+  // Finished companies often land on /orchestrator before local progress exists.
+  // Stay blank until the first check, then open the company view directly.
+  const [bootResolved, setBootResolved] = useState(() => isOnboardingFullyCompleted());
   // Only users who already finished onboarding before this page load are sent
   // straight to the dashboard. Completing the last step in this session must
   // not swap the sidebar to the dashboard menu on its own.
@@ -181,6 +185,10 @@ function AppContent() {
       if (complete) onboardingCompleteAtLoad.current = true;
     }
     setOnboardingComplete(complete);
+    setBootResolved(true);
+    if (complete && onboardingCompleteAtLoad.current) {
+      setActiveProject('dashboard');
+    }
   };
   // `onboardingChecked` was used to gate the welcome modal until the API
   // onboarding sync had completed. The welcome modal no longer depends on
@@ -531,9 +539,12 @@ function AppContent() {
                   window.dispatchEvent(new CustomEvent('harx:company-ready'));
                   if (!access.isOwner) {
                     invitedMember = true;
+                    onboardingCompleteAtLoad.current = true;
                     setOnboardingComplete(true);
+                    setActiveProject('dashboard');
                     markGuideComplete();
                   }
+                  setBootResolved(true);
                 }
               } catch {
                 // Membership API may be unavailable; keep the owner flow unchanged.
@@ -550,7 +561,11 @@ function AppContent() {
           }
         } catch (error) {
           console.error('Error fetching details:', error);
+        } finally {
+          setBootResolved(true);
         }
+      } else {
+        setBootResolved(true);
       }
     };
 
@@ -709,7 +724,7 @@ function AppContent() {
 
   // Incomplete onboarding: a dashboard URL must not open the dashboard.
   useEffect(() => {
-    if (onboardingComplete || isZohoCallback || isZohoAuth) return;
+    if (!bootResolved || onboardingComplete || isZohoCallback || isZohoAuth) return;
     if (!location.pathname.includes('/dashboard') && activeProject !== 'dashboard') return;
 
     setActiveProject('comporchestrator');
@@ -724,6 +739,7 @@ function AppContent() {
     location.pathname,
     navigate,
     explainDashboardBlocked,
+    bootResolved,
     isZohoCallback,
     isZohoAuth,
   ]);
@@ -746,7 +762,7 @@ function AppContent() {
 
   // Initial route: first visit → orchestrator; finished onboarding → dashboard.
   useEffect(() => {
-    if (isZohoCallback || isZohoAuth) return;
+    if (!bootResolved || isZohoCallback || isZohoAuth) return;
     if (location.pathname !== '/' && location.pathname !== '') return;
 
     if (onboardingComplete) {
@@ -755,7 +771,7 @@ function AppContent() {
     } else {
       window.location.hash = '#/orchestrator';
     }
-  }, [onboardingComplete, location.pathname, navigate, isZohoCallback, isZohoAuth]);
+  }, [bootResolved, onboardingComplete, location.pathname, navigate, isZohoCallback, isZohoAuth]);
 
   useEffect(() => {
     // Welcome modal rule: shown ONCE on first orchestrator visit, never again.
@@ -903,6 +919,10 @@ function AppContent() {
         return <CompanyOnboarding />;
     }
   };
+
+  if (!bootResolved && !isZohoCallback && !isZohoAuth) {
+    return <div className="h-screen bg-harx-bg" />;
+  }
 
   if (isZohoCallback || isZohoAuth) {
     return (
