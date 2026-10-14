@@ -126,14 +126,6 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
-    id: 'chat',
-    label: 'Chat',
-    actions: [
-      { id: 'view', label: 'Voir' },
-      { id: 'reply', label: 'Répondre' },
-    ],
-  },
-  {
     id: 'voice',
     label: 'Assistant vocal',
     actions: [
@@ -265,7 +257,6 @@ export const SIDEBAR_PERMISSION: Record<string, string> = {
   training: 'training.view',
   scheduler: 'planning.view',
   emails: 'emails.view',
-  'live-chat': 'chat.view',
   gigs: 'gigs.view',
   'script-generator': 'scripts.view',
   'knowledge-base': 'knowledge.view',
@@ -283,7 +274,6 @@ export const SIDEBAR_PERMISSION_FALLBACK: Record<string, string> = {
   'premium-dashboard': 'calls.view',
   scheduler: 'matching.view',
   emails: 'calls.view',
-  'live-chat': 'calls.view',
   integrations: 'gigs.activate',
   'quality-assurance': 'calls.view',
   operations: 'calls.view',

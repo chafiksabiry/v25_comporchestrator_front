@@ -7,7 +7,6 @@ import {
   PhoneCall,
   Bot,
   Mail,
-  MessageSquare,
   TrendingUp,
   Plug,
   Briefcase,
@@ -187,7 +186,6 @@ export function MasterSidebar({
     { icon: <BookOpen size={20} />, label: t('sidebar.training'), path: '/dashboard/training', key: 'training', alwaysShow: true, groupId: 2 },
     { icon: <Calendar size={20} />, label: t('sidebar.scheduler'), path: '/dashboard/scheduler', key: 'scheduler', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
     { icon: <Mail size={20} />, label: t('sidebar.emails'), path: '/dashboard/emails', key: 'emails', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
-    { icon: <MessageSquare size={20} />, label: t('sidebar.liveChat'), path: '/dashboard/chat', key: 'live-chat', requiresRepMatching: true, hideForCallCenter: true, groupId: 2 },
 
     // Group 3
     { icon: <Briefcase size={20} />, label: t('sidebar.gigs'), path: '/dashboard/gigs', key: 'gigs', requiresGigs: true, groupId: 3 },
