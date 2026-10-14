@@ -520,6 +520,7 @@ const CompanyOnboarding = () => {
         title: 'Créer le Profil de l\'Entreprise',
         description: 'Cliquez ici pour remplir vos informations juridiques, contacts clés et accepter les conditions. Environ 5 minutes.',
         prefer: 'bottom',
+        advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title', // → KYC step title
@@ -534,6 +535,7 @@ const CompanyOnboarding = () => {
         title: 'Passer à la Phase 2',
         description: 'Une fois les étapes complétées, cliquez ici pour accéder à la Phase 2 : Configuration Opérationnelle.',
         prefer: 'top',
+        advanceOn: 'click',
       },
     ],
     2: [
@@ -550,6 +552,7 @@ const CompanyOnboarding = () => {
         title: 'Créer vos Gigs',
         description: 'Cliquez ici pour définir votre premier gig : équipe, objectifs et prérequis. C\'est la pierre angulaire de vos opérations.',
         prefer: 'bottom',
+        advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
@@ -564,6 +567,7 @@ const CompanyOnboarding = () => {
         title: 'Vers la Phase 3',
         description: 'Après avoir configuré vos opérations, cliquez ici pour passer à la Phase 3 : Engagement des REPS.',
         prefer: 'top',
+        advanceOn: 'click',
       },
     ],
     3: [
@@ -580,6 +584,7 @@ const CompanyOnboarding = () => {
         title: 'Base de Connaissances',
         description: 'Cliquez ici pour alimenter la base de connaissances avec des documents et ressources consultables pendant les appels.',
         prefer: 'bottom',
+        advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
@@ -594,6 +599,7 @@ const CompanyOnboarding = () => {
         title: 'Vers l\'Activation',
         description: 'Vos représentants sont équipés. Cliquez ici pour passer à la Phase 4 et lancer vos opérations.',
         prefer: 'top',
+        advanceOn: 'click',
       },
     ],
     4: [
@@ -610,6 +616,7 @@ const CompanyOnboarding = () => {
         title: 'Plan d\'Abonnement',
         description: 'Cliquez ici pour sélectionner le plan adapté à votre équipe. Il détermine le nombre de représentants et de gigs actifs.',
         prefer: 'bottom',
+        advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
@@ -624,6 +631,7 @@ const CompanyOnboarding = () => {
         title: 'Tableau de Bord',
         description: 'Félicitations ! Après l\'activation, cliquez ici pour accéder au tableau de bord et suivre les performances en temps réel.',
         prefer: 'top',
+        advanceOn: 'click',
       },
     ],
   };

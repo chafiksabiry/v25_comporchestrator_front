@@ -142,6 +142,8 @@ interface GigDetailsViewProps {
   gig: Gig;
   onBack: () => void;
   onGigUpdated?: (updatedGig: Gig) => void;
+  /** AUTH-11: hides every section's Edit button for a "lecture seule" company member. Defaults to true (owner/unrestricted). */
+  canEdit?: boolean;
 }
 
 // ─── shared edit-UI helpers ─────────────────────────────────────────────────
@@ -247,7 +249,7 @@ const SaveCancel: React.FC<SaveCancelProps> = ({ onSave, onCancel, saving }) => 
 
 // ─── main component ──────────────────────────────────────────────────────────
 
-const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdated }) => {
+const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdated, canEdit = true }) => {
   const { t } = useTranslation();
   const g = (key: string, fallback?: string) => t(`gigDetailsView.${key}`, fallback ?? key);
 
@@ -805,7 +807,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             <div className="space-y-6 animate-slide-up [animation-delay:120ms]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">{g('sections.basicInfo')}</h2>
-                <EditBtn onClick={() => enterEdit('basic')} />
+                {canEdit && <EditBtn onClick={() => enterEdit('basic')} />}
               </div>
               <p className="text-slate-600 leading-relaxed font-medium text-[15px]">
                 {localGig.description || "Nous recherchons une équipe commerciale dynamique pour assurer l'intégralité du cycle de vente."}
@@ -824,7 +826,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
             <div className="space-y-6 animate-slide-up [animation-delay:150ms]">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider">{g('sections.commission')}</h2>
-                <EditBtn onClick={() => enterEdit('commission')} />
+                {canEdit && <EditBtn onClick={() => enterEdit('commission')} />}
               </div>
               <div className="space-y-5">
                 <div className="flex flex-wrap gap-3.5">
@@ -953,7 +955,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               Campaign staffing, target zone & active assignments
             </p>
           </div>
-          {editingSection !== 'team'
+          {editingSection !== 'team' && canEdit
             ? <EditBtn onClick={() => enterEdit('team')} />
             : <SaveCancel onSave={() => saveSection('team')} onCancel={cancelEdit} saving={saving} />
           }
@@ -1271,7 +1273,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
                     </div>
                   </div>
                 )}
-                {editingSection !== 'schedule'
+                {editingSection !== 'schedule' && canEdit
                   ? <EditBtn onClick={() => enterEdit('schedule')} />
                   : <SaveCancel onSave={() => saveSection('schedule')} onCancel={cancelEdit} saving={saving} />
                 }
@@ -1395,7 +1397,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack, onGigUpdat
               </div>
               <h2 className="text-lg font-black text-slate-900 uppercase tracking-wider">{g('sections.skills')}</h2>
             </div>
-            {editingSection !== 'skills'
+            {editingSection !== 'skills' && canEdit
               ? <EditBtn onClick={() => enterEdit('skills')} />
               : <SaveCancel onSave={() => saveSection('skills')} onCancel={cancelEdit} saving={saving} />
             }
