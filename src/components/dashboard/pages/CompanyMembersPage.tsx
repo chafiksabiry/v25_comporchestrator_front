@@ -351,6 +351,10 @@ export default function CompanyMembersPage() {
   const onInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) return;
+    if (roles.length === 0) {
+      setError('Créez un rôle avant d’inviter un membre.');
+      return;
+    }
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -501,8 +505,13 @@ export default function CompanyMembersPage() {
             </button>
             <button
               type="button"
-              onClick={() => setShowForm((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95"
+              disabled={roles.length === 0}
+              title={roles.length === 0 ? 'Créez un rôle avant d’inviter un membre.' : undefined}
+              onClick={() => {
+                if (roles.length === 0) return;
+                setShowForm((v) => !v);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-sm font-bold text-white hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus size={14} />
               Inviter
@@ -561,7 +570,7 @@ export default function CompanyMembersPage() {
           </button>
         </div>
         {roles.length === 0 ? (
-          <p className="text-sm font-semibold text-slate-500">Aucun rôle enregistré. Les profils Admin, Opérateur et Lecture seule restent disponibles.</p>
+          <p className="text-sm font-semibold text-slate-500">Aucun rôle enregistré. Créez un rôle avant d’inviter un membre.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {roles.map((role) => (
@@ -606,7 +615,7 @@ export default function CompanyMembersPage() {
         ) : null}
       </section>
 
-      {showForm ? (
+      {showForm && roles.length > 0 ? (
         <form onSubmit={onInvite} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 text-harx-600">
             <UserPlus size={16} />
