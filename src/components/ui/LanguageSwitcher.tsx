@@ -102,16 +102,16 @@ export function LanguageSwitcher() {
         ref={buttonRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-10 bg-harx-chip hover:bg-[#222228] px-2.5 rounded-xl border border-harx-chip-border transition-colors duration-200 group"
+        className="flex items-center gap-2 h-10 bg-sky-50 hover:bg-sky-100 px-2.5 rounded-xl border border-sky-200 shadow-sm transition-colors duration-200 group"
         title={t('language.title')}
       >
-        <span className="block w-6 h-4 rounded-sm overflow-hidden shrink-0 border border-white/10">
+        <span className="block w-6 h-4 rounded-sm overflow-hidden shrink-0 border border-sky-200 shadow-sm">
           <img src={currentLang.flagUrl} alt={t(`language.${currentLang.code}`)} className="w-full h-full object-cover" />
         </span>
-        <span className="font-black text-xs text-white tracking-wide whitespace-nowrap">
+        <span className="font-black text-xs text-sky-950 tracking-wide whitespace-nowrap">
           {t(`language.${currentLang.code}`)}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-white/45 transition-transform duration-300 group-hover:text-white ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-sky-500 transition-transform duration-300 group-hover:text-sky-700 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {menu}
     </div>
