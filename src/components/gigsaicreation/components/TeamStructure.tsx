@@ -241,7 +241,6 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                     const roleId = typeof role === 'string' ? role : (role?.roleId || 'Agent');
                     const roleCount = typeof role === 'object' && role !== null ? role.count : 1;
                     const seniorityLevel = typeof role === 'object' && role !== null ? (role.seniority?.level || 'Mid-Level') : 'Mid-Level';
-                    const yearsExperience = typeof role === 'object' && role !== null ? (role.seniority?.yearsExperience || 3) : 3;
 
                     return (
                       <div
@@ -274,30 +273,16 @@ export function TeamStructure({ data, onChange, onPrevious, onNext }: TeamStruct
                             </select>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.countLabel')}</label>
-                              <input
-                                type="number"
-                                min="1"
-                                max="50"
-                                value={roleCount}
-                                onChange={(e) => updateTeamRole(index, 'count', parseInt(e.target.value) || 1)}
-                                className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.yearsLabel')}</label>
-                              <input
-                                type="number"
-                                min="0"
-                                max="20"
-                                value={yearsExperience}
-                                onChange={(e) => updateTeamRole(index, 'seniority.yearsExperience', parseInt(e.target.value) || 0)}
-                                className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
-                              />
-                            </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">{t('gigCreation.team.countLabel')}</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={roleCount}
+                              onChange={(e) => updateTeamRole(index, 'count', parseInt(e.target.value) || 1)}
+                              className="w-full px-3 py-2 text-sm bg-white border border-harx-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-harx-500 focus:border-harx-500"
+                            />
                           </div>
 
                           <div>

@@ -564,11 +564,6 @@ export function GigReview({
                   {data.seniority.level}
                 </span>
               )}
-              {data.seniority?.yearsExperience && (
-                <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
-                  {data.seniority.yearsExperience} {t('gigCreation.team.seniority')}
-                </span>
-              )}
             </div>
           </div>
 

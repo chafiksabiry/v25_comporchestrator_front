@@ -167,7 +167,71 @@ export function languageName(lang: 'fr' | 'en'): string {
 /** Visible copy in the zone language, plus a fenced translation the UI does not parse as the plan. */
 export function bilingualGenerationInstruction(display: 'fr' | 'en'): string {
   const other = otherContentLanguage(display);
-  return `The gig destination zone language is ${languageName(display)}. Write the visible title, every section heading, the plan, and all module or script lines ONLY in ${languageName(display)}. Do not mix languages in that visible part. Then append a fenced block containing the full ${languageName(other)} translation:\n\`\`\`translation-${other}\n...\n\`\`\`\nDo not repeat the translation outside that fence.`;
+  return `The gig destination zone language is ${languageName(display)}. Write the visible title, every section heading, the plan, and all module or script lines ONLY in ${languageName(display)}. Number modules 1, 2, 3… once. Do not switch language on a later module, and do not start again at Module 1. Then append a fenced block containing the full ${languageName(other)} translation of those SAME modules:\n\`\`\`translation-${other}\n...\n\`\`\`\nDo not repeat the translation outside that fence.`;
+}
+
+function moduleHeadingNumber(line: string): number | null {
+  const n = line.replace(/\*\*/g, '').replace(/^#+\s*/, '').trim();
+  const at = n.search(/\bmodule\s*\d+/i);
+  if (at < 0 || at > 24) return null;
+  if (/[a-zà-ÿæœ]/i.test(n.slice(0, at))) return null;
+  const match = n.slice(at).match(/^module\s*(\d+)/i);
+  const num = match ? Number(match[1]) : NaN;
+  return Number.isFinite(num) ? num : null;
+}
+
+function planLanguageScore(block: string): number {
+  const body = block.replace(
+    /^.*\b(objectifs?|key\s*topics?|learning\s+objectives?|sujets?\s*cl[eé]s?|th[eè]mes?\s*cl[eé]s?)\b.*$/gim,
+    ''
+  );
+  const lower = body.toLowerCase();
+  const french =
+    (lower.match(/\b(le|la|les|des|une|pour|dans|avec|est|sont|cette|ces|aux|qui|sur)\b/g) || []).length +
+    (body.match(/[àâäéèêëïîôùûüçœæ]/gi) || []).length;
+  const english =
+    (lower.match(/\b(the|and|with|for|this|that|these|from|overview|framework|compliance|retention|excellence)\b/g) || []).length;
+  return french - english;
+}
+
+/** Drop a second-language copy that the model appends as Module 7+ or as a new Module 1. */
+function isolatePrimaryLanguagePlan(text: string): { visible: string; extra: string } {
+  const lines = String(text || '').split(/\r?\n/);
+  const heads: { line: number; num: number }[] = [];
+  lines.forEach((line, index) => {
+    const num = moduleHeadingNumber(line);
+    if (num != null) heads.push({ line: index, num });
+  });
+  if (heads.length < 2) return { visible: text, extra: '' };
+
+  for (let i = 1; i < heads.length; i++) {
+    if (heads[i].num === 1 && heads[i - 1].num >= 2) {
+      return {
+        visible: lines.slice(0, heads[i].line).join('\n').trim(),
+        extra: lines.slice(heads[i].line).join('\n').trim(),
+      };
+    }
+  }
+
+  const scores = heads.map((head, index) => {
+    const end = index + 1 < heads.length ? heads[index + 1].line : lines.length;
+    return planLanguageScore(lines.slice(head.line, end).join('\n'));
+  });
+  const primaryIsFrench = scores[0] >= 1;
+  const primaryIsEnglish = scores[0] <= -1;
+  if (!primaryIsFrench && !primaryIsEnglish) return { visible: text, extra: '' };
+
+  for (let i = 1; i < scores.length; i++) {
+    const switched = primaryIsFrench ? scores[i] <= -1 : scores[i] >= 1;
+    if (!switched) continue;
+    const restStays = scores.slice(i).every((score) => (primaryIsFrench ? score < 0 : score > 0));
+    if (!restStays) continue;
+    return {
+      visible: lines.slice(0, heads[i].line).join('\n').trim(),
+      extra: lines.slice(heads[i].line).join('\n').trim(),
+    };
+  }
+  return { visible: text, extra: '' };
 }
 
 export function splitBilingualContent(text: string): {
@@ -175,7 +239,7 @@ export function splitBilingualContent(text: string): {
   translations: Partial<Record<'fr' | 'en', string>>;
 } {
   const translations: Partial<Record<'fr' | 'en', string>> = {};
-  const visible = String(text || '').replace(
+  let visible = String(text || '').replace(
     /```translation-(fr|en)\s*([\s\S]*?)```/gi,
     (_match, lang: string, body: string) => {
       const key = lang.toLowerCase() === 'fr' ? 'fr' : 'en';
@@ -183,7 +247,18 @@ export function splitBilingualContent(text: string): {
       return '';
     }
   );
-  return { visible: visible.trim(), translations };
+  const unclosed = visible.search(/```translation-(fr|en)\b/i);
+  if (unclosed >= 0) {
+    const lang = visible.slice(unclosed).match(/```translation-(fr|en)/i)?.[1]?.toLowerCase() === 'fr' ? 'fr' : 'en';
+    translations[lang] = visible.slice(unclosed).replace(/```translation-(fr|en)\s*/i, '').trim();
+    visible = visible.slice(0, unclosed);
+  }
+  const isolated = isolatePrimaryLanguagePlan(visible);
+  if (isolated.extra && !translations.fr && !translations.en) {
+    const extraScore = planLanguageScore(isolated.extra);
+    translations[extraScore >= 0 ? 'fr' : 'en'] = isolated.extra;
+  }
+  return { visible: isolated.visible.trim(), translations };
 }
 
 export function planSectionLabels(lang: 'fr' | 'en'): {
