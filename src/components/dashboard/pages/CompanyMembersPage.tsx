@@ -54,30 +54,82 @@ import {
 
 const PRESET_IDS: Exclude<PresetId, 'owner' | 'custom'>[] = ['admin', 'operator', 'readonly'];
 
-const GROUP_META: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; info: string }> = {
-  gigs: { icon: Briefcase, info: 'Créer, modifier, activer ou supprimer les missions.' },
-  leads: { icon: UserPlus, info: 'Voir et importer les prospects, les modifier ou les archiver.' },
-  telephony: { icon: Phone, info: 'Numéros, recherche, achat, affectation et appel test.' },
-  scripts: { icon: ScrollText, info: 'Scripts d’appel générés pour les missions.' },
-  knowledge: { icon: BookOpen, info: 'Documents consultés pendant l’appel.' },
-  matching: { icon: Users, info: 'Candidatures REP : invitation et décision.' },
-  training: { icon: GraduationCap, info: 'Parcours et modules de formation.' },
-  calls: { icon: PhoneCall, info: 'Journal, écoute, validation et export des appels.' },
-  dashboard: { icon: LayoutDashboard, info: 'Tableau de bord de l’entreprise.' },
-  agents: { icon: UserCog, info: 'Comptes agents du centre d’appels.' },
-  planning: { icon: Calendar, info: 'Créneaux et planification des sessions.' },
-  emails: { icon: Mail, info: 'Campagnes et envoi d’e-mails.' },
-  chat: { icon: MessageSquare, info: 'Messagerie en direct avec les prospects.' },
-  voice: { icon: Bot, info: 'Assistant vocal et sa configuration.' },
-  activation: { icon: Plug, info: 'Mise en ligne d’un gig et ses intégrations.' },
-  quality: { icon: ClipboardCheck, info: 'Contrôle qualité des appels.' },
-  operations: { icon: Activity, info: 'Suivi opérationnel du jour.' },
-  analytics: { icon: TrendingUp, info: 'Indicateurs et tendances.' },
-  wallet: { icon: Wallet, info: 'Solde, dépôts et retraits.' },
-  subscription: { icon: CreditCard, info: 'Plan en cours et changement d’offre.' },
-  billing: { icon: Coins, info: 'Jetons IA et achats.' },
-  members: { icon: Shield, info: 'Invitations, rôles et retrait d’un membre.' },
-  settings: { icon: Settings, info: 'Réglages de l’entreprise.' },
+const GROUP_TONE: Record<string, { card: string; tile: string; chip: string; chipOn: string; pill: string }> = {
+  rose: {
+    card: 'border-rose-200 bg-gradient-to-br from-rose-50 to-white',
+    tile: 'bg-rose-500 text-white',
+    chip: 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50',
+    chipOn: 'border-rose-500 bg-rose-500 text-white',
+    pill: 'bg-rose-100 text-rose-700',
+  },
+  sky: {
+    card: 'border-sky-200 bg-gradient-to-br from-sky-50 to-white',
+    tile: 'bg-sky-500 text-white',
+    chip: 'border-sky-200 bg-white text-sky-700 hover:bg-sky-50',
+    chipOn: 'border-sky-500 bg-sky-500 text-white',
+    pill: 'bg-sky-100 text-sky-700',
+  },
+  emerald: {
+    card: 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white',
+    tile: 'bg-emerald-500 text-white',
+    chip: 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
+    chipOn: 'border-emerald-500 bg-emerald-500 text-white',
+    pill: 'bg-emerald-100 text-emerald-700',
+  },
+  violet: {
+    card: 'border-violet-200 bg-gradient-to-br from-violet-50 to-white',
+    tile: 'bg-violet-500 text-white',
+    chip: 'border-violet-200 bg-white text-violet-700 hover:bg-violet-50',
+    chipOn: 'border-violet-500 bg-violet-500 text-white',
+    pill: 'bg-violet-100 text-violet-700',
+  },
+  amber: {
+    card: 'border-amber-200 bg-gradient-to-br from-amber-50 to-white',
+    tile: 'bg-amber-500 text-white',
+    chip: 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50',
+    chipOn: 'border-amber-500 bg-amber-500 text-white',
+    pill: 'bg-amber-100 text-amber-800',
+  },
+  fuchsia: {
+    card: 'border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-white',
+    tile: 'bg-fuchsia-500 text-white',
+    chip: 'border-fuchsia-200 bg-white text-fuchsia-700 hover:bg-fuchsia-50',
+    chipOn: 'border-fuchsia-500 bg-fuchsia-500 text-white',
+    pill: 'bg-fuchsia-100 text-fuchsia-700',
+  },
+  cyan: {
+    card: 'border-cyan-200 bg-gradient-to-br from-cyan-50 to-white',
+    tile: 'bg-cyan-500 text-white',
+    chip: 'border-cyan-200 bg-white text-cyan-800 hover:bg-cyan-50',
+    chipOn: 'border-cyan-500 bg-cyan-500 text-white',
+    pill: 'bg-cyan-100 text-cyan-800',
+  },
+};
+
+const GROUP_META: Record<string, { icon: React.ComponentType<{ size?: number; className?: string }>; tone: keyof typeof GROUP_TONE }> = {
+  gigs: { icon: Briefcase, tone: 'rose' },
+  leads: { icon: UserPlus, tone: 'sky' },
+  telephony: { icon: Phone, tone: 'emerald' },
+  scripts: { icon: ScrollText, tone: 'violet' },
+  knowledge: { icon: BookOpen, tone: 'amber' },
+  matching: { icon: Users, tone: 'fuchsia' },
+  training: { icon: GraduationCap, tone: 'violet' },
+  calls: { icon: PhoneCall, tone: 'cyan' },
+  dashboard: { icon: LayoutDashboard, tone: 'rose' },
+  agents: { icon: UserCog, tone: 'sky' },
+  planning: { icon: Calendar, tone: 'amber' },
+  emails: { icon: Mail, tone: 'fuchsia' },
+  chat: { icon: MessageSquare, tone: 'emerald' },
+  voice: { icon: Bot, tone: 'violet' },
+  activation: { icon: Plug, tone: 'rose' },
+  quality: { icon: ClipboardCheck, tone: 'cyan' },
+  operations: { icon: Activity, tone: 'emerald' },
+  analytics: { icon: TrendingUp, tone: 'sky' },
+  wallet: { icon: Wallet, tone: 'amber' },
+  subscription: { icon: CreditCard, tone: 'fuchsia' },
+  billing: { icon: Coins, tone: 'amber' },
+  members: { icon: Shield, tone: 'rose' },
+  settings: { icon: Settings, tone: 'sky' },
 };
 
 function countOn(value: PermissionMap) {
@@ -130,25 +182,25 @@ function PermissionGrid({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50 via-white to-orange-50 p-2">
         <label className="relative min-w-[200px] flex-1">
-          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-rose-400" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('teamPage.searchFeatures')}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-800"
+            className="w-full rounded-xl border border-rose-100 bg-white py-2 pl-9 pr-3 text-sm font-medium text-slate-800 outline-none focus:border-rose-300"
           />
         </label>
-        <span className="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-black text-white">
+        <span className="rounded-full bg-gradient-harx px-3 py-1 text-[11px] font-black text-white">
           {granted}/{total}
         </span>
         {!disabled ? (
           <>
-            <button type="button" onClick={() => setAll(true)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={() => setAll(true)} className="rounded-lg bg-rose-500 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-rose-600">
               {t('teamPage.allowAll')}
             </button>
-            <button type="button" onClick={() => setAll(false)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50">
+            <button type="button" onClick={() => setAll(false)} className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50">
               {t('teamPage.clearAll')}
             </button>
           </>
@@ -160,32 +212,33 @@ function PermissionGrid({
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {groups.map((group) => {
           const meta = GROUP_META[group.id];
+          const tone = GROUP_TONE[meta?.tone || 'rose'];
           const Icon = meta?.icon || Shield;
           const keys = group.actions.map((action) => `${group.id}.${action.id}`);
           const onCount = keys.filter((key) => value[key]).length;
           const allOn = onCount === keys.length;
           return (
-            <div key={group.id} className="rounded-2xl border border-slate-200 bg-white p-3">
+            <div key={group.id} className={`rounded-2xl border p-3 shadow-sm ${tone.card}`}>
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="flex min-w-0 items-start gap-2">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                  <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tone.tile}`}>
                     <Icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-wide text-slate-800">{groupLabel(group.id)}</p>
-                    <p className="text-[11px] font-medium leading-snug text-slate-500">{t(`teamPage.info.${group.id}`)}</p>
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-900">{groupLabel(group.id)}</p>
+                    <p className="text-[11px] font-medium leading-snug text-slate-600">{t(`teamPage.info.${group.id}`)}</p>
                   </div>
                 </div>
                 {!disabled ? (
                   <button
                     type="button"
                     onClick={() => toggleGroup(group.id, group.actions)}
-                    className="shrink-0 text-[11px] font-bold text-rose-600 hover:underline"
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${tone.pill}`}
                   >
                     {allOn ? t('teamPage.clearGroup') : t('teamPage.grantGroup')}
                   </button>
                 ) : (
-                  <span className="text-[11px] font-bold text-slate-400">{onCount}/{keys.length}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-black ${tone.pill}`}>{onCount}/{keys.length}</span>
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -199,10 +252,8 @@ function PermissionGrid({
                       disabled={disabled}
                       onClick={() => toggle(key)}
                       className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition ${
-                        on
-                          ? 'border-rose-500 bg-rose-500 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-500'
-                      } ${disabled ? 'cursor-default' : 'hover:border-rose-300'}`}
+                        on ? tone.chipOn : tone.chip
+                      } ${disabled ? 'cursor-default' : ''}`}
                     >
                       {actionLabel(group.id, action.id)}
                     </button>
@@ -597,22 +648,22 @@ export default function CompanyMembersPage() {
           </div>
         )}
         {showRoleForm ? (
-          <form onSubmit={onCreateRole} className="space-y-3 border-t border-slate-100 pt-3">
-            <label className="block text-xs font-bold text-slate-600">
+          <form onSubmit={onCreateRole} className="space-y-3 rounded-2xl border border-rose-100 bg-rose-50/40 p-3">
+            <label className="block text-xs font-black uppercase tracking-wide text-rose-700">
               {t('teamPage.roleName')}
               <input
                 required
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
                 placeholder={t('teamPage.rolePlaceholder')}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900"
+                className="mt-1 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-slate-900 outline-none focus:border-rose-400"
               />
             </label>
             <PermissionGrid value={roleRights} onChange={setRoleRights} />
             <button
               type="submit"
               disabled={savingRole}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-black text-white disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-black text-white disabled:opacity-60"
             >
               {savingRole ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               {t('teamPage.saveRole')}
