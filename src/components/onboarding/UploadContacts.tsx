@@ -362,7 +362,7 @@ type LeadTableRowProps = {
   onToggleSelect?: (leadId: string) => void;
   onArchive?: (leadId: string) => void;
   onView: (lead: Lead) => void;
-  onEdit: (lead: Lead) => void;
+  onEdit?: (lead: Lead) => void;
   calledBadgeTitle: string;
   viewTitle: string;
   editTitle: string;
@@ -549,14 +549,16 @@ function LeadTableRow({
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
-          <button
-            type="button"
-            onClick={() => onEdit({ ...lead })}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 shadow-sm transition-all duration-200 hover:border-amber-300 hover:bg-amber-100 hover:text-amber-700"
-            title={editTitle}
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </button>
+          {onEdit ? (
+            <button
+              type="button"
+              onClick={() => onEdit({ ...lead })}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 shadow-sm transition-all duration-200 hover:border-amber-300 hover:bg-amber-100 hover:text-amber-700"
+              title={editTitle}
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
           {onArchive && lead._id ? (
             <button
               type="button"
@@ -780,6 +782,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(50);
+  const [pendingPage, setPendingPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [leadQuickStats, setLeadQuickStats] = useState<LeadQuickStats | null>(null);
   const [isLoadingQuickStats, setIsLoadingQuickStats] = useState(false);
@@ -1713,6 +1716,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
 
       setPreviewCount(PREVIEW_PAGE_SIZE);
+      setPendingPage(1);
       setParsedLeads(result.leads);
       safeStorageSet('parsedLeads', result.leads);
       safeStorageSet('validationResults', trimValidation(result.validation));
@@ -2078,24 +2082,38 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       // Progression fictive pour montrer que ├ºa travaille
       setUploadProgress(30);
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_DASHBOARD_API}/leads/bulk`,
-        { leads: leadsForAPI },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentGigId}:${currentUserId}`
-          },
-          timeout: 60000 // 60 secondes pour le bulk
+      const chunkSize = 150;
+      let savedCount = 0;
+      let serverSkipped = 0;
+      for (let offset = 0; offset < leadsForAPI.length; offset += chunkSize) {
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
         }
-      );
+        const chunk = leadsForAPI.slice(offset, offset + chunkSize);
+        const response = await axios.post(
+          `${import.meta.env.VITE_DASHBOARD_API}/leads/bulk`,
+          { leads: chunk },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentGigId}:${currentUserId}`
+            },
+            timeout: 120000
+          }
+        );
 
-      setUploadProgress(90);
+        if (![200, 201, 207].includes(response.status)) {
+          throw new Error(response.statusText || 'Bulk save failed');
+        }
 
-      if (response.status === 200 || response.status === 201 || response.status === 207) {
         const responseData = response.data as { count?: number; data?: any[]; skipped?: number };
-        const savedCount = responseData.count || (responseData.data ? responseData.data.length : 0);
-        const serverSkipped = responseData.skipped || 0;
+        savedCount += responseData.count || (responseData.data ? responseData.data.length : 0);
+        serverSkipped += responseData.skipped || 0;
+        setSavedLeadsCount(savedCount);
+        setUploadProgress(Math.min(95, Math.round(((offset + chunk.length) / leadsForAPI.length) * 100)));
+      }
+
+      {
         const totalSkipped = clientSkipped + serverSkipped;
 
         setUploadSuccess(true);
@@ -2151,8 +2169,6 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           console.error('Error updating onboarding progress:', error);
         }
 
-      } else {
-        throw new Error(response.statusText || 'Bulk save failed');
       }
 
     } catch (error: any) {
@@ -2172,6 +2188,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         sessionStorage.removeItem('uploadProcessing');
         void fetchLeads(1);
       }
+
+      if (!didSave) return;
 
       // Store timer so a new upload can cancel it before it wipes the new file's state
       (window as any).__leadCleanupTimer = setTimeout(() => {
@@ -2657,7 +2675,14 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  const visibleLeadIds = filteredLeads
+  const pendingActive = parsedLeads.length > 0 && !uploadSuccess;
+  const pendingPageCount = Math.max(1, Math.ceil(parsedLeads.length / pageSize));
+  const pendingPageSafe = Math.min(pendingPage, pendingPageCount);
+  const pendingVisible = pendingActive
+    ? parsedLeads.slice((pendingPageSafe - 1) * pageSize, pendingPageSafe * pageSize)
+    : [];
+
+  const visibleLeadIds = (pendingActive ? pendingVisible : filteredLeads)
     .map((lead) => lead?._id)
     .filter((id): id is string => Boolean(id));
   const allVisibleSelected = visibleLeadIds.length > 0 && visibleLeadIds.every((id) => selectedLeadIds.has(id));
@@ -4475,7 +4500,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   <LeadStatChip
                     label={t('uploadContacts.stats.leads', 'Leads')}
-                    value={(leadQuickStats?.total ?? totalCount).toLocaleString('fr-FR')}
+                    value={(pendingActive ? parsedLeads.length : (leadQuickStats?.total ?? totalCount)).toLocaleString('fr-FR')}
                     icon={Users}
                     tone="harx"
                     selected={leadStatsFilter === 'all'}
@@ -4708,6 +4733,21 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         </div>
                       </td>
                     </tr>
+                  ) : pendingVisible.length > 0 ? (
+                    pendingVisible.map((lead, index) =>
+                      lead ? (
+                        <LeadTableRow
+                          key={lead._id || `pending-${pendingPageSafe}-${index}`}
+                          lead={lead}
+                          onView={setViewingLeadDetail}
+                          calledBadgeTitle={t('uploadContacts.list.calledBadge')}
+                          viewTitle={t('uploadContacts.list.details.button')}
+                          editTitle={t('uploadContacts.list.edit.button')}
+                          companyVisible={companyVisible}
+                          customColumns={companyCustomColumns}
+                        />
+                      ) : null
+                    )
                   ) : isLoadingLeads ? (
                     Array.from({ length: 6 }).map((_, i) => (
                       <tr key={`skeleton-${i}`}>
@@ -4779,7 +4819,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           </div>
         </div>
         {/* Pagination Controls */}
-        {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
+        {(pendingVisible.length > 0 || filteredLeads.length > 0 || realtimeLeads.length > 0) && (
           <div className="bg-white/70 backdrop-blur-md px-6 py-4 border-t border-slate-100/80 flex-shrink-0 rounded-b-[32px]">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center text-xs font-medium text-slate-500">
@@ -4790,29 +4830,31 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                     </>
                   ) : (
                     <>
-                      <span className="font-black text-slate-800">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span>{' '}
+                      <span className="font-black text-slate-800">{pendingActive ? pendingVisible.length : (filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length)}</span>{' '}
                       {t('uploadContacts.list.of')}{' '}
-                      <span className="font-black text-slate-800">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> {t('uploadContacts.list.leads')}
+                      <span className="font-black text-slate-800">{pendingActive ? parsedLeads.length : (totalCount > 0 ? totalCount : realtimeLeads.length)}</span> {t('uploadContacts.list.leads')}
                     </>
                   )}
                 </span>
               </div>
-              {!searchQuery && totalPages > 1 && (
+              {!searchQuery && (pendingActive ? pendingPageCount > 1 : totalPages > 1) && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => fetchLeads(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => pendingActive ? setPendingPage((page) => Math.max(1, page - 1)) : fetchLeads(currentPage - 1)}
+                    disabled={pendingActive ? pendingPageSafe === 1 : currentPage === 1}
                     className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     {t('uploadContacts.list.prev')}
                   </button>
                   <div className="flex items-center gap-1">
-                    {renderPaginationButtons()}
+                    {pendingActive ? (
+                      <span className="px-2 text-xs font-black text-slate-700">{pendingPageSafe} / {pendingPageCount}</span>
+                    ) : renderPaginationButtons()}
                   </div>
                   <button
-                    onClick={() => fetchLeads(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => pendingActive ? setPendingPage((page) => Math.min(pendingPageCount, page + 1)) : fetchLeads(currentPage + 1)}
+                    disabled={pendingActive ? pendingPageSafe === pendingPageCount : currentPage === totalPages}
                     className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
                   >
                     {t('uploadContacts.list.next')}
