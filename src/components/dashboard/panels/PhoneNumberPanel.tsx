@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { authFetch } from '../../../lib/authFetch';
 import {
   Phone,
   Search,
@@ -819,7 +820,7 @@ export function PhoneNumberPanel() {
       }
 
       // 2. Fetch gigs details for dropdown association
-      const gigsRes = await fetch(`${apiBaseUrl}/escrow/gigs-and-reps/${companyId}`);
+      const gigsRes = await authFetch(`${apiBaseUrl}/escrow/gigs-and-reps/${companyId}`);
       if (gigsRes.ok) {
         const gigsResult = await gigsRes.json();
         if (gigsResult.success && gigsResult.data) {

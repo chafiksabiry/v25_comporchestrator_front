@@ -28,6 +28,7 @@ import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
 import Cookies from 'js-cookie';
+import { authFetch } from './lib/authFetch';
 import { broadcastAuthChanged } from './lib/authSync';
 import { formatWalletMinutesBalance } from './utils/billingMinutes';
 import { formatAiTokensBalance } from './lib/aiTokensUsage';
@@ -238,9 +239,9 @@ function AppContent() {
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
     try {
       const [walletRes, minutesRes, tokensRes, phoneRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
-        fetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
-        fetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
+        authFetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
         fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
       ]);
 

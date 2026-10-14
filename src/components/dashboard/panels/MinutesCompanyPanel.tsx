@@ -32,6 +32,7 @@ import {
   runStripeCheckoutFlow
 } from '../../../lib/paypalCheckout';
 import { getCallsApiBase } from '../lib/callsApiBase';
+import { authFetch } from '../../../lib/authFetch';
 import {
   billedMinutesFromSeconds,
   formatBilledMinutesFromSeconds,
@@ -303,7 +304,7 @@ export function MinutesCompanyPanel() {
     if (!isSilent) setLoading(true);
     try {
       // 1. Fetch minutes balance from new vertical endpoint
-      const minsRes = await fetch(`${apiBaseUrl}/minutes-company/${companyId}`);
+      const minsRes = await authFetch(`${apiBaseUrl}/minutes-company/${companyId}`);
       if (minsRes.ok) {
         const minsData = await minsRes.json();
         if (minsData.success && minsData.data) {

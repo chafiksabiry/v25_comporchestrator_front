@@ -49,6 +49,7 @@ import {
 } from 'chart.js';
 import { Chart, Doughnut } from 'react-chartjs-2';
 import Cookies from 'js-cookie';
+import { authFetch } from '../../../lib/authFetch';
 import { useTranslation } from 'react-i18next';
 import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 import type { TFunction } from 'i18next';
@@ -608,8 +609,8 @@ export default function OperationsDashboard() {
     const fetchWallet = async () => {
       try {
         const [walletRes, entriesRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/wallet-company/${companyId}`),
-          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/wallet-company/${companyId}`),
+          authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
         ]);
 
         if (walletRes.ok) {
@@ -674,11 +675,11 @@ export default function OperationsDashboard() {
       setOverviewResources((prev) => ({ ...prev, loading: true }));
       try {
         const [minsRes, subRes, phoneRes, entriesRes, repTxRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
           fetch(`${backUrl}/api/subscriptions/current/${companyId}`).catch(() => null),
           fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
-          fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
-          fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
         ]);
 
         if (cancelled) return;
@@ -4865,9 +4866,9 @@ function WalletView({
       setLoading(true);
       try {
         const [walletRes, repTxRes, balRes] = await Promise.all([
-          fetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
-          fetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
-          fetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
+          authFetch(`${walletApi}/wallet-company/entries/${companyId}`).catch(() => null),
+          authFetch(`${walletApi}/escrow/company/rep-transactions/${companyId}${gigQs}`).catch(() => null),
+          authFetch(`${walletApi}/wallet-company/${companyId}`).catch(() => null),
         ]);
 
         if (balRes?.ok) {

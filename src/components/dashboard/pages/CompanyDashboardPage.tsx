@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Building2, PencilLine, BarChart3, MapPin, Mail, Phone, Globe, Briefcase, ListChecks, Activity as ActivityIcon } from 'lucide-react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { authFetch } from '../../../lib/authFetch';
 import { useTranslation } from 'react-i18next';
 import { getGigsByCompanyId } from '../matching';
 import { localizeText } from '../../../utils/i18nText';
@@ -122,8 +123,9 @@ export function CompanyDashboardPage() {
       }
 
       try {
-        const res = await axios.get(`${orchestratorBase}/escrow/calls/${cid}`);
-        const payload = res.data?.data;
+        const res = await authFetch(`${orchestratorBase}/escrow/calls/${cid}`);
+        const body = await res.json();
+        const payload = body?.data;
         setCalls(Array.isArray(payload) ? payload : []);
       } catch {
         setCalls([]);

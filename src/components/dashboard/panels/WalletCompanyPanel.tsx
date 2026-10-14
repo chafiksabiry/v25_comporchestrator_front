@@ -22,6 +22,7 @@ import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
 import { callsApi } from '../services/api/calls';
+import { authFetch } from '../../../lib/authFetch';
 import { useTranslation } from 'react-i18next';
 import {
   fetchPaymentConfig,
@@ -229,7 +230,7 @@ export function WalletCompanyPanel() {
     if (!isSilent) setLoading(true);
     try {
       // 1. Fetch wallet balance from our new vertical endpoint
-      const walletRes = await fetch(`${apiBaseUrl}/wallet-company/${companyId}`);
+      const walletRes = await authFetch(`${apiBaseUrl}/wallet-company/${companyId}`);
       if (walletRes.ok) {
         const walletData = await walletRes.json();
         if (walletData.success && walletData.data) {
@@ -249,7 +250,7 @@ export function WalletCompanyPanel() {
       // "Validés" / "Refusés" tabs. Each row is a real commission booked by
       // the backend (validated call, sale or bonus).
       try {
-        const repTxRes = await fetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
+        const repTxRes = await authFetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`);
         if (repTxRes.ok) {
           const repTxData = await repTxRes.json();
           if (repTxData.success && Array.isArray(repTxData.data)) {
@@ -269,7 +270,7 @@ export function WalletCompanyPanel() {
       // a credit (deposit) or a debit (withdrawal) recorded by the backend
       // when the company tops up / withdraws funds.
       try {
-        const entriesRes = await fetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`);
+        const entriesRes = await authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`);
         if (entriesRes.ok) {
           const entriesData = await entriesRes.json();
           if (entriesData.success && Array.isArray(entriesData.data)) {
@@ -286,7 +287,7 @@ export function WalletCompanyPanel() {
       }
 
       // 4. Fetch representatives withdrawal requests pending validation
-      const agentRes = await fetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/${companyId}`);
+      const agentRes = await authFetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/${companyId}`);
       if (agentRes.ok) {
         const agentData = await agentRes.json();
         if (agentData.success && agentData.data) {
@@ -390,7 +391,7 @@ export function WalletCompanyPanel() {
 
     setSubmittingWithdraw(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/wallet-company/withdraw`, {
+      const res = await authFetch(`${apiBaseUrl}/wallet-company/withdraw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -478,7 +479,7 @@ export function WalletCompanyPanel() {
 
   const handleAgentWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'refuse') => {
     try {
-      const res = await fetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/approve/${withdrawalId}`, {
+      const res = await authFetch(`${apiBaseUrl}/wallet-company/agent-withdrawals/approve/${withdrawalId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
