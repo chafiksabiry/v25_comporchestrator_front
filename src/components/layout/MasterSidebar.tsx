@@ -491,6 +491,18 @@ export function MasterSidebar({
         </nav>
       </div>
 
+      <div className={`shrink-0 border-t border-white/10 ${isCollapsed ? 'px-3 py-3' : 'px-3 py-4'}`}>
+        <button
+          type="button"
+          onClick={handleLogoutMaster}
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-rose-300 hover:text-white hover:bg-white/5 transition-all ${isCollapsed ? 'justify-center' : ''}`}
+        >
+          <LogOut size={20} className="shrink-0" />
+          {!isCollapsed && (
+            <span className="font-semibold whitespace-nowrap text-[13px]">{t('sidebar.logout')}</span>
+          )}
+        </button>
+      </div>
 
     </div>
   );
