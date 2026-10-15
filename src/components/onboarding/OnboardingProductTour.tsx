@@ -235,11 +235,11 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
                 >
                   Passer
                 </button>
-                {current.advanceOn === 'click' ? (
-                  <span className="flex items-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-4 py-1.5 text-xs font-bold text-gray-400">
+                {current.advanceOn === 'click' && (
+                  <span className="flex items-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-3 py-1.5 text-[11px] font-bold text-gray-400">
                     À vous de jouer
                   </span>
-                ) : (
+                )}
                 <button
                   type="button"
                   onClick={next}
@@ -248,7 +248,6 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
                   {isLast ? 'Terminer' : 'Suivant'}
                   {!isLast && <ArrowRight size={12} />}
                 </button>
-                )}
               </div>
             </div>
           </div>
