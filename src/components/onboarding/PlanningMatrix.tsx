@@ -5,7 +5,7 @@ import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import Cookies from 'js-cookie';
 import { TimeSlot, Rep } from '../../types/scheduler';
-import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X } from 'lucide-react';
+import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X, Check } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
@@ -91,6 +91,12 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
     const { t } = useTranslation();
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
+    /** Tracks whether the grid has edits since the last successful save, so the
+     * save button always reflects reality: "Enregistré" once saved, "Enregistrer
+     * les modifications" again only once the user actually changes something. */
+    const [isDirty, setIsDirty] = useState(false);
+    const [saveFeedback, setSaveFeedback] = useState<'success' | 'error' | null>(null);
+    const saveFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragValue, setDragValue] = useState<number | null>(null);
     const [repQuota, setRepQuota] = useState<RepQuota>({ maxReps: null, planName: null, nextPlan: null });
@@ -256,6 +262,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 [hour]: next
             }
         }));
+        setIsDirty(true);
     };
 
     const handleSave = async () => {
@@ -266,6 +273,8 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         }
 
         setIsSaving(true);
+        if (saveFeedbackTimeoutRef.current) clearTimeout(saveFeedbackTimeoutRef.current);
+        setSaveFeedback(null);
         try {
             const slotsToUpdate: Partial<TimeSlot>[] = [];
 
@@ -301,12 +310,22 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             }
 
             onRefresh();
+            setIsDirty(false);
+            setSaveFeedback('success');
         } catch (error) {
             console.error('Error saving matrix:', error);
+            setSaveFeedback('error');
         } finally {
             setIsSaving(false);
+            saveFeedbackTimeoutRef.current = setTimeout(() => setSaveFeedback(null), 3500);
         }
     };
+
+    useEffect(() => {
+        return () => {
+            if (saveFeedbackTimeoutRef.current) clearTimeout(saveFeedbackTimeoutRef.current);
+        };
+    }, []);
 
     // Calculate totals with explicit casting and memoization
     const dayTotals = useMemo(() => {
@@ -367,18 +386,40 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                     </div>
                 </div>
 
-                <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 bg-white text-harx-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-harx-50 transition-all disabled:opacity-50 shadow-md shadow-black/10"
-                >
-                    {isSaving ? (
-                        <div className="w-5 h-5 border-2 border-harx-600 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                        <Save className="w-5 h-5" />
+                <div className="flex flex-col items-end gap-1">
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving || (!isDirty && saveFeedback !== 'error')}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all disabled:opacity-70 shadow-md shadow-black/10 ${
+                            !isDirty && !isSaving && saveFeedback !== 'error'
+                                ? 'bg-emerald-50 text-emerald-700 cursor-default'
+                                : 'bg-white text-harx-600 hover:bg-harx-50'
+                        }`}
+                    >
+                        {isSaving ? (
+                            <div className="w-5 h-5 border-2 border-harx-600 border-t-transparent rounded-full animate-spin"></div>
+                        ) : !isDirty && saveFeedback !== 'error' ? (
+                            <Check className="w-5 h-5" />
+                        ) : (
+                            <Save className="w-5 h-5" />
+                        )}
+                        {isSaving
+                            ? 'Enregistrement...'
+                            : !isDirty && saveFeedback !== 'error'
+                            ? 'Enregistré'
+                            : 'Enregistrer les modifications'}
+                    </button>
+                    {saveFeedback === 'success' && (
+                        <span className="rounded-md bg-emerald-500/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm animate-fade-in">
+                            Planning enregistré avec succès
+                        </span>
                     )}
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                </button>
+                    {saveFeedback === 'error' && (
+                        <span className="rounded-md bg-rose-500/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm animate-fade-in">
+                            Échec de l'enregistrement — réessayez
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Matrix Table */}
