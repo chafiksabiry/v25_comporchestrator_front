@@ -3440,6 +3440,8 @@
     "select": "Choisir cette méthodologie",
     "comingSoon": "Bientôt disponible",
     "recommendedForGig": "Recommandé pour ce GIG",
+    "aiDisclaimerTitle": "Contenu généré par IA —",
+    "aiDisclaimerBody": "ces méthodologies, y compris leurs modules de conformité, sont des propositions à relire, corriger et valider par votre entreprise avant diffusion à vos REPS, notamment au regard du pays et du secteur d'activité concernés.",
     "features": {
       "foundational": "Connaissances de base",
       "compliance": "Conformité",
