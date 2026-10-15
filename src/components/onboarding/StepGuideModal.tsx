@@ -233,6 +233,74 @@ const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
   );
 };
 
+/**
+ * Concrete, actionable tips for the steps that don't get a full custom
+ * "Extras" layout (1 and 8) — grounded in the real screens (gating
+ * conditions, confirmation steps, hidden requirements) rather than generic
+ * descriptions, so the "inside" guide actually helps instead of restating
+ * the step title.
+ */
+const GENERIC_STEP_TIPS_FR: Record<number, string[]> = {
+  3: [
+    'Décrivez votre besoin en langage libre dans la zone de texte — la génération IA ne démarre qu’une fois ce champ rempli.',
+    'Vous accédez ensuite aux sections structurées (infos de base, planning, commission, compétences, équipe), puis à la relecture avant publication.',
+  ],
+  4: [
+    'Créez d’abord un GIG avec sa zone de destination — sans GIG sélectionné, aucun numéro n’est disponible ici.',
+    'Si le pays l’exige, un formulaire réglementaire doit être complété avant de pouvoir acheter un numéro.',
+  ],
+  5: [
+    'Après l’import, mappez chaque colonne de votre fichier vers les champs HARX par glisser-déposer.',
+    'Les contacts restent en aperçu tant que le mapping n’est pas confirmé — ils ne sont réellement importés qu’après validation.',
+  ],
+  7: [
+    'Sélectionnez le GIG concerné avant d’uploader — les documents restent rattachés à ce GIG, même si vous en changez après coup.',
+    'Formats acceptés : PDF, Word, texte, audio, vidéo.',
+  ],
+  9: [
+    'Générez un script interactif par IA, ou partez d’un script déjà existant pour ce GIG.',
+    'Un script en brouillon n’est pas utilisable par vos REPS — il faut l’activer explicitement pour qu’il devienne le script actif du GIG.',
+  ],
+  10: [
+    'Sélectionnez le GIG concerné, puis réservez des créneaux sur le calendrier hebdomadaire.',
+    'Cette étape se valide automatiquement dès qu’un créneau existe — il n’y a pas de bouton dédié à cliquer.',
+  ],
+  11: [
+    'Le paiement se fait directement dans la page, via Stripe.',
+    'Après paiement, un court délai peut s’écouler avant que l’étape apparaisse validée — c’est normal, inutile de recommencer.',
+  ],
+  12: [
+    'Le bouton « Activer » se débloque une fois les prérequis du GIG réunis (téléphonie, contacts, script, planification) et le solde suffisant.',
+    'La base de connaissances n’est pas obligatoire pour activer un GIG — mais mieux vaut la compléter avant de lancer réellement les appels.',
+  ],
+  13: [
+    'Trois onglets à connaître : « matching » pour trouver des REPS, « invited » pour suivre vos invitations envoyées, « enrollment » pour traiter les demandes entrantes.',
+    'Ajustez les poids de correspondance (expérience, compétences, secteur, langues, disponibilité…) pour affiner les suggestions.',
+  ],
+};
+
+const GenericStepTips: React.FC<{ stepId: number }> = ({ stepId }) => {
+  const { t } = useTranslation();
+  const fallback = GENERIC_STEP_TIPS_FR[stepId];
+  if (!fallback) return null;
+  const rawTips = t(`companyOnboarding.stepGuide.step${stepId}.tips`, { returnObjects: true }) as unknown;
+  const tips = Array.isArray(rawTips) && rawTips.length > 0 ? (rawTips as string[]) : fallback;
+
+  return (
+    <ul className="mt-4 space-y-2">
+      {tips.map((tip, idx) => (
+        <li
+          key={idx}
+          className="flex items-start gap-2 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-400 leading-relaxed"
+        >
+          <Check className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-emerald-400" />
+          <span>{tip}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 const StepGuideModal: React.FC<StepGuideModalProps> = ({
   isOpen,
   stepId,
@@ -299,8 +367,9 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
 
         {isStep1 && <Step1GuideExtras variant={variant} />}
         {isStep8 && <Step8GuideExtras variant={variant} />}
+        {!isStep1 && !isStep8 && !isBefore && <GenericStepTips stepId={stepId} />}
 
-        {!isBefore && !isStep1 && !isStep8 && (
+        {!isBefore && !isStep1 && !isStep8 && !GENERIC_STEP_TIPS_FR[stepId] && (
           <p className="mt-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-500 leading-relaxed">
             {t('companyOnboarding.stepGuide.insideHint')}
           </p>
