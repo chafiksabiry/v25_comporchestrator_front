@@ -221,6 +221,14 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
           </div>
         </div>
 
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <p className="text-xs leading-relaxed text-amber-900">
+            <span className="font-bold">{t('trainingMethodology.aiDisclaimerTitle')}</span>{' '}
+            {t('trainingMethodology.aiDisclaimerBody')}
+          </p>
+        </div>
+
         <div className="rounded-xl border border-harx-100/80 bg-harx-50/35 p-2 sm:p-3">
           <h2 className="mb-2 text-center text-[11px] font-bold uppercase tracking-wide text-gray-800">
             {t('trainingMethodology.includesTitle')}
