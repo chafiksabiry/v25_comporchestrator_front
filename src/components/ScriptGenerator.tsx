@@ -830,17 +830,19 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         }
       }
 
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: 'professionnel et direct',
-        outputLanguage: 'fr',
-        contentLanguage: 'fr',
-        alsoGenerateLanguage: 'en',
+        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: scriptLanguage,
+        contentLanguage: scriptLanguage,
         contexte: [
-          'Écris toutes les phrases du script en français uniquement. La version anglaise est enregistrée à part.',
-          "Générer un script interactif structuré en 8 étapes basées sur la mission.",
+          bilingualGenerationInstruction(scriptLanguage),
+          scriptLanguage === 'fr'
+            ? 'Générer un script interactif structuré en 8 étapes basées sur la mission.'
+            : 'Generate a structured 8-step interactive script for this gig.',
           contactVariablesPrompt,
         ].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
@@ -922,13 +924,14 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         activeInteractiveStages.length - 1
       );
 
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
       const payload = {
         companyId,
         gig: selectedGig,
         typeClient: 'general',
-        langueTon: uiLangRef.current === 'fr' ? 'professionnel et direct' : 'professional and direct',
-        outputLanguage: uiLangRef.current,
-        contentLanguage: uiLangRef.current,
+        langueTon: scriptLanguage === 'fr' ? 'professionnel et direct' : 'professional and direct',
+        outputLanguage: scriptLanguage,
+        contentLanguage: scriptLanguage,
         contexte: [promptText, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         trainings: currentTrainings,
         isInteractiveRequest: true,
@@ -1041,24 +1044,23 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         .filter((iframe) => iframe.url.length > 0);
 
       const pack = stagePackRef.current;
-      const frenchStages = pack.fr?.length ? pack.fr : activeInteractiveStages;
-      const englishStages = pack.en?.length ? pack.en : null;
+      const scriptLanguage = resolveGigContentLanguage(selectedGig);
+      const stages = stagesForLanguage(pack, scriptLanguage) || activeInteractiveStages;
       const payload = {
         gigId: selectedGig._id,
         targetClient: 'general',
-        language: 'fr,en',
+        language: scriptLanguage,
         details: 'Généré via le Cockpit Interactif',
-        script: (frenchStages || []).map(s => ({
+        script: (stages || []).map(s => ({
           phase: s.label,
           actor: 'agent',
           replica: s.introReplica
         })),
         playbook: {
           title: activeInteractiveTitle || selectedGig.title,
-          stages: frenchStages,
+          stages,
           stagesByLanguage: {
-            ...(frenchStages ? { fr: frenchStages } : {}),
-            ...(englishStages ? { en: englishStages } : {}),
+            [scriptLanguage]: stages,
           },
           iframes: cleanedIframes
         },
@@ -1216,7 +1218,6 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         langueTon: scriptLanguage === 'fr' ? 'simple et direct' : 'simple and direct',
         outputLanguage: scriptLanguage,
         contentLanguage: scriptLanguage,
-        alsoGenerateLanguage: scriptLanguage === 'fr' ? 'en' : 'fr',
         contexte: [bilingualGenerationInstruction(scriptLanguage), regenInstruction, contactVariablesPrompt].filter(Boolean).join('\n\n'),
         currentScript: currentScriptText || undefined,
         currentPlaybook: activeScriptMessage?.playbook || undefined,

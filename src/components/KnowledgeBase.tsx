@@ -9,7 +9,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
 import { markCompanyGigsStepDone, markGigStepDone } from '../services/gigSetupSync';
-import { otherContentLanguage, resolveGigContentLanguage } from './training/utils/gigSnapshotForAi';
+import { resolveGigContentLanguage } from './training/utils/gigSnapshotForAi';
 import DocumentViewer from './training/components/DocumentViewer/DocumentViewer';
 
 interface DocumentAnalysis {
@@ -850,19 +850,19 @@ const KnowledgeBase: React.FC = () => {
       if (!analysis || !('domain' in analysis)) return false;
       const doc = analysis as DocumentAnalysis;
       const sourceLang = analysisLanguage(doc);
-      const needed = [displayLanguage, otherContentLanguage(displayLanguage)].filter(
-        (lang) => lang !== sourceLang && !translatedAnalysis[id]?.[lang]
+      return (
+        sourceLang !== displayLanguage &&
+        !translatedAnalysis[id]?.[displayLanguage] &&
+        !translationStarted.current.has(`${id}:${displayLanguage}`)
       );
-      return needed.some((lang) => !translationStarted.current.has(`${id}:${lang}`));
     });
     if (!pending) return;
     const [id, analysis] = pending;
     const doc = analysis as DocumentAnalysis;
     const sourceLang = analysisLanguage(doc);
-    const target = [displayLanguage, otherContentLanguage(displayLanguage)].find(
-      (lang) => lang !== sourceLang && !translatedAnalysis[id]?.[lang] && !translationStarted.current.has(`${id}:${lang}`)
-    );
-    if (!target) return;
+    if (sourceLang === displayLanguage || translatedAnalysis[id]?.[displayLanguage]) return;
+    const target = displayLanguage;
+    if (translationStarted.current.has(`${id}:${target}`)) return;
     translationStarted.current.add(`${id}:${target}`);
     void translateAnalysis(id, doc, target);
   }, [displayLanguage, translatingDocument, documentAnalysis, translatedAnalysis]);

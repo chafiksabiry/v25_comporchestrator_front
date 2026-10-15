@@ -397,7 +397,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         gig: selectedGig,
         outputLanguage,
         contentLanguage: outputLanguage,
-        alsoGenerateLanguage: outputLanguage === 'fr' ? 'en' : 'fr',
         languageFromGig: {
           source: 'destination_zone',
           titleSample: gigTitle.slice(0, 180) || null,

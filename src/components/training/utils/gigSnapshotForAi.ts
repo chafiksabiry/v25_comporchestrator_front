@@ -164,10 +164,9 @@ export function languageName(lang: 'fr' | 'en'): string {
   return lang === 'fr' ? 'French' : 'English';
 }
 
-/** Visible copy in the zone language, plus a fenced translation the UI does not parse as the plan. */
+/** One language only: the gig destination language. No second copy. */
 export function bilingualGenerationInstruction(display: 'fr' | 'en'): string {
-  const other = otherContentLanguage(display);
-  return `The gig destination zone language is ${languageName(display)}. Write the visible title, every section heading, the plan, and all module or script lines ONLY in ${languageName(display)}. Number modules 1, 2, 3… once. Do not switch language on a later module, and do not start again at Module 1. Then append a fenced block containing the full ${languageName(other)} translation of those SAME modules:\n\`\`\`translation-${other}\n...\n\`\`\`\nDo not repeat the translation outside that fence.`;
+  return `The gig language is ${languageName(display)}. Write the title, every heading, the plan, and all module or script lines ONLY in ${languageName(display)}. Number modules 1, 2, 3… once. Do not add a translation, a second language, or a later module in another language.`;
 }
 
 function moduleHeadingNumber(line: string): number | null {

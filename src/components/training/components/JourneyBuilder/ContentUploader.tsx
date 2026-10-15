@@ -3941,10 +3941,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
           useGigAsSecondaryContext: false,
-          // Visible language follows the destination zone. Both languages are generated.
           outputLanguage,
           contentLanguage: outputLanguage,
-          alsoGenerateLanguage: outputLanguage === 'fr' ? 'en' : 'fr',
           languageFromGig: {
             source: 'destination_zone',
             titleSample: gigTitleForLanguage.slice(0, 180) || null,
