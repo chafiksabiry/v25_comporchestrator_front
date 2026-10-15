@@ -60,6 +60,7 @@ import {
   listForLang,
   removeNarrativeItem,
   textForLang,
+  textForLangEditable,
   uiLangFrom,
   updateNarrativeItem,
   writeNarrativeText,
@@ -4425,7 +4426,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                     </div>
 
                     <textarea
-                      value={textForLang(
+                      value={textForLangEditable(
                         option.additionalDetails_i18n,
                         option.additionalDetails,
                         uiLang,
