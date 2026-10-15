@@ -95,6 +95,12 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
      * save button always reflects reality: "Enregistré" once saved, "Enregistrer
      * les modifications" again only once the user actually changes something. */
     const [isDirty, setIsDirty] = useState(false);
+    /** Whether the backend actually has at least one slot with capacity > 0 for
+     * this gig. Without this, a brand-new/empty schedule (nothing ever saved)
+     * would still show the green "Enregistré" state on first load — because
+     * isDirty starts false — falsely telling the user it's saved when nothing
+     * is, which is exactly what let this step silently stay incomplete. */
+    const [hasPersistedCapacity, setHasPersistedCapacity] = useState(false);
     const [saveFeedback, setSaveFeedback] = useState<'success' | 'error' | null>(null);
     const saveFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -216,6 +222,10 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 matrix[dayName][hour] = capacity;
             });
         });
+
+        setHasPersistedCapacity(
+            Object.values(matrix).some(dayHours => Object.values(dayHours).some(c => c > 0))
+        );
 
         // Only update if we don't have local changes or after a save is complete
         setLocalMatrix(prev => {
@@ -387,31 +397,52 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                 </div>
 
                 <div className="flex flex-col items-end gap-1">
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving || (!isDirty && saveFeedback !== 'error')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all disabled:opacity-70 shadow-md shadow-black/10 ${
-                            !isDirty && !isSaving && saveFeedback !== 'error'
-                                ? 'bg-emerald-50 text-emerald-700 cursor-default'
-                                : 'bg-white text-harx-600 hover:bg-harx-50'
-                        }`}
-                    >
-                        {isSaving ? (
-                            <div className="w-5 h-5 border-2 border-harx-600 border-t-transparent rounded-full animate-spin"></div>
-                        ) : !isDirty && saveFeedback !== 'error' ? (
-                            <Check className="w-5 h-5" />
-                        ) : (
-                            <Save className="w-5 h-5" />
-                        )}
-                        {isSaving
-                            ? 'Enregistrement...'
-                            : !isDirty && saveFeedback !== 'error'
-                            ? 'Enregistré'
-                            : 'Enregistrer les modifications'}
-                    </button>
-                    {!isDirty && !isSaving && saveFeedback !== 'error' && (
+                    {(() => {
+                        // Three real states, not two: a brand-new/empty schedule (never
+                        // saved) must NOT look identical to one that's genuinely saved —
+                        // that's what let the onboarding step stay stuck while the button
+                        // claimed "Enregistré".
+                        const isSavedClean = !isDirty && hasPersistedCapacity && saveFeedback !== 'error';
+                        const isEmptyUnsaved = !isDirty && !hasPersistedCapacity && saveFeedback !== 'error';
+                        return (
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving || isSavedClean || isEmptyUnsaved}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all disabled:opacity-70 shadow-md shadow-black/10 ${
+                                    isSavedClean
+                                        ? 'bg-emerald-50 text-emerald-700 cursor-default'
+                                        : isEmptyUnsaved
+                                        ? 'bg-amber-50 text-amber-700 cursor-default'
+                                        : 'bg-white text-harx-600 hover:bg-harx-50'
+                                }`}
+                            >
+                                {isSaving ? (
+                                    <div className="w-5 h-5 border-2 border-harx-600 border-t-transparent rounded-full animate-spin"></div>
+                                ) : isSavedClean ? (
+                                    <Check className="w-5 h-5" />
+                                ) : isEmptyUnsaved ? (
+                                    <AlertTriangle className="w-5 h-5" />
+                                ) : (
+                                    <Save className="w-5 h-5" />
+                                )}
+                                {isSaving
+                                    ? 'Enregistrement...'
+                                    : isSavedClean
+                                    ? 'Enregistré'
+                                    : isEmptyUnsaved
+                                    ? 'Aucun créneau défini'
+                                    : 'Enregistrer les modifications'}
+                            </button>
+                        );
+                    })()}
+                    {!isDirty && hasPersistedCapacity && !isSaving && saveFeedback !== 'error' && (
                         <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
                             Pour modifier : cliquez ou glissez sur une case du calendrier, puis enregistrez à nouveau.
+                        </span>
+                    )}
+                    {!isDirty && !hasPersistedCapacity && !isSaving && saveFeedback !== 'error' && (
+                        <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
+                            Cliquez ou glissez sur une case pour définir des créneaux, puis enregistrez.
                         </span>
                     )}
                     {saveFeedback === 'success' && (
