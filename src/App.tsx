@@ -199,6 +199,10 @@ function AppContent() {
   const [minutes, setMinutes] = useState<number>(0);
   const [aiTokens, setAiTokens] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
+  const [minuteCredits, setMinuteCredits] = useState<Array<{ at?: string; minutes?: number; planName?: string; kind?: string }>>([]);
+  const [minutesMenuOpen, setMinutesMenuOpen] = useState(false);
+  const [minutesMenuPos, setMinutesMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const minutesChipRef = useRef<HTMLDivElement>(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => connectTeamPresenceSocket(), []);
@@ -262,11 +266,13 @@ function AppContent() {
 
       if (minutesRes?.ok) {
         const minutesJson = await minutesRes.json();
-        // API returns { success, data: { minutes } } — same as MinutesCompanyPanel
-        const mins = minutesJson?.data?.minutes ?? minutesJson?.minutes;
+        // API returns { success, data: { minutes, credits } } — same as MinutesCompanyPanel
+        const minutesData = minutesJson?.data ?? minutesJson;
+        const mins = minutesData?.minutes;
         if (typeof mins === 'number') {
           setMinutes(mins);
         }
+        setMinuteCredits(Array.isArray(minutesData?.credits) ? minutesData.credits : []);
       }
 
       if (tokensRes?.ok) {
@@ -371,9 +377,44 @@ function AppContent() {
     }
   };
 
-  const handleMinutesClick = () => {
+  const openMinutesPage = () => {
+    setMinutesMenuOpen(false);
     openDashboard(minutes <= 0 ? '/dashboard/minutes?buy=1' : '/dashboard/minutes');
   };
+
+  const updateMinutesMenuPos = () => {
+    const el = minutesChipRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setMinutesMenuPos({
+      top: rect.bottom + 8,
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  };
+
+  const handleMinutesClick = () => {
+    setMinutesMenuOpen((open) => !open);
+  };
+
+  useEffect(() => {
+    if (!minutesMenuOpen) return;
+    updateMinutesMenuPos();
+    const onScrollOrResize = () => updateMinutesMenuPos();
+    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (minutesChipRef.current?.contains(target)) return;
+      if ((event.target as HTMLElement)?.closest?.('[data-harx-minutes-menu]')) return;
+      setMinutesMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('resize', onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [minutesMenuOpen]);
 
   const handleTokensClick = () => {
     openDashboard('/dashboard/tokens');
@@ -1008,6 +1049,7 @@ function AppContent() {
 
                   {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                     <div
+                      ref={minutesChipRef}
                       onClick={handleMinutesClick}
                       className={`harx-nav-chip group ${minutes <= 0 ? 'ring-1 ring-rose-400/50' : ''}`}
                       title={minutes <= 0 ? t('navbar.minutesLimitReached', 'Limite atteinte — acheter des minutes') : undefined}
@@ -1022,6 +1064,68 @@ function AppContent() {
                         </span>
                       </div>
                     </div>
+                  )}
+                  {minutesMenuOpen && minutesMenuPos && createPortal(
+                    <div
+                      data-harx-minutes-menu
+                      style={{ top: minutesMenuPos.top, right: minutesMenuPos.right }}
+                      className="fixed z-[9999] w-[min(36rem,calc(100vw-1rem))] overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white p-5 shadow-2xl"
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-black tracking-tight text-slate-800">Minutes créditées</h3>
+                        <button
+                          type="button"
+                          onClick={openMinutesPage}
+                          className="text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-700"
+                        >
+                          {minutes <= 0 ? 'Acheter' : 'Voir tout'}
+                        </button>
+                      </div>
+                      {minuteCredits.length === 0 ? (
+                        <p className="py-6 text-center text-xs font-bold text-gray-400">Aucune minute créditée pour le moment.</p>
+                      ) : (
+                        <div className="overflow-auto rounded-2xl border border-gray-50">
+                          <table className="w-full border-collapse text-left">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                <th className="px-3 py-2.5">Date</th>
+                                <th className="px-3 py-2.5">Type</th>
+                                <th className="px-3 py-2.5">Détail</th>
+                                <th className="px-3 py-2.5 text-right">Minutes</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-xs">
+                              {minuteCredits.map((credit, index) => {
+                                const isPlan = credit.kind === 'plan';
+                                return (
+                                  <tr key={`${credit.at || 'credit'}-${credit.kind || 'row'}-${index}`}>
+                                    <td className="px-3 py-2.5 text-gray-500">
+                                      {credit.at ? new Date(credit.at).toLocaleString('fr-FR') : '—'}
+                                    </td>
+                                    <td className="px-3 py-2.5">
+                                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${
+                                        isPlan
+                                          ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                                          : 'border-blue-100 bg-blue-50 text-blue-700'
+                                      }`}>
+                                        {isPlan ? 'Inclus plan' : 'Recharge'}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2.5 font-bold text-slate-800">
+                                      {isPlan ? (credit.planName || 'Plan') : 'Achat de minutes'}
+                                    </td>
+                                    <td className="px-3 py-2.5 text-right font-black tabular-nums text-emerald-700">
+                                      +{formatWalletMinutesBalance(Number(credit.minutes) || 0)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>,
+                    document.body
                   )}
 
                   {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
