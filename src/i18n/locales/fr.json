@@ -3439,6 +3439,7 @@
     "hours": "{{count}} h",
     "select": "Choisir cette méthodologie",
     "comingSoon": "Bientôt disponible",
+    "recommendedForGig": "Recommandé pour ce GIG",
     "features": {
       "foundational": "Connaissances de base",
       "compliance": "Conformité",
