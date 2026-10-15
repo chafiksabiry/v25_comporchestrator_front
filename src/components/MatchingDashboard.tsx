@@ -48,6 +48,7 @@ import {
     mergeMatchCaches,
     collectUniqueGigIds,
 } from './dashboard/utils/repMatchDisplay';
+import { OnboardingBackButton } from './onboarding/searchCompanyWizard/OnboardingBackButton';
 
 export type MatchingDashboardProps = {
   /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
@@ -527,24 +528,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         };
 
         fetchData();
-
-        // Embedded in onboarding: parent must clear activeStep. Standalone Matching tab: tabChange only.
-        window.dispatchEvent(new CustomEvent('setGlobalBack', {
-            detail: {
-                label: 'Back to Onboarding',
-                action: () => {
-                    void onBackToOnboardingRef.current?.();
-                    localStorage.setItem('activeTab', 'company-onboarding');
-                    window.dispatchEvent(
-                        new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-                    );
-                }
-            }
-        }));
-
-        return () => {
-            window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
-        };
     }, []);
 
     // Restore selected gig from localStorage when gigs are available
@@ -982,6 +965,20 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 </div>
             ) : (
                 <>
+                    {onBackToOnboardingRef.current && (
+                        <div className="container mx-auto px-4 pt-4">
+                            <OnboardingBackButton
+                                variant="cta"
+                                onClick={() => {
+                                    void onBackToOnboardingRef.current?.();
+                                    localStorage.setItem('activeTab', 'company-onboarding');
+                                    window.dispatchEvent(
+                                        new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+                                    );
+                                }}
+                            />
+                        </div>
+                    )}
                     {/* Header with Navigation Tabs */}
                     <header className="bg-gradient-rep-header border-b border-indigo-100/80 shadow-sm">
                 {/* Top Header */}
