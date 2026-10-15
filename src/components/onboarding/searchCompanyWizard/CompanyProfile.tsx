@@ -25,6 +25,7 @@ import {
   Trash2,
   Pencil,
   Lock,
+  Info,
 } from "lucide-react";
 import { extractApiError, publishCompanyData } from "./api/companyApi";
 import type { CompanyProfileData } from "./api/openai";
@@ -654,6 +655,17 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     <div className="w-full h-full bg-white rounded-3xl shadow-2xl border border-harx-100 overflow-hidden flex relative min-h-[800px] animate-fade-in">
       <div className="w-64 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
         <div className="p-5 space-y-6">
+          <div className="rounded-2xl border border-harx-100 bg-harx-50/60 p-4 space-y-2.5">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-harx-700">
+              <Info size={16} className="shrink-0" />
+              {t('searchCompanyWizard.profile.guideTitle', 'Comment procéder')}
+            </h3>
+            <ul className="space-y-2 text-xs leading-relaxed text-slate-600">
+              <li>{t('searchCompanyWizard.profile.guideStep1', 'Vérifiez les informations générées automatiquement ci-contre.')}</li>
+              <li>{t('searchCompanyWizard.profile.guideStep2', 'Cliquez sur « Modifier » pour corriger un champ, ou utilisez les + pour compléter une coordonnée manquante.')}</li>
+              <li>{t('searchCompanyWizard.profile.guideStep3', 'Une fois prêt, cliquez sur « Continuer l\'onboarding » (en haut) pour enregistrer la société et passer à l\'étape suivante.')}</li>
+            </ul>
+          </div>
           {(
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -904,15 +916,19 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
               no scrolling needed to find the way forward (the only other Publier
               button sits far below the fold on a long profile). */}
           <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
-            {onBack ? (
-              <OnboardingBackButton
-                variant="icon"
-                label={t("searchCompanyWizard.backToSearch", "Retour à la recherche")}
-                onClick={onBack}
-              />
-            ) : (
-              <span />
-            )}
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={publishing}
+              className="inline-flex items-center gap-2 rounded-xl bg-white/90 px-4 py-2 text-sm font-bold text-harx-700 shadow-lg ring-1 ring-harx-300 transition-all duration-200 hover:scale-105 hover:bg-white active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
+            >
+              {publishing ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <ArrowRight size={14} />
+              )}
+              {t("searchCompanyWizard.continueOnboarding", "Continuer l'onboarding")}
+            </button>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1202,17 +1218,6 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
               </div>
             </section>
 
-            <div className="pt-8 flex justify-center border-t border-gray-100">
-              <button
-                onClick={handlePublish}
-                disabled={publishing}
-                className="px-8 py-4 bg-gradient-harx text-white rounded-2xl hover:shadow-2xl hover:shadow-harx-500/30 transition-all duration-300 flex items-center gap-3 group text-lg font-bold w-full sm:w-auto justify-center transform hover:-translate-y-1 disabled:opacity-70 disabled:hover:translate-y-0"
-              >
-                <Check size={24} className="text-white" />
-                <span>{publishing ? t('searchCompanyWizard.profile.publishing') : t('searchCompanyWizard.profile.publishBtn')}</span>
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
