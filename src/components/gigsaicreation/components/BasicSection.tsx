@@ -23,7 +23,7 @@ import {
   getSectorNameById,
 } from '../lib/activitiesIndustries';
 import { fetchAllCountries, Country } from '../lib/api';
-import { addNarrativeItem, listForLang, removeNarrativeItem, textForLang, uiLangFrom } from '../lib/gigNarrativeI18n';
+import { addNarrativeItem, listForLang, removeNarrativeItem, textForLang, textForLangEditable, uiLangFrom } from '../lib/gigNarrativeI18n';
 
 interface BasicSectionProps {
   data: GigData;
@@ -313,7 +313,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
               </label>
               <input
                 type="text"
-                value={textForLang(data.title_i18n, data.title, narrativeLang)}
+                value={textForLangEditable(data.title_i18n, data.title, narrativeLang)}
                 onChange={(e) => {
                   const value = e.target.value;
                   const current = data.title_i18n || {};
@@ -341,7 +341,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
                 {t('gigCreation.suggestions.jobDescription')}
               </label>
               <textarea
-                value={textForLang(data.description_i18n, data.description, narrativeLang)}
+                value={textForLangEditable(data.description_i18n, data.description, narrativeLang)}
                 onChange={(e) => {
                   const value = e.target.value;
                   const current = data.description_i18n || {};

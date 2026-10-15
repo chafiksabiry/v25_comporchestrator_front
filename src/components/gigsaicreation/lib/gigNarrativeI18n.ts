@@ -16,6 +16,23 @@ export function textForLang(
   return (plain || '').trim();
 }
 
+/**
+ * Same resolution as textForLang, but never trims. Use this (not
+ * textForLang) as a controlled <input>/<textarea>'s `value` — trimming the
+ * live value strips a just-typed trailing space on every keystroke, since a
+ * React controlled input re-derives `value` from this on every render, so
+ * typing " " while the cursor is at the end silently drops the space.
+ */
+export function textForLangEditable(
+  bundle: { en?: string; fr?: string } | undefined,
+  plain: string | undefined,
+  lang: UiLang,
+): string {
+  const side = bundle?.[lang];
+  if (typeof side === 'string' && side) return side;
+  return plain || '';
+}
+
 export function listForLang(
   bundle: I18nList | undefined,
   plain: string[] | undefined,
