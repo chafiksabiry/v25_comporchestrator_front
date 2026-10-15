@@ -901,7 +901,9 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
             <style>{`@keyframes shine {0% { transform: translateX(-200%);}100% { transform: translateX(200%);}}`}</style>
           </div>
 
-          {/* Back (no publish) + Edit / Done — always visible in the hero */}
+          {/* Back (no publish) + Edit / Done + Publier — always visible in the hero,
+              no scrolling needed to find the way forward (the only other Publier
+              button sits far below the fold on a long profile). */}
           <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
             {onBack ? (
               <OnboardingBackButton
@@ -912,27 +914,44 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
             ) : (
               <span />
             )}
-            <button
-              type="button"
-              onClick={() => setEditMode((v) => !v)}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
-                editMode
-                  ? "bg-white/90 text-emerald-700 ring-1 ring-emerald-300 hover:bg-white"
-                  : "bg-white/90 text-harx-700 ring-1 ring-harx-300 hover:bg-white"
-              }`}
-            >
-              {editMode ? (
-                <>
-                  <Lock size={14} />
-                  {t("searchCompanyWizard.profile.doneEditing", "Terminé")}
-                </>
-              ) : (
-                <>
-                  <Pencil size={14} />
-                  {t("searchCompanyWizard.profile.editProfile", "Modifier")}
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEditMode((v) => !v)}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
+                  editMode
+                    ? "bg-white/90 text-emerald-700 ring-1 ring-emerald-300 hover:bg-white"
+                    : "bg-white/90 text-harx-700 ring-1 ring-harx-300 hover:bg-white"
+                }`}
+              >
+                {editMode ? (
+                  <>
+                    <Lock size={14} />
+                    {t("searchCompanyWizard.profile.doneEditing", "Terminé")}
+                  </>
+                ) : (
+                  <>
+                    <Pencil size={14} />
+                    {t("searchCompanyWizard.profile.editProfile", "Modifier")}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-4 py-2 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
+              >
+                {publishing ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
+                {publishing
+                  ? t('searchCompanyWizard.profile.publishing')
+                  : t('searchCompanyWizard.profile.publishBtn')}
+              </button>
+            </div>
           </div>
 
           <div className="relative z-20 h-full flex flex-col justify-end p-12 space-y-6">
