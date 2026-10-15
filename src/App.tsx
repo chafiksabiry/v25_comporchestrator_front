@@ -994,14 +994,14 @@ function AppContent() {
                   {showActivationNavbarWidgets && (
                     <div
                       onClick={handleBalanceClick}
-                      className="harx-nav-chip group !bg-emerald-50 !border-emerald-200 hover:!bg-emerald-100 hover:!border-emerald-300 shadow-sm shadow-emerald-950/10"
+                      className="harx-nav-chip group"
                     >
-                      <div className="harx-nav-chip-icon !bg-emerald-500 !border-0 text-white shadow-sm shadow-emerald-500/40">
-                        <Coins size={15} className="text-white" />
+                      <div className="harx-nav-chip-icon bg-emerald-500/15 border border-emerald-500/25">
+                        <Coins size={14} className="text-emerald-400" />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-emerald-700">{t('navbar.myWallet')}</span>
-                        <span className="text-sm font-black text-emerald-950 tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.myWallet')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{balance.toLocaleString('en-US')} €</span>
                       </div>
                     </div>
                   )}
@@ -1009,15 +1009,15 @@ function AppContent() {
                   {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                     <div
                       onClick={handleMinutesClick}
-                      className={`harx-nav-chip group shadow-sm ${minutes <= 0 ? '!bg-rose-50 !border-rose-200 hover:!bg-rose-100 hover:!border-rose-300 shadow-rose-950/10' : '!bg-sky-50 !border-sky-200 hover:!bg-sky-100 hover:!border-sky-300 shadow-sky-950/10'}`}
+                      className={`harx-nav-chip group ${minutes <= 0 ? 'ring-1 ring-rose-400/50' : ''}`}
                       title={minutes <= 0 ? t('navbar.minutesLimitReached', 'Limite atteinte — acheter des minutes') : undefined}
                     >
-                      <div className={`harx-nav-chip-icon !border-0 text-white shadow-sm ${minutes <= 0 ? '!bg-rose-500 shadow-rose-500/40' : '!bg-sky-500 shadow-sky-500/40'}`}>
-                        <Clock size={15} className="text-white" />
+                      <div className={`harx-nav-chip-icon border ${minutes <= 0 ? 'bg-rose-500/20 border-rose-400/40' : 'bg-blue-500/15 border-blue-500/25'}`}>
+                        <Clock size={13} className={minutes <= 0 ? 'text-rose-400' : 'text-blue-400'} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className={`text-[8px] font-black uppercase tracking-[0.15em] ${minutes <= 0 ? 'text-rose-700' : 'text-sky-700'}`}>{t('navbar.minutes')}</span>
-                        <span className={`text-sm font-black tabular-nums whitespace-nowrap ${minutes <= 0 ? 'text-rose-950' : 'text-sky-950'}`}>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.minutes')}</span>
+                        <span className={`text-sm font-black tabular-nums whitespace-nowrap ${minutes <= 0 ? 'text-rose-300' : 'text-white'}`}>
                           {formatWalletMinutesBalance(minutes)}
                         </span>
                       </div>
@@ -1027,14 +1027,14 @@ function AppContent() {
                   {showActivationNavbarWidgets && activeProject !== 'comporchestrator' && (
                     <div
                       onClick={handleTokensClick}
-                      className="harx-nav-chip group !bg-violet-50 !border-violet-200 hover:!bg-violet-100 hover:!border-violet-300 shadow-sm shadow-violet-950/10"
+                      className="harx-nav-chip group"
                     >
-                      <div className="harx-nav-chip-icon !bg-violet-500 !border-0 text-white shadow-sm shadow-violet-500/40">
-                        <Cpu size={15} className="text-white" />
+                      <div className="harx-nav-chip-icon bg-violet-500/15 border border-violet-500/25">
+                        <Cpu size={13} className="text-violet-400" />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-violet-700">{t('navbar.aiTokens')}</span>
-                        <span className="text-sm font-black text-violet-950 tabular-nums whitespace-nowrap">{formatAiTokensBalance(aiTokens)}</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.aiTokens')}</span>
+                        <span className="text-sm font-black text-white tabular-nums whitespace-nowrap">{formatAiTokensBalance(aiTokens)}</span>
                       </div>
                     </div>
                   )}
@@ -1042,14 +1042,14 @@ function AppContent() {
                   {activeProject !== 'comporchestrator' && (
                     <div
                       onClick={handleTelephonyClick}
-                      className="harx-nav-chip group !bg-amber-50 !border-amber-200 hover:!bg-amber-100 hover:!border-amber-300 shadow-sm shadow-amber-950/10"
+                      className="harx-nav-chip group"
                     >
-                      <div className="harx-nav-chip-icon !bg-amber-500 !border-0 text-white shadow-sm shadow-amber-500/40">
-                        <Phone size={15} className="text-white" strokeWidth={2.5} />
+                      <div className="harx-nav-chip-icon bg-harx-orange/15 border border-harx-orange/30">
+                        <Phone size={13} className="text-harx-orange" strokeWidth={2.5} />
                       </div>
                       <div className="flex flex-col leading-tight">
-                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-amber-700">{t('navbar.phoneLines')}</span>
-                        <span className="text-sm font-black text-amber-950 tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
+                        <span className="text-[8px] font-black uppercase tracking-[0.15em] text-white/45">{t('navbar.phoneLines')}</span>
+                        <span className="text-sm font-black text-white tabular-nums tracking-tight whitespace-nowrap">{escrow} {escrow !== 1 ? t('navbar.linePlural') : t('navbar.lineSingular')}</span>
                       </div>
                     </div>
                   )}
@@ -1060,7 +1060,7 @@ function AppContent() {
                       onClick={() => {
                         openDashboard('/dashboard/subscription');
                       }}
-                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] shadow-md shadow-rose-500/30 hover:brightness-110 active:scale-[0.98] transition-all duration-200 shrink-0"
+                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl bg-gradient-harx text-white font-black text-[11px] uppercase tracking-[0.12em] hover:opacity-95 active:scale-[0.98] transition-all duration-200 shrink-0"
                     >
                       <Sparkles size={13} className="text-white shrink-0" />
                       <span className="whitespace-nowrap">{t('navbar.upgrade')}</span>
@@ -1073,7 +1073,7 @@ function AppContent() {
                 <div className="relative shrink-0 overflow-visible" ref={profileDropdownRef}>
                   <div
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                    className="flex items-center gap-2 bg-white p-1 pr-3 rounded-xl border border-slate-200 cursor-pointer shadow-sm hover:border-rose-200 hover:bg-rose-50 transition-colors"
+                    className="flex items-center gap-2 bg-harx-chip p-1 pr-3 rounded-xl border border-harx-chip-border cursor-pointer hover:border-white/20 hover:bg-[#222228] transition-colors"
                   >
                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-white text-sm font-black overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                       {companyLogo && !logoError ? (
@@ -1088,10 +1088,10 @@ function AppContent() {
                       )}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-black text-slate-900 leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
-                      <span className="text-[9px] text-rose-500 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
+                      <span className="text-xs font-black text-white leading-tight truncate max-w-[120px]">{companyName || userFullName}</span>
+                      <span className="text-[9px] text-white/45 font-bold uppercase tracking-wider">{t('navbar.company')}</span>
                     </div>
-                    <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 shrink-0 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`text-white/45 transition-transform duration-300 shrink-0 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
 
                   {isProfileDropdownOpen && (
