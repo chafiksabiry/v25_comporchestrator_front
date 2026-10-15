@@ -5,12 +5,13 @@ import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import Cookies from 'js-cookie';
 import { TimeSlot, Rep } from '../../types/scheduler';
-import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X, Check } from 'lucide-react';
+import { Clock, Calendar, Save, AlertTriangle, ArrowUpRight, X, Check, ChevronRight } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 import { markGigStepDone } from '../../services/gigSetupSync';
 import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 import { getOrchestratorApiBase } from '../../lib/paypalCheckout';
 import { limitsFromSubscriptionPayload } from '../../lib/planMetadata';
+import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -436,9 +437,19 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         );
                     })()}
                     {!isDirty && hasPersistedCapacity && !isSaving && saveFeedback !== 'error' && (
-                        <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
-                            Pour modifier : cliquez ou glissez sur une case du calendrier, puis enregistrez à nouveau.
-                        </span>
+                        <>
+                            <button
+                                type="button"
+                                onClick={goToCompanyOnboardingTab}
+                                className="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-harx-600 shadow-md shadow-black/10 transition-all hover:bg-harx-50"
+                            >
+                                Étape suivante
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
+                                Pour modifier : cliquez ou glissez sur une case du calendrier, puis enregistrez à nouveau.
+                            </span>
+                        </>
                     )}
                     {!isDirty && !hasPersistedCapacity && !isSaving && saveFeedback !== 'error' && (
                         <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
