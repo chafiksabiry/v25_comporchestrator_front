@@ -25,8 +25,12 @@ import type { LucideIcon } from 'lucide-react';
 import { TrainingMethodology } from '../../types/methodology';
 import {
   buildB2bServicesMethodology,
+  buildCollectionsMethodology,
   buildProspectingMethodology,
+  buildSurveyMethodology,
+  buildWelcomeCallMethodology,
   healthInsuranceMethodologyForLanguage,
+  matchMethodologyIdForGigCategory,
   type MethodologyLang,
 } from '../../data/genericSalesMethodologies';
 import { scrollJourneyMainToTop } from './journeyScroll';
@@ -37,6 +41,12 @@ interface MethodologySelectorProps {
   onBack?: () => void;
   /** When true, wizard footer provides Back — hide duplicate top Back */
   hideBackButton?: boolean;
+  /** Gig.category of the GIG this training is for (e.g. "Outbound Sales", "Collections") —
+   * used to highlight the methodology that matches the GIG's call type. */
+  gigCategory?: string | null;
+  /** Destination country name of the GIG (selectedGig.destination_zone?.name?.common) —
+   * threaded into the regulatory module so it names the country to verify compliance for. */
+  countryLabel?: string | null;
 }
 
 type IndustryCard = {
@@ -54,15 +64,20 @@ function featureList(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
 }
 
-export default function MethodologySelector({ onMethodologySelect, onBack, hideBackButton }: MethodologySelectorProps) {
+export default function MethodologySelector({ onMethodologySelect, onBack, hideBackButton, gigCategory, countryLabel }: MethodologySelectorProps) {
   const { t, i18n } = useTranslation();
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const lang: MethodologyLang = (i18n.resolvedLanguage || i18n.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr';
+  const recommendedId = useMemo(() => matchMethodologyIdForGigCategory(gigCategory), [gigCategory]);
 
   const industries = useMemo<IndustryCard[]>(() => {
-    const prospecting = buildProspectingMethodology(lang);
-    const b2b = buildB2bServicesMethodology(lang);
+    const country = countryLabel || undefined;
+    const prospecting = buildProspectingMethodology(lang, country);
+    const b2b = buildB2bServicesMethodology(lang, country);
     const health = healthInsuranceMethodologyForLanguage(lang);
+    const collections = buildCollectionsMethodology(lang, country);
+    const survey = buildSurveyMethodology(lang, country);
+    const welcomeCall = buildWelcomeCallMethodology(lang, country);
     const hours = (methodology: TrainingMethodology) =>
       t('trainingMethodology.hours', {
         count: methodology.components.reduce((sum, item) => sum + (item.estimatedDuration || 0), 0),
@@ -122,16 +137,43 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         duration: t('trainingMethodology.industries.health.duration'),
         certificationLevels: health.certificationPath.levels.length,
       },
-      soon('collections', HandCoins, 'collections', 3),
-      soon('satisfaction-survey', ClipboardList, 'satisfaction', 2),
-      soon('welcome-call', PhoneIncoming, 'welcomeCall', 2),
+      {
+        id: 'collections',
+        name: collections.name,
+        icon: HandCoins,
+        description: collections.description,
+        methodology: collections,
+        features: collections.components.map((item) => item.title),
+        duration: hours(collections),
+        certificationLevels: collections.certificationPath.levels.length,
+      },
+      {
+        id: 'satisfaction-survey',
+        name: survey.name,
+        icon: ClipboardList,
+        description: survey.description,
+        methodology: survey,
+        features: survey.components.map((item) => item.title),
+        duration: hours(survey),
+        certificationLevels: survey.certificationPath.levels.length,
+      },
+      {
+        id: 'welcome-call',
+        name: welcomeCall.name,
+        icon: PhoneIncoming,
+        description: welcomeCall.description,
+        methodology: welcomeCall,
+        features: welcomeCall.components.map((item) => item.title),
+        duration: hours(welcomeCall),
+        certificationLevels: welcomeCall.certificationPath.levels.length,
+      },
       soon('auto-insurance', Car, 'auto', 3),
       soon('property-insurance', Home, 'property', 3),
       soon('life-insurance', Shield, 'life', 4),
       soon('financial-services', TrendingUp, 'financial', 4),
       soon('healthcare', Stethoscope, 'healthcare', 3),
     ];
-  }, [lang, t]);
+  }, [lang, t, countryLabel]);
 
   const handleIndustrySelect = (industry: IndustryCard) => {
     if (industry.methodology) {
@@ -203,6 +245,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
               const Icon = industry.icon;
               const isAvailable = industry.methodology !== null;
               const isSelectedSoon = selectedIndustry === industry.id;
+              const isRecommended = !!recommendedId && industry.methodology?.id === recommendedId;
 
               return (
                 <div
@@ -216,12 +259,19 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
                       handleIndustrySelect(industry);
                     }
                   }}
-                  className={`harx-method-card rounded-xl border bg-white p-3 transition-all duration-200 sm:p-4 ${
+                  className={`harx-method-card relative rounded-xl border bg-white p-3 transition-all duration-200 sm:p-4 ${
                     isAvailable
                       ? 'cursor-pointer border-gray-200 hover:border-harx-300 hover:shadow-md focus-visible:outline focus-visible:ring-2 focus-visible:ring-harx-500/25'
                       : 'border-gray-100 opacity-[0.82]'
-                  } ${isSelectedSoon && !isAvailable ? 'ring-1 ring-harx-200/50' : ''}`}
+                  } ${isSelectedSoon && !isAvailable ? 'ring-1 ring-harx-200/50' : ''} ${
+                    isRecommended ? 'border-harx-400 ring-1 ring-harx-300/60' : ''
+                  }`}
                 >
+                  {isRecommended && (
+                    <span className="absolute -top-2 left-3 rounded-full bg-gradient-harx px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      {t('trainingMethodology.recommendedForGig')}
+                    </span>
+                  )}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-start gap-2">
                       <Icon className="mt-0.5 h-5 w-5 shrink-0 text-harx-500" />
