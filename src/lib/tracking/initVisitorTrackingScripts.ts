@@ -9,7 +9,12 @@ declare global {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     _mfq?: Array<string | string[]>;
-    $zoho?: { salesiq?: { ready?: () => void } };
+    $zoho?: {
+      salesiq?: {
+        ready?: () => void;
+        floatbutton?: { coin?: { hidetooltip?: () => void } };
+      };
+    };
     __POWERED_BY_QIANKUN__?: boolean;
   }
 }
@@ -48,6 +53,15 @@ export function initVisitorTrackingScripts(): void {
   }
 
   window.$zoho = window.$zoho || {};
-  window.$zoho.salesiq = window.$zoho.salesiq || { ready() {} };
+  const salesiq = (window.$zoho.salesiq = window.$zoho.salesiq || {});
+  const hideGreeting = () => {
+    salesiq.floatbutton?.coin?.hidetooltip?.();
+  };
+  const previousReady = salesiq.ready;
+  salesiq.ready = () => {
+    previousReady?.();
+    hideGreeting();
+  };
+  hideGreeting();
   appendScript('zsiqscript', ZOHO_SALESIQ_WIDGET_SRC);
 }

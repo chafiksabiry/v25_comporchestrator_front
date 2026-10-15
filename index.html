@@ -41,7 +41,13 @@
     <!-- Zoho SalesIQ — visitor tracking & live chat -->
     <script>
       window.$zoho = window.$zoho || {};
-      $zoho.salesiq = $zoho.salesiq || { ready: function () {} };
+      $zoho.salesiq = $zoho.salesiq || {
+        ready: function () {
+          if ($zoho.salesiq.floatbutton && $zoho.salesiq.floatbutton.coin) {
+            $zoho.salesiq.floatbutton.coin.hidetooltip();
+          }
+        }
+      };
       if (!document.getElementById('zsiqscript')) {
         var zsiq = document.createElement('script');
         zsiq.id = 'zsiqscript';
