@@ -224,10 +224,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
         });
 
-        setHasPersistedCapacity(
-            Object.values(matrix).some(dayHours => Object.values(dayHours).some(c => c > 0))
-        );
-
         // Only update if we don't have local changes or after a save is complete
         setLocalMatrix(prev => {
             // Merge logic: keep local values if they exist, otherwise use from slots
@@ -239,6 +235,22 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             return next;
         });
     }, [slots, gigId, availabilitySchedule, availabilityByDay, hoursList, isHourAvailable]);
+
+    /**
+     * Whether the backend has at least one real slot (capacity > 0) for this
+     * gig — computed directly from `slots`, NOT gated through `isHourAvailable`
+     * / `hoursList` (derived from `availabilitySchedule`, which can still be
+     * `[]` on first load while `slots` already has real data). Gating this
+     * through the availability-schedule matrix meant a saved, real schedule
+     * could transiently read back as "no slot defined" whenever the two
+     * props settled out of step on remount — stalling onboarding step
+     * completion on a loop back into this same step.
+     */
+    useEffect(() => {
+        setHasPersistedCapacity(
+            slots.some((s) => s.gigId === gigId && Number(s.capacity) > 0)
+        );
+    }, [slots, gigId]);
     // Removed old sync logic
 
     const capacityOverPlan = useCallback((maxReps: number) => {
