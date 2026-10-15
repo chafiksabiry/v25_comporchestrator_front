@@ -3,12 +3,16 @@ import { useTranslation } from 'react-i18next';
 import {
   Check,
   ChevronRight,
+  ClipboardList,
+  FileCheck2,
   Globe,
   Lightbulb,
+  ListChecks,
   PenLine,
   PlayCircle,
   Search,
   Sparkles,
+  Target,
 } from 'lucide-react';
 import {
   GuideBadge,
@@ -129,6 +133,106 @@ const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
   );
 };
 
+const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) => {
+  const { t } = useTranslation();
+  const isBefore = variant === 'before';
+
+  const stages = [
+    {
+      icon: Target,
+      titleKey: 'companyOnboarding.stepGuide.step8.stages.methodology.title',
+      defaultTitle: 'Choisissez la méthodologie',
+      descKey: 'companyOnboarding.stepGuide.step8.stages.methodology.desc',
+      defaultDesc: 'La rubrique adaptée à votre GIG est mise en avant ("Recommandé pour ce GIG") — vous pouvez quand même en choisir une autre.',
+      gradient: 'from-emerald-500/80 to-teal-500/80',
+    },
+    {
+      icon: ClipboardList,
+      titleKey: 'companyOnboarding.stepGuide.step8.stages.personalize.title',
+      defaultTitle: 'Répondez aux 4 questions',
+      descKey: 'companyOnboarding.stepGuide.step8.stages.personalize.desc',
+      defaultDesc: 'Source, niveau, objectif, format : ces réponses pilotent réellement le contenu généré, pas une simple formalité.',
+      gradient: 'from-sky-500/80 to-blue-500/80',
+    },
+    {
+      icon: ListChecks,
+      titleKey: 'companyOnboarding.stepGuide.step8.stages.modules.title',
+      defaultTitle: 'Générez et validez chaque module',
+      descKey: 'companyOnboarding.stepGuide.step8.stages.modules.desc',
+      defaultDesc: 'Validez le plan, puis générez le contenu de chaque module un par un jusqu’à ce qu’ils soient tous validés.',
+      gradient: 'from-violet-500/80 to-indigo-500/80',
+    },
+    {
+      icon: FileCheck2,
+      titleKey: 'companyOnboarding.stepGuide.step8.stages.document.title',
+      defaultTitle: 'Générez le document de support',
+      descKey: 'companyOnboarding.stepGuide.step8.stages.document.desc',
+      defaultDesc: 'L’étape ne se termine que lorsque le document (présentation) est généré — pas avant, même si le plan est déjà validé.',
+      gradient: 'from-amber-500/80 to-orange-500/80',
+    },
+  ];
+
+  const tipsKey = isBefore
+    ? 'companyOnboarding.stepGuide.step8.tips.before'
+    : 'companyOnboarding.stepGuide.step8.tips.inside';
+  const tipsFallback = isBefore
+    ? [
+        'Comptez les 4 étapes ci-dessous avant de passer à la suite.',
+        'Le contenu généré par IA reste une proposition — relisez-le et corrigez-le avant de le diffuser à vos REPS.',
+      ]
+    : [
+        'Si "Étape terminée" n’apparaît pas, c’est qu’il manque soit du contenu de module, soit le document de support.',
+        'Vous pouvez revenir corriger un module à tout moment avant la diffusion aux REPS.',
+      ];
+
+  const rawTips = t(tipsKey, { returnObjects: true }) as unknown;
+  const tips = Array.isArray(rawTips) && rawTips.length > 0 ? (rawTips as string[]) : tipsFallback;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <p className="text-[11px] font-black uppercase tracking-widest text-gray-500">
+        {t('companyOnboarding.stepGuide.step8.stagesLabel', 'Les 4 étapes de la formation')}
+      </p>
+
+      <div className="grid gap-3">
+        {stages.map(({ icon: Icon, titleKey, defaultTitle, descKey, defaultDesc, gradient }) => (
+          <div
+            key={titleKey}
+            className="group flex items-start gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:border-white/10 hover:bg-white/[0.06]"
+          >
+            <div
+              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
+            >
+              <Icon className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white">{t(titleKey, defaultTitle)}</p>
+              <p className="mt-1 text-xs text-gray-400 leading-relaxed">{t(descKey, defaultDesc)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-4 w-4 text-amber-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+            {t('companyOnboarding.stepGuide.step1.tipsLabel', 'Pro tips')}
+          </span>
+        </div>
+        <ul className="space-y-1.5">
+          {tips.map((tip, idx) => (
+            <li key={idx} className="flex items-start gap-2 text-xs text-amber-100/90 leading-relaxed">
+              <Check className="h-3.5 w-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <span>{tip}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const StepGuideModal: React.FC<StepGuideModalProps> = ({
   isOpen,
   stepId,
@@ -143,6 +247,7 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
   const title = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.title`);
   const description = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.description`);
   const isStep1 = stepId === 1;
+  const isStep8 = stepId === 8;
 
   return (
     <GuideModalLayout
@@ -150,7 +255,7 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
       onBackdropClick={onClose}
       onClose={onClose}
       closeLabel={t('orchestratorGuide.close')}
-      maxWidth={isStep1 ? 'lg' : 'md'}
+      maxWidth={isStep1 || isStep8 ? 'lg' : 'md'}
       footer={
         <GuidePrimaryButton onClick={onClose}>
           {isBefore
@@ -193,8 +298,9 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
         </p>
 
         {isStep1 && <Step1GuideExtras variant={variant} />}
+        {isStep8 && <Step8GuideExtras variant={variant} />}
 
-        {!isBefore && !isStep1 && (
+        {!isBefore && !isStep1 && !isStep8 && (
           <p className="mt-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-500 leading-relaxed">
             {t('companyOnboarding.stepGuide.insideHint')}
           </p>

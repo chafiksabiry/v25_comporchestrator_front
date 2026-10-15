@@ -15,6 +15,7 @@ import {
   Calendar,
   Settings,
   Rocket,
+  HelpCircle,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
@@ -491,11 +492,24 @@ const CompanyOnboarding = () => {
     setStepGuide(null);
   };
 
-  // Step-specific guide modals are disabled — only the orchestrator guide is shown on first login.
-  const stepGuideLayer = null;
-  void stepGuide;
-  void StepGuideModal;
-  void handleCloseStepGuide;
+  // Step-specific guide modals no longer auto-trigger (shouldShowStepGuide stays
+  // false for the automatic before/inside popups), but the user can always open
+  // the same guide on demand via the persistent "?" button — see
+  // openStepGuideOnDemand and the floating button rendered with activeComponent.
+  const openStepGuideOnDemand = () => {
+    const stepId = getFocusedStepId();
+    if (stepId === null) return;
+    setStepGuide({ stepId, phaseId: findPhaseIdForStep(stepId), variant: 'inside' });
+  };
+  const stepGuideLayer = stepGuide ? (
+    <StepGuideModal
+      isOpen
+      stepId={stepGuide.stepId}
+      phaseId={stepGuide.phaseId}
+      variant={stepGuide.variant}
+      onClose={handleCloseStepGuide}
+    />
+  ) : null;
 
   // Per-phase product tour — shown only on the first visit to each phase.
   const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
@@ -1961,6 +1975,17 @@ const CompanyOnboarding = () => {
     return (
       <>
         {stepGuideLayer}
+        {/* Persistent, discoverable help — reopens the step's guide on demand at
+            any time, instead of only showing it once automatically. */}
+        <button
+          type="button"
+          onClick={openStepGuideOnDemand}
+          aria-label={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
+          title={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
+          className="fixed bottom-5 left-5 z-[60] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {!stepHasOwnBack ? (
             <div className="px-4 pt-4 sm:px-6 mb-2">
