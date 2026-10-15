@@ -30,7 +30,8 @@ import {
   Target,
   Award,
   X,
-  Mail
+  Mail,
+  AlertTriangle
 } from 'lucide-react';
 import { PremiumAudioPlayer } from '../dashboard/components/PremiumAudioPlayer';
 import { useTranslation } from 'react-i18next';
@@ -645,6 +646,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const presentationUrl = journey.presentationUrl || journey.presentation?.url;
     const duration = computeJourneyDurationLabel(journey);
     const modulesCount = resolveJourneyModulesCount(journey);
+    // ENT-16: a journey is only truly ready once the plan AND every module's
+    // content AND the support document exist — not just the plan (see the
+    // onboarding-step completion fix in ContentUploader.tsx for the same
+    // three conditions). Surfaced here so this list, not just the chat, shows
+    // whether a training is actually finished.
+    const planValidated = Boolean(journey.planIsValid);
+    const modulesValidated = Boolean(journey.methodologyData?.validatedAllModulesContentAt);
+    const documentGenerated = Boolean(presentationUrl);
+    const isFullyValidated = planValidated && modulesValidated && documentGenerated;
 
     let status = 'not_started';
     let progress = 0;
@@ -675,6 +685,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       modulesCount,
       status,
       progress,
+      isFullyValidated,
+      planValidated,
+      modulesValidated,
+      documentGenerated,
       participantCount: stats?.participantCount ?? 0,
       completedCount: stats?.completedCount ?? 0,
       inProgressCount: stats?.inProgressCount ?? 0,
@@ -2059,9 +2073,33 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 </div>
                               )}
                               <div className="min-w-0 flex-1">
-                                <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-harx-700">
-                                  {displayTitle}
-                                </h3>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-harx-700">
+                                    {displayTitle}
+                                  </h3>
+                                  {formatted.isFullyValidated ? (
+                                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                                      <Check className="h-3 w-3" />
+                                      {t('repOnboarding.trainingSection.validatedBadge')}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200"
+                                      title={t('repOnboarding.trainingSection.draftBadgeHint', {
+                                        missing: [
+                                          !formatted.planValidated && 'plan non validé',
+                                          !formatted.modulesValidated && 'contenu des modules incomplet',
+                                          !formatted.documentGenerated && 'document de support non généré',
+                                        ]
+                                          .filter(Boolean)
+                                          .join(', '),
+                                      })}
+                                    >
+                                      <AlertTriangle className="h-3 w-3" />
+                                      {t('repOnboarding.trainingSection.draftBadge')}
+                                    </span>
+                                  )}
+                                </div>
                                 {formatted.description ? (
                                   <p className="mt-1 line-clamp-1 text-xs text-slate-500">
                                     {formatted.description}
