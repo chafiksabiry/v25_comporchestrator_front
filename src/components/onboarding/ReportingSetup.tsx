@@ -74,7 +74,7 @@ const ReportingSetup = () => {
 
       // Vérifier l'état de l'étape 7 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`
       );
 
       
@@ -90,7 +90,7 @@ const ReportingSetup = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(7)) {
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(6)) {
             
             setIsStepCompleted(true);
             return;
@@ -109,7 +109,7 @@ const ReportingSetup = () => {
         setIsStepCompleted(true);
 
         // Mettre à jour le localStorage avec l'étape 7 marquée comme complétée
-        const currentCompletedSteps = [7];
+        const currentCompletedSteps = [6];
         const currentProgress = {
           currentPhase: 2,
           completedSteps: currentCompletedSteps,
@@ -123,7 +123,7 @@ const ReportingSetup = () => {
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
-            stepId: 7,
+            stepId: 6,
             phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
@@ -141,7 +141,7 @@ const ReportingSetup = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(7)) {
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(6)) {
             setIsStepCompleted(true);
           }
         } catch (e) {
@@ -170,7 +170,7 @@ const ReportingSetup = () => {
 
       // Marquer l'étape 7 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
         { status: 'completed' }
       );
 
@@ -182,7 +182,7 @@ const ReportingSetup = () => {
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
-        completedSteps: [7],
+        completedSteps: [6],
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -193,10 +193,10 @@ const ReportingSetup = () => {
       // Notifier le composant parent
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
-          stepId: 7,
+          stepId: 6,
           phaseId: 2,
           status: 'completed',
-          completedSteps: [7]
+          completedSteps: [6]
         }
       }));
 

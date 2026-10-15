@@ -1100,12 +1100,21 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       if (selectedGig?._id) {
         applyActiveScriptToLists(String(savedScriptId), selectedGig._id);
         scriptLoadIntentRef.current = null;
-        const { data: listData } = (await apiClient.get('/rag/scripts', {
-          params: { gigId: selectedGig._id },
-        })) as { data: any };
-        const items = Array.isArray(listData?.data) ? listData.data : [];
-        setSavedScripts(items);
-        if (gigs.length > 0) fetchAllSavedScriptsForGigs(gigs);
+        // Own try/catch: the script is already genuinely saved above — a
+        // failure refreshing the saved-scripts list must not skip marking
+        // the onboarding step complete below (same bug class as the
+        // Session Planning fetchData() fix: an unrelated refetch inside the
+        // same try block silently aborting a real completion signal).
+        try {
+          const { data: listData } = (await apiClient.get('/rag/scripts', {
+            params: { gigId: selectedGig._id },
+          })) as { data: any };
+          const items = Array.isArray(listData?.data) ? listData.data : [];
+          setSavedScripts(items);
+          if (gigs.length > 0) fetchAllSavedScriptsForGigs(gigs);
+        } catch (refreshErr) {
+          console.error('Error refreshing saved scripts list:', refreshErr);
+        }
         markGigStepDone(String(selectedGig._id), 'callScript', true);
       }
 
