@@ -409,6 +409,11 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                             ? 'Enregistré'
                             : 'Enregistrer les modifications'}
                     </button>
+                    {!isDirty && !isSaving && saveFeedback !== 'error' && (
+                        <span className="max-w-[220px] text-right text-[11px] font-medium leading-snug text-white/85">
+                            Pour modifier : cliquez ou glissez sur une case du calendrier, puis enregistrez à nouveau.
+                        </span>
+                    )}
                     {saveFeedback === 'success' && (
                         <span className="rounded-md bg-emerald-500/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm animate-fade-in">
                             Planning enregistré avec succès

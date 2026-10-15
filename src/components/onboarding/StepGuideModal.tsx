@@ -262,8 +262,9 @@ const GENERIC_STEP_TIPS_FR: Record<number, string[]> = {
     'Un script en brouillon n’est pas utilisable par vos REPS — il faut l’activer explicitement pour qu’il devienne le script actif du GIG.',
   ],
   10: [
-    'Sélectionnez le GIG concerné, puis réservez des créneaux sur le calendrier hebdomadaire.',
-    'Cette étape se valide automatiquement dès qu’un créneau existe — il n’y a pas de bouton dédié à cliquer.',
+    'Cliquez ou glissez sur une case du calendrier pour définir le nombre de REPS attendus sur ce créneau, puis cliquez sur « Enregistrer les modifications » en haut à droite pour sauvegarder.',
+    'Le bouton affiche « Enregistré » (vert) tant qu’aucune modification n’est en attente — ce n’est pas désactivé définitivement : cliquez à nouveau sur une case pour modifier, le bouton redevient actif.',
+    'Cette étape de l’onboarding se valide automatiquement dès qu’un créneau a été enregistré — pas besoin d’une action supplémentaire pour la clôturer.',
   ],
   11: [
     'Le paiement se fait directement dans la page, via Stripe.',
