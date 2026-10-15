@@ -2333,6 +2333,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   };
 
+  /**
+   * ENT-16: the onboarding "Formation" step must only complete once the plan is
+   * validated, ALL modules' content is generated/validated, and the support
+   * document (presentation) has actually been produced — not on plan
+   * validation alone (that used to mark the whole step "completed" the
+   * moment the plan was saved, before any content existed).
+   */
+  const maybeCompleteTrainingOnboardingStep = (presentationOverride?: any) => {
+    // React state updates are async: when called right after setGeneratedPresentation(),
+    // `generatedPresentation` in closure may still hold the pre-update value, hence the override.
+    const presentationForCheck = presentationOverride !== undefined ? presentationOverride : generatedPresentation;
+    const workflow = chatWorkflowStatusRef.current || chatWorkflowStatus;
+    const planDone = isPlanSavedForChat || workflow?.plan === 'completed';
+    const modules = Array.isArray(workflow?.modules) ? workflow.modules : [];
+    const allModulesDone = modules.length > 0 && modules.every((m) => m.status === 'completed');
+    const hasSupportDocument =
+      Array.isArray(presentationForCheck?.slides) && presentationForCheck.slides.length > 0;
+    if (!(planDone && allModulesDone && hasSupportDocument)) return;
+    const compId = company?.id || company?._id ? String(company?.id || company?._id) : undefined;
+    if (!compId) return;
+    void OnboardingService.updateOnboardingProgress(compId).catch((err) => {
+      console.error('[ContentUploader] Failed to update onboarding progress:', err);
+    });
+  };
+
   const generatePresentationFromState = async (regenerate: boolean): Promise<any | null> => {
     const fallbackGigId = String(gigId || (journey as any)?.gigId || '').trim();
     const sid = String(activeChatSessionId || '').trim();
@@ -2487,6 +2512,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
       const normalized = normalizePresentationFromApi(presentation) || presentation;
       setGeneratedPresentation(normalized);
+      maybeCompleteTrainingOnboardingStep(normalized);
       setWorkspaceTab('artifact');
 
       return normalized;
@@ -4016,14 +4042,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (streamResult.planSaved && streamResult.journeyId && /^[a-f\d]{24}$/i.test(streamResult.journeyId)) {
           chatConfirmedJourneyIdRef.current = streamResult.journeyId;
           setIsPlanSavedForChat(true);
-
-          // Update onboarding progress
-          const compId = company?.id || company?._id ? String(company?.id || company?._id) : undefined;
-          if (compId) {
-            void OnboardingService.updateOnboardingProgress(compId).catch((err) => {
-              console.error('[ContentUploader] Failed to update onboarding progress:', err);
-            });
-          }
+          // ENT-16: do NOT mark the onboarding step complete here — the plan being
+          // saved only means the outline exists, not that module content or the
+          // support document have been generated. See maybeCompleteTrainingOnboardingStep.
 
           // Le backend peut creer un shell de journey avec titre/description par defaut.
           // Re-applique immediatement les metadonnees configurees au setup.
@@ -5173,7 +5194,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     return;
                   }
                   if (action.id === 'validate_all_modules_content') {
-                    void sendChatMessage('__VALIDATE_ALL_MODULES_CONTENT__', { appendUser: false });
+                    void sendChatMessage('__VALIDATE_ALL_MODULES_CONTENT__', { appendUser: false }).then(() => {
+                      maybeCompleteTrainingOnboardingStep();
+                    });
                     return;
                   }
                   if (action.id === 'generate_missing_modules') {
