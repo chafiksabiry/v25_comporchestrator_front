@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -23,10 +23,10 @@ import {
   Bot,
   Trash2,
   Repeat2,
+  Mic,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import { TelnyxRTC } from '@telnyx/webrtc';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
@@ -230,11 +230,14 @@ export function PhoneNumberPanel() {
   const [testNumber, setTestNumber] = useState('');
   const [testFromNumber, setTestFromNumber] = useState('');
   const [testingCall, setTestingCall] = useState(false);
-  const [rtcClient, setRtcClient] = useState<any>(null);
-  const [rtcState, setRtcState] = useState<'idle' | 'connecting' | 'connected' | 'ringing' | 'active'>('idle');
-  const [activeCall, setActiveCall] = useState<any>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [showSoftphone, setShowSoftphone] = useState(false);
+
+  // Local microphone test (browser-only: no provider, no outbound call).
+  const [micTestOpen, setMicTestOpen] = useState(false);
+  const [micTestLevel, setMicTestLevel] = useState(0);
+  const micTestStreamRef = useRef<MediaStream | null>(null);
+  const micTestAudioCtxRef = useRef<AudioContext | null>(null);
+  const micTestRafRef = useRef<number | null>(null);
+
   type CallMonitorStatus = 'connecting' | 'ringing' | 'active' | 'ended' | 'failed';
   type CallMonitorOutcome =
     | 'completed'
@@ -245,7 +248,6 @@ export function PhoneNumberPanel() {
     | 'voicemail'
     | null;
   const [callMonitorOpen, setCallMonitorOpen] = useState(false);
-  const [callMonitorMode, setCallMonitorMode] = useState<'api' | 'mic'>('api');
   const [callMonitorStatus, setCallMonitorStatus] = useState<CallMonitorStatus>('connecting');
   const [callMonitorOutcome, setCallMonitorOutcome] = useState<CallMonitorOutcome>(null);
   const [callReachedRinging, setCallReachedRinging] = useState(false);
@@ -285,17 +287,6 @@ export function PhoneNumberPanel() {
     setCallReachedRinging(false);
     setCallReachedActive(false);
   }, []);
-
-  // Gérer la fin d'un appel WebRTC
-  const handleWebRTCHangup = useCallback(() => {
-    if (activeCall) {
-      activeCall.hangup();
-    }
-    setActiveCall(null);
-    setRtcState(rtcClient ? 'connected' : 'idle');
-    setShowSoftphone(false);
-    setCallMonitorStatus('ended');
-  }, [activeCall, rtcClient]);
 
   const selectedGigForSearch = useMemo(() => gigsAndReps.find(g => g.gigId === selectedGigIdForNumber), [gigsAndReps, selectedGigIdForNumber]);
   const destZone = selectedGigForSearch?.destinationCountry;
@@ -359,143 +350,58 @@ export function PhoneNumberPanel() {
     checkRequirements();
   }, [destZone, searchProvider, companyId]);
 
-  // Initialiser TelnyxRTC
-  const initTelnyxRTC = useCallback(async () => {
-    const sipUser = import.meta.env.VITE_TELNYX_SIP_USER;
-    const sipPassword = import.meta.env.VITE_TELNYX_SIP_PASSWORD;
-
-    if (!sipUser || !sipPassword) {
-      toast.error(
-        t('phoneNumberPanel.toasts.softphoneUnavailable', {
-          defaultValue: "Le test micro n'est pas disponible pour le moment.",
-        })
-      );
-      return null;
+  // Local microphone test: just confirms the browser can capture audio from
+  // the mic and shows a live level meter. No phone call, no provider — this
+  // is unrelated to which operator (Telnyx/Twilio) a line is purchased from.
+  const stopMicTest = useCallback(() => {
+    if (micTestRafRef.current !== null) {
+      cancelAnimationFrame(micTestRafRef.current);
+      micTestRafRef.current = null;
     }
+    micTestStreamRef.current?.getTracks().forEach((track) => track.stop());
+    micTestStreamRef.current = null;
+    if (micTestAudioCtxRef.current) {
+      micTestAudioCtxRef.current.close().catch(() => {});
+      micTestAudioCtxRef.current = null;
+    }
+    setMicTestOpen(false);
+    setMicTestLevel(0);
+  }, []);
 
+  useEffect(() => () => stopMicTest(), [stopMicTest]);
+
+  const handleTestMicrophone = async () => {
     try {
-      const client = new TelnyxRTC({
-        login: sipUser,
-        password: sipPassword,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micTestStreamRef.current = stream;
 
-      client.on('telnyx.ready', () => {
-        console.log('TelnyxRTC Ready');
-        setRtcState('connected');
-      });
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      micTestAudioCtxRef.current = audioCtx;
 
-      client.on('telnyx.error', (error: any) => {
-        console.error('TelnyxRTC Error:', error);
-        toast.error('Erreur de connexion WebRTC.');
-        setRtcState('idle');
-      });
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
 
-      client.on('telnyx.notification', (notification: any) => {
-        if (notification.type === 'callUpdate') {
-          const call = notification.call;
-          if (call.state === 'ringing' || call.state === 'new' || call.state === 'trying') {
-            setRtcState('ringing');
-            setCallMonitorStatus('ringing');
-            setCallReachedRinging(true);
-            setActiveCall(call);
-          } else if (call.state === 'active') {
-            setRtcState('active');
-            setCallMonitorStatus('active');
-            setCallReachedRinging(true);
-            setCallReachedActive(true);
-            setActiveCall(call);
-            const remoteAudio = document.getElementById('remoteMedia') as HTMLAudioElement;
-            if (remoteAudio && call.remoteStream) {
-              remoteAudio.srcObject = call.remoteStream;
-            }
-          } else if (call.state === 'hangup' || call.state === 'destroy') {
-            setRtcState('connected');
-            setActiveCall(null);
-            setShowSoftphone(false);
-            setCallMonitorStatus('ended');
-          }
+      setMicTestOpen(true);
+
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let sumSquares = 0;
+        for (let i = 0; i < data.length; i++) {
+          const normalized = (data[i] - 128) / 128;
+          sumSquares += normalized * normalized;
         }
-      });
-
-      await client.connect();
-      setRtcClient(client);
-      return client;
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Impossible d\'initialiser le softphone.');
-      setRtcState('idle');
-      return null;
-    }
-  }, [t]);
-
-  const selectedTestFromLine = useMemo(
-    () => phoneNumbers.find((n) => n.phoneNumber === testFromNumber) || null,
-    [phoneNumbers, testFromNumber]
-  );
-
-  const handleTestCallWithMic = async () => {
-    if (!testFromNumber) {
-      toast.error(t('phoneNumberPanel.toasts.testSelectFrom'));
-      return;
-    }
-    if (!testNumber) {
-      toast.error(t('phoneNumberPanel.toasts.testEnterDestination'));
-      return;
-    }
-
-    // Softphone WebRTC is wired to one provider stack; FR (Twilio) lines use API test.
-    if (selectedTestFromLine?.provider === 'twilio') {
-      toast.error(t('phoneNumberPanel.toasts.testMicUnavailableForLine'));
-      return;
-    }
-
-    setCallMonitorMode('mic');
-    setCallMonitorStatus('connecting');
-    setCallMonitorOutcome(null);
-    setCallReachedRinging(false);
-    setCallReachedActive(false);
-    setCallMonitorOpen(true);
-    setShowSoftphone(true);
-    setRtcState('connecting');
-
-    let client = rtcClient;
-    if (!client) {
-      client = await initTelnyxRTC();
-    }
-
-    if (!client) {
-      setShowSoftphone(false);
-      setCallMonitorStatus('failed');
-      return;
-    }
-
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+        const rms = Math.sqrt(sumSquares / data.length);
+        setMicTestLevel(Math.min(1, rms * 4));
+        micTestRafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
     } catch (err) {
-      toast.error(t('phoneNumberPanel.toasts.micDenied'));
-      setShowSoftphone(false);
-      setRtcState(client ? 'connected' : 'idle');
-      setCallMonitorStatus('failed');
-      return;
-    }
-
-    try {
-      client.newCall({
-        destinationNumber: testNumber,
-        callerNumber: testFromNumber,
-        audio: true,
-        video: false,
-      });
-      setCallMonitorStatus('ringing');
-      setCallReachedRinging(true);
-      setRtcState('ringing');
-    } catch (err: any) {
       console.error(err);
-      toast.error(t('phoneNumberPanel.toasts.testCallFailed'));
-      setShowSoftphone(false);
-      setRtcState('connected');
-      setCallMonitorStatus('failed');
-      setCallMonitorOutcome('failed');
+      toast.error(t('phoneNumberPanel.toasts.micDenied'));
     }
   };
 
@@ -714,16 +620,12 @@ export function PhoneNumberPanel() {
   }, [apiCallId, apiCallProvider, apiBaseUrl, closeCallMonitor]);
 
   const handleMonitorHangup = useCallback(() => {
-    if (callMonitorMode === 'mic') {
-      handleWebRTCHangup();
-      return;
-    }
     void handleApiHangup();
-  }, [callMonitorMode, handleWebRTCHangup, handleApiHangup]);
+  }, [handleApiHangup]);
 
   // Poll API call status while the monitor popup is open
   useEffect(() => {
-    if (!callMonitorOpen || callMonitorMode !== 'api' || !apiCallId) return;
+    if (!callMonitorOpen || !apiCallId) return;
     if (callMonitorStatus === 'ended' || callMonitorStatus === 'failed') return;
 
     let cancelled = false;
@@ -748,7 +650,6 @@ export function PhoneNumberPanel() {
     };
   }, [
     callMonitorOpen,
-    callMonitorMode,
     apiCallId,
     apiCallProvider,
     callMonitorStatus,
@@ -2125,23 +2026,74 @@ export function PhoneNumberPanel() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleTestCallWithMic}
-                  disabled={
-                    rtcState === 'connecting' ||
-                    rtcState === 'ringing' ||
-                    rtcState === 'active' ||
-                    !testFromNumber
-                  }
+                  onClick={handleTestMicrophone}
                   className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
                   title={t('phoneNumberPanel.myNumbers.testCall.micTitle')}
                 >
-                  {rtcState === 'connecting' ? <RefreshCw size={14} className="animate-spin" /> : <Radio size={14} />}
+                  <Mic size={14} />
                   <span>{t('phoneNumberPanel.myNumbers.testCall.mic')}</span>
                 </button>
               </div>
-
-              <audio id="remoteMedia" autoPlay playsInline className="hidden" />
             </div>
+
+            {/* Local microphone test popup — browser-only, no call, no provider */}
+            {micTestOpen && createPortal(
+              <div
+                className="fixed inset-0 z-[9998] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 animate-fade-in"
+                onClick={stopMicTest}
+              >
+                <div
+                  className="bg-white rounded-3xl w-full max-w-sm overflow-hidden border border-slate-200 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="mic-test-title"
+                >
+                  <div className="relative px-6 py-5 bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white overflow-hidden">
+                    <div className="absolute -right-8 -top-8 h-32 w-32 bg-white/15 rounded-full blur-2xl" />
+                    <button
+                      type="button"
+                      onClick={stopMicTest}
+                      className="absolute top-4 right-4 z-20 p-1.5 rounded-full hover:bg-white/15 transition"
+                      aria-label={t('phoneNumberPanel.myNumbers.testCall.micTestClose')}
+                    >
+                      <X size={16} />
+                    </button>
+                    <div className="relative z-10 flex items-center gap-2">
+                      <Mic size={18} />
+                      <h2 id="mic-test-title" className="text-lg font-black tracking-tight">
+                        {t('phoneNumberPanel.myNumbers.testCall.micTestTitle')}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="p-6 flex flex-col items-center gap-4">
+                    <p className="text-xs text-center text-slate-500 font-medium">
+                      {t('phoneNumberPanel.myNumbers.testCall.micTestInstructions')}
+                    </p>
+                    <div className="w-full">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                        {t('phoneNumberPanel.myNumbers.testCall.micTestLevelLabel')}
+                      </p>
+                      <div className="h-4 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-75"
+                          style={{ width: `${Math.round(micTestLevel * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopMicTest}
+                      className="w-full py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-black text-xs uppercase tracking-wider transition-colors"
+                    >
+                      {t('phoneNumberPanel.myNumbers.testCall.micTestClose')}
+                    </button>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
 
             {/* Call status monitoring popup (API + Micro) */}
             {callMonitorOpen && createPortal(
@@ -2317,28 +2269,6 @@ export function PhoneNumberPanel() {
                         );
                       })}
                     </ol>
-
-                    {callMonitorMode === 'mic' && callMonitorStatus === 'active' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (activeCall) {
-                            if (isMuted) activeCall.unmuteAudio();
-                            else activeCall.muteAudio();
-                            setIsMuted(!isMuted);
-                          }
-                        }}
-                        className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors ${
-                          isMuted
-                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {isMuted
-                          ? t('phoneNumberPanel.myNumbers.testCall.unmute')
-                          : t('phoneNumberPanel.myNumbers.testCall.mute')}
-                      </button>
-                    )}
 
                     {(callMonitorStatus === 'connecting' ||
                       callMonitorStatus === 'ringing' ||

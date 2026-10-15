@@ -208,9 +208,7 @@
       "testCallFailed": "Erreur lors du test d'appel.",
       "testSelectFrom": "Choisissez un numéro acheté dans la liste.",
       "testEnterDestination": "Saisissez le numéro à appeler.",
-      "testMicUnavailableForLine": "Le test micro n'est pas disponible pour cette ligne. Utilisez le test API.",
-      "softphoneUnavailable": "Le test micro n'est pas disponible pour le moment.",
-      "micDenied": "Accès au microphone refusé."
+      "micDenied": "Accès au microphone refusé. Autorisez le micro dans votre navigateur puis réessayez."
     },
     "tabs": {
       "myNumbersWithCount": "Mes Lignes ({{count}})",
@@ -267,10 +265,14 @@
         "toLabel": "Numéro appelé",
         "toPlaceholder": "Numéro appelé (ex: +336…)",
         "noLines": "Aucun numéro acheté",
-        "api": "Tester (API)",
+        "api": "Appel Test",
         "mic": "Tester (Micro)",
         "apiTitle": "Lancer l'appel de test",
-        "micTitle": "Tester l'appel avec votre microphone",
+        "micTitle": "Tester votre microphone (local, sans appel)",
+        "micTestTitle": "Test du microphone",
+        "micTestInstructions": "Parlez normalement : la barre doit bouger si votre microphone fonctionne.",
+        "micTestLevelLabel": "Niveau détecté",
+        "micTestClose": "Fermer",
         "monitorTitle": "Suivi de l'appel",
         "monitorClose": "Fermer",
         "fromShort": "Depuis",
