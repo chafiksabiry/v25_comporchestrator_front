@@ -968,7 +968,6 @@ function AppContent() {
               setActiveTab(tab);
               setMobileSidebarOpen(false);
             }}
-            onLogout={handleLogout}
             currentStepGuide={currentStepGuide}
           />
         </div>

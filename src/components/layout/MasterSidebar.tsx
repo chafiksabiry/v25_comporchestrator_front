@@ -22,7 +22,6 @@ import {
   ChevronRight,
   ChevronLeft,
   Lightbulb,
-  LogOut,
   BarChart2,
   Sparkles,
   Info,
@@ -32,7 +31,6 @@ import {
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
-import { useAuth } from '../dashboard/contexts/AuthContext';
 import type { ProjectView } from '../ProjectViewSwitch';
 import { useTranslation } from 'react-i18next';
 import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
@@ -49,7 +47,6 @@ interface MasterSidebarProps {
   setActiveProject: (v: ProjectView) => void;
   activeTab: string;
   setActiveTab: (t: string) => void;
-  onLogout: () => void;
   currentStepGuide?: { title: string; description: string; steps?: string[] } | null;
 }
 
@@ -60,12 +57,10 @@ export function MasterSidebar({
   setActiveProject,
   activeTab,
   setActiveTab,
-  onLogout,
   currentStepGuide
 }: MasterSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const initialSteps = getCompletedStepsFromStorage();
   const [hasCompany, setHasCompany] = useState(false);
@@ -246,11 +241,6 @@ export function MasterSidebar({
 
   const handleLinkClick = (key: string) => {
     setActiveTab(key);
-  };
-
-  const handleLogoutMaster = () => {
-    logout();
-    onLogout();
   };
 
   const navActive = (active: boolean) =>
@@ -489,19 +479,6 @@ export function MasterSidebar({
             </div>
           )}
         </nav>
-      </div>
-
-      <div className={`shrink-0 border-t border-white/10 ${isCollapsed ? 'px-3 py-3' : 'px-3 py-4'}`}>
-        <button
-          type="button"
-          onClick={handleLogoutMaster}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl bg-gradient-harx text-white shadow-sm hover:opacity-95 active:scale-[0.98] transition-all ${isCollapsed ? 'justify-center' : ''}`}
-        >
-          <LogOut size={20} className="shrink-0" />
-          {!isCollapsed && (
-            <span className="font-semibold whitespace-nowrap text-[13px]">{t('sidebar.logout')}</span>
-          )}
-        </button>
       </div>
 
     </div>
