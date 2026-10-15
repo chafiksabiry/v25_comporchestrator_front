@@ -91,6 +91,22 @@ function formatPrice(plan: Pick<ApiPlan, 'price' | 'priceCents' | 'currency'>): 
   }
 }
 
+/** Quota metadata keys already rendered as plan feature bullets
+ * (server-side buildStripePlanDisplayFeatures) — never echo these raw,
+ * or the same quota shows up twice ("ACTIVE REPS: 1" + "Active REPs: 1"). */
+const QUOTA_KEY_PREFIXES = [
+  'activegigs',
+  'activereps',
+  'activelocalnumber',
+  'communicationminutes',
+  'aitoken',
+];
+
+function isQuotaKey(key: string): boolean {
+  const normalized = key.toLowerCase().replace(/[_\s-]+/g, '').replace(/\(.*?\)/g, '');
+  return QUOTA_KEY_PREFIXES.some((p) => normalized.startsWith(p));
+}
+
 /** Stripe product metadata → display lines (keys may differ per plan). */
 function metadataLines(meta?: Record<string, string> | null): Array<{ key: string; value: string }> {
   if (!meta || typeof meta !== 'object') return [];
@@ -100,6 +116,7 @@ function metadataLines(meta?: Record<string, string> | null): Array<{ key: strin
       return (
         key !== 'features' &&
         !/^feature[_-]?\d+$/i.test(k) &&
+        !isQuotaKey(k) &&
         String(v ?? '').trim().length > 0
       );
     })
