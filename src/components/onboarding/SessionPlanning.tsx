@@ -7,8 +7,10 @@ import {
   AlertCircle,
   Users,
   Brain,
+  ChevronRight,
   Calendar as LucideCalendar // Keep one name for the icon
 } from 'lucide-react';
+import { goToCompanyOnboardingTab } from '../../hooks/useOnboardingGlobalBack';
 import { PremiumDropdown } from '../ui/PremiumDropdown';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
@@ -234,6 +236,11 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
     }
   }, [location.search]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  /** True once the planning grid is genuinely saved (real capacity
+   *  persisted, nothing pending) — drives the "Étape suivante" button in
+   *  the page header, next to the title, instead of buried in the grid's
+   *  own card. */
+  const [planningSavedClean, setPlanningSavedClean] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -450,6 +457,12 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
   useEffect(() => {
     fetchData();
   }, [selectedGigId, selectedDate]);
+
+  // Switching gig: the "Étape suivante" state belongs to the gig that
+  // reported it, not the next one about to mount.
+  useEffect(() => {
+    setPlanningSavedClean(false);
+  }, [selectedGigId]);
 
   const selectedRep = useMemo(() => {
     return reps.find(rep => rep.id === selectedRepId) || reps[0];
@@ -727,6 +740,16 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
                 </h1>
                 <p className="text-base text-gray-400 font-medium">{t('sessionPlanning.header.description')}</p>
               </div>
+              {planningSavedClean && (
+                <button
+                  type="button"
+                  onClick={goToCompanyOnboardingTab}
+                  className="flex items-center gap-1.5 rounded-2xl bg-gradient-harx px-5 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-harx-500/30 transition-all hover:scale-[1.02]"
+                >
+                  Étape suivante
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </header>
         )}
@@ -757,6 +780,7 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
                     onRefresh={fetchData}
                     onSelectDay={setSelectedDate}
                     availabilitySchedule={selectedGigAvailabilitySchedule}
+                    onSavedStateChange={setPlanningSavedClean}
                   />
                 </div>
               )}
