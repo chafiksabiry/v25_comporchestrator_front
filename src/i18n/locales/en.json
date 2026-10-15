@@ -3407,6 +3407,8 @@
     "select": "Select methodology",
     "comingSoon": "Coming soon",
     "recommendedForGig": "Recommended for this GIG",
+    "aiDisclaimerTitle": "AI-generated content —",
+    "aiDisclaimerBody": "these methodologies, including their compliance modules, are proposals to review, correct, and validate for your company before sharing them with your REPS, especially regarding the country and industry involved.",
     "features": {
       "foundational": "Foundational knowledge",
       "compliance": "Regulatory compliance",
