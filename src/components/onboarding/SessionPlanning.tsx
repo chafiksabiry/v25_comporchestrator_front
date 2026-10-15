@@ -299,10 +299,16 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
   const fetchData = async () => {
     if (!selectedGigId) return;
 
+    let mappedReps: Rep[] = [];
     try {
-      // Fetch Agents for this Gig
+      // Fetch Agents for this Gig. Kept in its own try/catch: this call
+      // 404s/500s for a gig the matching backend hasn't indexed yet (e.g.
+      // a brand-new gig with no agents synced), and letting that abort the
+      // whole function silently dropped the slots fetch + onboarding-step
+      // completion below it — the grid kept showing the user's just-typed
+      // values locally while the save was never reflected back, and the
+      // onboarding step never completed.
       const agents = await schedulerApi.getGigAgents(selectedGigId);
-      let mappedReps: Rep[] = [];
       if (agents && agents.length > 0) {
         mappedReps = agents.map(a => {
           // Some APIs return { agentId: { ...agentData } }, others return { ...agentData }
@@ -338,7 +344,11 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
         setCreateSlotRepId('');
         setSelectedRepId('');
       }
+    } catch (error) {
+      console.error('Error fetching gig agents:', error);
+    }
 
+    try {
       // Fetch all slots and reservations for this gig
       const [availableSlotsResponse, reservationsResponse] = await Promise.all([
         slotApi.getSlots(selectedGigId),
