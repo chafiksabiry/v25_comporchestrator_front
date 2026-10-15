@@ -814,6 +814,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onCustomMethodology={handleCustomMethodology}
                 onBack={() => setCurrentStep(2)}
                 hideBackButton
+                gigCategory={selectedGig?.category}
+                countryLabel={selectedGig?.destination_zone?.name?.common}
               />
             )}
 

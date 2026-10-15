@@ -3406,6 +3406,7 @@
     "hours": "{{count}} h",
     "select": "Select methodology",
     "comingSoon": "Coming soon",
+    "recommendedForGig": "Recommended for this GIG",
     "features": {
       "foundational": "Foundational knowledge",
       "compliance": "Regulatory compliance",
