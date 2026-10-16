@@ -102,6 +102,11 @@ export default function CallsDashboardPage() {
   const [gigFilter, setGigFilter] = useState<string>(readUrlGigFilter);
   const [gigs, setGigs] = useState<Array<{ _id: string; title: string }>>([]);
   const [companyFraudStats, setCompanyFraudStats] = useState<CompanyFraudStatsApi | null>(null);
+  const [fraudPopupAgent, setFraudPopupAgent] = useState<{
+    agentId: string;
+    agentName: string;
+    fraudCount: number;
+  } | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<{ callId: string; type: 'validation' | 'transaction' } | null>(null);
 
   const companyId = Cookies.get('companyId');
@@ -714,17 +719,18 @@ export default function CallsDashboardPage() {
               </h3>
               <div className="flex flex-wrap gap-2">
                 {agentFraudStats.map((agent) => (
-                  <div
+                  <button
                     key={agent.agentId}
-                    title={apiAgentWarning(agent.agentId, agent.fraudCount)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2"
+                    type="button"
+                    onClick={() => setFraudPopupAgent(agent)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 cursor-pointer transition-colors hover:bg-rose-100 hover:border-rose-200"
                   >
                     <span className="text-sm font-black text-slate-900">{agent.agentName}</span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border bg-rose-100 text-rose-800 border-rose-200 shrink-0">
                       <ShieldAlert className="w-3 h-3" />
                       {getCompanyAgentFraudCountLabel(agent.fraudCount, i18n.language)}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1118,6 +1124,76 @@ export default function CallsDashboardPage() {
           />
         );
       })()}
+
+      {fraudPopupAgent && (
+        <div
+          className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => setFraudPopupAgent(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-rose-100 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-rose-100 bg-rose-50">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-700">
+                  {getCompanyAgentFraudSectionTitle(i18n.language)}
+                </p>
+                <h2 className="mt-1 text-lg font-black text-slate-900 truncate">{fraudPopupAgent.agentName}</h2>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border bg-rose-100 text-rose-800 border-rose-200">
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  {getCompanyAgentFraudCountLabel(fraudPopupAgent.fraudCount, i18n.language)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFraudPopupAgent(null)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700"
+                  aria-label={t('common.close', 'Fermer')}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <p className="text-sm font-medium text-rose-900 leading-relaxed">
+                {apiAgentWarning(fraudPopupAgent.agentId, fraudPopupAgent.fraudCount)}
+              </p>
+              {(() => {
+                const agentCalls = calls.filter(
+                  (call) =>
+                    isCallFraudDetected(call) && callAgentId(call) === fraudPopupAgent.agentId
+                );
+                if (agentCalls.length === 0) return null;
+                return (
+                  <ul className="max-h-64 overflow-y-auto space-y-2">
+                    {agentCalls.map((call, idx) => (
+                      <li key={normalizeCallId(call) || idx}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFraudPopupAgent(null);
+                            openCallDetails(call, 'insights');
+                          }}
+                          className="w-full flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-left hover:border-rose-200 hover:bg-rose-50/50"
+                        >
+                          <span className="text-sm font-bold text-slate-900 truncate">{callLeadName(call)}</span>
+                          <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                            {new Date(call.createdAt || call.date).toLocaleString(i18n.resolvedLanguage || i18n.language)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {(false as boolean) && selectedCall && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-300 bg-slate-905/80 backdrop-blur-md" onClick={() => setSelectedCall(null)}>

@@ -308,12 +308,14 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                 Call ID: {call.id}
               </span>
             </div>
-            {/* Close – mobile */}
-            <div className="md:hidden">
-              <button onClick={onClose} className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('common.close', 'Fermer')}
+              className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-500 hover:text-white"
+            >
+              <X className="w-4 h-4" strokeWidth={2.5} />
+            </button>
           </div>
 
           {/* Audio player */}
@@ -324,12 +326,14 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             }
           </div>
 
-          {/* Close – desktop */}
-          <div className="hidden md:flex items-center gap-2 shrink-0">
-            <button onClick={onClose} className="p-2 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100 transition-all shadow-sm">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('common.close', 'Fermer')}
+            className="hidden md:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-500 hover:text-white"
+          >
+            <X className="w-4 h-4" strokeWidth={2.5} />
+          </button>
         </div>
 
         {isVoicemail && (
