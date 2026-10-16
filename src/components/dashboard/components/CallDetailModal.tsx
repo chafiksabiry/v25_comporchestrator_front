@@ -286,7 +286,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
       onClick={onClose}
     >
       <div
-        className="relative bg-white w-full md:max-w-5xl max-h-[92vh] rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80"
+        className="relative bg-white w-full md:max-w-5xl max-h-[92vh] overflow-y-auto rounded-2xl md:rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -515,7 +515,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-slate-50/20 custom-scrollbar">
+        <div className="p-3 md:p-4 bg-slate-50/20">
           {activeTab === 'transcript' ? (
             <div className="max-w-4xl mx-auto space-y-3">
               {selfCallNotice && (
@@ -703,7 +703,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                             </h5>
                           </div>
                           <div className="mt-2">
-                            <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
+                            <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 italic">
                               {rawFeedback
                                 ? rawFeedback.split('"').map((part: string, i: number) =>
                                   i % 2 === 1
@@ -789,7 +789,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
                               </h5>
                             </div>
                             <div className="mt-2">
-                              <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 group-hover:bg-white group-hover:border-slate-100 transition-all max-h-[160px] overflow-y-auto custom-scrollbar italic">
+                              <div className="text-xs sm:text-[13px] font-medium text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl sm:rounded-2xl p-4 border border-slate-50 italic">
                                 {(i18n.language || '').toLowerCase().startsWith('en')
                                   ? (metricData?.feedback_en || metricData?.feedback || feedbackFallback)
                                   : (metricData?.feedback_fr || metricData?.feedback || feedbackFallback)
@@ -810,7 +810,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-4 py-4 md:px-8 md:py-6 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 shrink-0">
+        <div className="px-3 py-3 md:px-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
           {hasAiCallAnalysis(call) && renderRelaunchButton()}
           <button
             onClick={onClose}
