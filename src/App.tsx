@@ -104,6 +104,56 @@ const ORCHESTRATOR_STEP_TABS = new Set([
   'optimization',
 ]);
 
+function HeaderBootSkeleton() {
+  return (
+    <div className="ml-auto flex items-center gap-2" aria-hidden="true">
+      <div className="hidden sm:flex items-center gap-2">
+        {[88, 76, 72, 80].map((width) => (
+          <div
+            key={width}
+            className="h-10 rounded-xl bg-white/10 animate-pulse"
+            style={{ width }}
+          />
+        ))}
+      </div>
+      <div className="h-10 w-10 rounded-xl bg-white/10 animate-pulse" />
+      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1 pr-3">
+        <div className="h-8 w-8 rounded-lg bg-white/10 animate-pulse" />
+        <div className="hidden sm:flex flex-col gap-1.5">
+          <div className="h-2.5 w-20 rounded bg-white/10 animate-pulse" />
+          <div className="h-2 w-12 rounded bg-white/10 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShellContentSkeleton() {
+  return (
+    <div className="p-6 md:p-8 space-y-5" aria-hidden="true">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-7 w-56 rounded-xl bg-slate-200 animate-pulse" />
+          <div className="h-3 w-24 rounded bg-slate-200 animate-pulse" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-10 w-40 rounded-xl bg-white border border-slate-200 animate-pulse" />
+          <div className="h-10 w-32 rounded-xl bg-white border border-slate-200 animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="h-64 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+        <div className="h-64 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -199,6 +249,9 @@ function AppContent() {
   const [minutes, setMinutes] = useState<number>(0);
   const [aiTokens, setAiTokens] = useState<number>(0);
   const [escrow, setEscrow] = useState<number>(0);
+  const shellBooted = useRef(false);
+  const [shellLoading, setShellLoading] = useState(true);
+  const [navbarReady, setNavbarReady] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => connectTeamPresenceSocket(), []);
@@ -285,6 +338,8 @@ function AppContent() {
       }
     } catch (err) {
       console.error('Failed to fetch navbar balances:', err);
+    } finally {
+      setNavbarReady(true);
     }
   }, []);
 
@@ -451,6 +506,7 @@ function AppContent() {
     }
 
     const fetchData = async () => {
+      try {
       if (userId) {
         try {
           // Fetch user details
@@ -566,6 +622,13 @@ function AppContent() {
         }
       } else {
         setBootResolved(true);
+      }
+      } finally {
+        if (!shellBooted.current) {
+          shellBooted.current = true;
+          setShellLoading(false);
+          if (!Cookies.get('companyId')) setNavbarReady(true);
+        }
       }
     };
 
@@ -969,6 +1032,7 @@ function AppContent() {
               setMobileSidebarOpen(false);
             }}
             currentStepGuide={currentStepGuide}
+            booting={shellLoading}
           />
         </div>
 
@@ -987,7 +1051,10 @@ function AppContent() {
                 <Menu size={20} />
               </button>
 
-              {/* Right cluster: scrollable chips stay separate from dropdowns (overflow-x clips absolute menus). */}
+              {shellLoading || !navbarReady ? (
+                <HeaderBootSkeleton />
+              ) : (
+              /* Right cluster: scrollable chips stay separate from dropdowns (overflow-x clips absolute menus). */
               <div className="ml-auto flex items-center gap-2 min-w-0 overflow-visible">
                 <div className="flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
                   {showActivationNavbarWidgets && (
@@ -1131,6 +1198,7 @@ function AppContent() {
                   )}
                 </div>
               </div>
+              )}
             </div>
           </header>
 
@@ -1139,6 +1207,9 @@ function AppContent() {
             className="flex-1 overflow-y-auto overflow-x-hidden relative w-full h-full min-w-0 bg-harx-bg"
             data-harx-scroll-root
           >
+            {shellLoading ? (
+              <ShellContentSkeleton />
+            ) : (
             <ProjectViewSwitch
               activeView={activeProject}
               dashboard={<DashboardApp />}
@@ -1154,6 +1225,7 @@ function AppContent() {
                 </div>
               }
             />
+            )}
           </main>
         </div>
       </div>

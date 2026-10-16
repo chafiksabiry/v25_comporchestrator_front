@@ -397,6 +397,32 @@ interface RecentCall {
 /** Operations-style dashboard. Replaces the old analytics view at /dashboard/main.
  *  Layout follows the product mock: wallet alert banner + section tabs +
  *  6 KPI tiles + statuses panel + recent calls panel + MTD analysis grid. */
+function OperationsPageSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto space-y-5 pb-12" aria-hidden="true">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-2">
+          <div className="h-7 w-56 rounded-xl bg-slate-200 animate-pulse" />
+          <div className="h-3 w-16 rounded bg-slate-200 animate-pulse" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-10 w-44 rounded-xl border border-slate-200 bg-white animate-pulse" />
+          <div className="h-10 w-32 rounded-xl border border-slate-200 bg-white animate-pulse" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="h-72 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+        <div className="h-72 rounded-2xl border border-slate-200 bg-white animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function OperationsDashboard() {
   const { t, i18n } = useTranslation();
   const isOpsConsole = isCallCenterWorkspace();
@@ -992,6 +1018,7 @@ export default function OperationsDashboard() {
   }, [selectedGigId]);
 
   // ----- Call analytics (v25_dash_calls_backend) -----
+  const [pageReady, setPageReady] = useState(false);
   const [overviewPeriod, setOverviewPeriod] = useState<AnalyticsOverview | null>(null);
   const [recentCallsApi, setRecentCallsApi] = useState<RecentCallApi[] | null>(null);
   const [outcomesMonth, setOutcomesMonth] = useState<{
@@ -1136,6 +1163,7 @@ export default function OperationsDashboard() {
     const companyId = Cookies.get('companyId')?.trim();
     const base = getCallsApiBase();
     if (!companyId || !base) {
+      setPageReady(true);
       setDebugInfo({
         companyId,
         gigId: selectedGigId,
@@ -1252,6 +1280,8 @@ export default function OperationsDashboard() {
         }
       } catch (err) {
         console.warn('[OperationsDashboard] call analytics fetch error', err);
+      } finally {
+        if (!cancelled) setPageReady(true);
       }
     })();
 
@@ -1436,6 +1466,10 @@ export default function OperationsDashboard() {
   ];
 
   const fmtDuration = (sec: number) => formatBilledMinutesFromSeconds(sec);
+
+  if (!pageReady) {
+    return <OperationsPageSkeleton />;
+  }
 
   return (
     <div
