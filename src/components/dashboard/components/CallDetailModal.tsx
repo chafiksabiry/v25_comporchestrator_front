@@ -184,13 +184,13 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
   const renderCalibrationPanel = () => {
     if (!showCalibration || !onCalibrateScore) return null;
     return (
-      <div className="px-4 py-4 md:px-8 border-b border-violet-100 bg-violet-50/40 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+      <div className="px-3 py-2 md:px-4 border-b border-violet-100 bg-violet-50/40 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <div>
             <h5 className="text-sm font-black uppercase tracking-widest text-violet-700">
               {t('calls.calibration.title')}
             </h5>
-            <p className="text-xs font-medium text-slate-500 mt-1">
+            <p className="text-[11px] font-medium text-slate-500 mt-0.5">
               {t('calls.calibration.subtitle')}
             </p>
           </div>
@@ -200,11 +200,11 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             </span>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-3 mb-3">
+        <div className="flex flex-wrap gap-2 mb-2">
           <button
             type="button"
             onClick={() => setCalibrationVerdict('up')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border transition-all ${
               calibrationVerdict === 'up'
                 ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25'
                 : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
@@ -216,7 +216,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           <button
             type="button"
             onClick={() => setCalibrationVerdict('down')}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border transition-all ${
               calibrationVerdict === 'down'
                 ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/25'
                 : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
@@ -226,7 +226,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             {t('calls.calibration.thumbsDown')}
           </button>
         </div>
-        <label className="block space-y-2">
+        <label className="block space-y-1">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
             {t('calls.calibration.explanationLabel')}
           </span>
@@ -235,18 +235,18 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
             onChange={(e) => setCalibrationExplanation(e.target.value)}
             rows={2}
             placeholder={t('calls.calibration.explanationPlaceholder')}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[72px]"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-200/60 resize-y min-h-[52px]"
           />
         </label>
         {calibrationError ? (
           <p className="text-xs font-semibold text-rose-600 mt-2">{calibrationError}</p>
         ) : null}
-        <div className="flex justify-end mt-3">
+        <div className="flex justify-end mt-2">
           <button
             type="button"
             disabled={!calibrationVerdict || calibrationSaving}
             onClick={() => void handleSaveCalibration()}
-            className="px-5 py-2.5 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
+            className="px-4 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest shadow-md shadow-violet-500/20 transition-all"
           >
             {calibrationSaving ? t('calls.calibration.saving') : t('calls.calibration.submit')}
           </button>
@@ -282,15 +282,15 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-2 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300"
       onClick={onClose}
     >
       <div
-        className="relative bg-white w-full md:max-w-5xl h-[92vh] md:h-[88vh] rounded-[24px] md:rounded-[36px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80"
+        className="relative bg-white w-full md:max-w-5xl max-h-[92vh] rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 border border-slate-100/80"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
-        <div className="px-4 py-4 md:px-8 md:py-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+        <div className="px-3 py-2 md:px-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-2 shrink-0">
           <div className="flex justify-between items-start md:items-center w-full md:w-auto flex-1">
             <div>
               <h2 className="text-sm md:text-base font-black text-slate-900 uppercase tracking-widest leading-snug">
@@ -337,7 +337,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         </div>
 
         {isVoicemail && (
-          <div className="px-4 md:px-8 py-4 border-b border-slate-200 bg-slate-50/80 shrink-0">
+          <div className="px-3 md:px-4 py-2 border-b border-slate-200 bg-slate-50/80 shrink-0">
             <p className="text-[11px] font-bold text-slate-700 leading-relaxed flex items-start gap-2">
               <Phone className="w-4 h-4 shrink-0 mt-0.5 text-slate-500" />
               <span>{getVoicemailCallNotice(i18n.language)}</span>
@@ -346,7 +346,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         )}
 
         {isFraud && (
-          <div className="px-4 md:px-8 py-4 border-b border-rose-100 bg-rose-50/60 space-y-2 shrink-0">
+          <div className="px-3 md:px-4 py-2 border-b border-rose-100 bg-rose-50/60 space-y-1 shrink-0">
             <p className="text-[11px] font-bold text-rose-800 leading-relaxed">
               {getFraudCommissionNotice(i18n.language)}
             </p>
@@ -360,7 +360,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         )}
 
         {isTooShort && (
-          <div className="px-4 md:px-8 py-3 border-b border-amber-100 bg-amber-50/70 shrink-0">
+          <div className="px-3 md:px-4 py-2 border-b border-amber-100 bg-amber-50/70 shrink-0">
             <p className="text-[11px] font-bold text-amber-800 leading-relaxed flex items-start gap-2">
               <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
               <span>
@@ -373,7 +373,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         {renderCalibrationPanel()}
 
         {/* ── Tabs + AI decision ── */}
-        <div className="px-4 py-3 md:px-8 md:py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 bg-white shrink-0">
+        <div className="px-3 py-2 md:px-4 flex flex-col lg:flex-row lg:items-center justify-between gap-2 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap scrollbar-none pb-1 lg:pb-0">
             <button
               type="button"
@@ -515,9 +515,9 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50/20 custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4 bg-slate-50/20 custom-scrollbar">
           {activeTab === 'transcript' ? (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-3">
               {selfCallNotice && (
                 <div
                   role="alert"
