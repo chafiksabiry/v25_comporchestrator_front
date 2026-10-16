@@ -615,13 +615,13 @@ export default function CallsDashboardPage() {
     ) : null;
 
   return (
-    <div className="p-8 space-y-8 animate-in fade-in duration-700 relative">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="p-6 md:p-8 space-y-5 animate-in fade-in duration-700 relative">
+      <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase tracking-widest">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
             {t('calls.title')}
           </h1>
-          <p className="text-slate-500 font-medium mt-1">
+          <p className="text-slate-500 font-medium mt-1 max-w-xl">
             {t('calls.subtitle')}
           </p>
           {outcomeFilter !== 'all' && (
@@ -637,26 +637,26 @@ export default function CallsDashboardPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200 px-4 py-2 flex items-center gap-3 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
-            <Search className="w-5 h-5 text-slate-400" />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 flex items-center gap-2 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all min-w-[240px] flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               type="text"
               placeholder={t(
                 'calls.search.placeholder',
                 'Rechercher par prospect, gig ou ID…'
               )}
-              className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 w-64"
+              className="bg-transparent border-none outline-none text-sm font-medium text-slate-700 w-full min-w-0"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               aria-label={t('calls.search.label', 'Rechercher des appels')}
             />
           </div>
 
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200 px-4 py-2 flex items-center gap-3 shadow-sm">
-            <Briefcase className="w-5 h-5 text-slate-400" />
+          <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 flex items-center gap-2 shadow-sm min-w-[180px]">
+            <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
             <select
-              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer max-w-[200px]"
+              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer w-full min-w-0"
               value={gigFilter}
               onChange={(e) => setGigFilter(e.target.value)}
               title={t('calls.filters.gig', 'Filtrer par gig')}
@@ -670,10 +670,10 @@ export default function CallsDashboardPage() {
             </select>
           </div>
 
-          <div className="bg-white/60 backdrop-blur-md rounded-2xl border border-slate-200 px-4 py-2 flex items-center gap-3 shadow-sm">
-            <Filter className="w-5 h-5 text-slate-400" />
+          <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 flex items-center gap-2 shadow-sm min-w-[180px]">
+            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
             <select
-              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer"
+              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 cursor-pointer w-full min-w-0"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               title={t('calls.filters.status', 'Filtrer par statut')}
@@ -708,26 +708,22 @@ export default function CallsDashboardPage() {
           </div>
 
           {agentFraudStats.length > 0 && (
-            <div className="rounded-2xl border border-rose-100 bg-white p-4 md:p-5 shadow-sm space-y-3">
+            <div className="rounded-2xl border border-rose-100 bg-white px-4 py-3 shadow-sm space-y-2">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-rose-700">
                 {getCompanyAgentFraudSectionTitle(i18n.language)}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              <div className="flex flex-wrap gap-2">
                 {agentFraudStats.map((agent) => (
                   <div
                     key={agent.agentId}
-                    className="rounded-xl border border-rose-100 bg-rose-50/40 p-4 space-y-2"
+                    title={apiAgentWarning(agent.agentId, agent.fraudCount)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-black text-slate-900 truncate">{agent.agentName}</span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border bg-rose-100 text-rose-800 border-rose-200 shrink-0">
-                        <ShieldAlert className="w-3 h-3" />
-                        {getCompanyAgentFraudCountLabel(agent.fraudCount, i18n.language)}
-                      </span>
-                    </div>
-                    <p className="text-[11px] font-medium text-rose-800 leading-relaxed">
-                      {apiAgentWarning(agent.agentId, agent.fraudCount)}
-                    </p>
+                    <span className="text-sm font-black text-slate-900">{agent.agentName}</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border bg-rose-100 text-rose-800 border-rose-200 shrink-0">
+                      <ShieldAlert className="w-3 h-3" />
+                      {getCompanyAgentFraudCountLabel(agent.fraudCount, i18n.language)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -736,7 +732,7 @@ export default function CallsDashboardPage() {
         </div>
       )}
 
-      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 h-[calc(100vh-320px)] flex flex-col overflow-hidden min-h-[400px]">
+      <div className="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40 flex flex-col overflow-hidden min-h-[480px]">
         <div className="flex-1 overflow-auto custom-scrollbar p-6">
           {loading ? (
             <div className="space-y-4">
