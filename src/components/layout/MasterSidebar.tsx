@@ -40,6 +40,32 @@ import { getCompletedStepsFromStorage, isOnboardingFullyCompleted } from '../../
 import { resolveSessionUserId } from '../../lib/sessionUserId';
 import { isCallCenterWorkspace } from '../../utils/callCenterWorkspace';
 
+function SidebarBootSkeleton({ collapsed }: { collapsed: boolean }) {
+  const groups = [2, 4, 3];
+  return (
+    <div className="space-y-5" aria-hidden="true">
+      {groups.map((count, groupIndex) => (
+        <div key={groupIndex} className={groupIndex > 0 ? 'mt-5 pt-3 border-t border-white/5' : ''}>
+          {!collapsed && <div className="mx-3 mb-2 h-2 w-16 rounded bg-white/10 animate-pulse" />}
+          <div className="space-y-1">
+            {Array.from({ length: count }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5">
+                <div className="h-5 w-5 shrink-0 rounded-md bg-white/10 animate-pulse" />
+                {!collapsed && (
+                  <div
+                    className="h-3 rounded bg-white/10 animate-pulse"
+                    style={{ width: `${58 + ((i * 17) % 36)}%` }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface MasterSidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
@@ -49,6 +75,8 @@ interface MasterSidebarProps {
   setActiveTab: (t: string) => void;
   onLogout: () => void;
   currentStepGuide?: { title: string; description: string; steps?: string[] } | null;
+  /** First paint after login: nav placeholders until the session is ready. */
+  booting?: boolean;
 }
 
 export function MasterSidebar({
@@ -59,7 +87,8 @@ export function MasterSidebar({
   activeTab,
   setActiveTab,
   onLogout,
-  currentStepGuide
+  currentStepGuide,
+  booting = false
 }: MasterSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -273,7 +302,9 @@ export function MasterSidebar({
         }`}
       >
         <nav className="space-y-1">
-          {activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
+          {booting ? (
+            <SidebarBootSkeleton collapsed={isCollapsed} />
+          ) : activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
             <>
               {orchestratorItems.map((item) => {
                 const isActive = activeTab === item.key;
