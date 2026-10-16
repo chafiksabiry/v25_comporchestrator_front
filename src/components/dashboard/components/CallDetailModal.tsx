@@ -278,7 +278,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
     ) : null;
 
   const displayTranscript = getDisplayTranscript(call.transcript, call.ai_call_score);
-  const selfCallNotice = getSelfCallTranscriptNotice(call.ai_call_score, i18n.language);
+  const selfCallNotice = getSelfCallTranscriptNotice(call.ai_call_score, i18n.language, call.transcript);
 
   return createPortal(
     <div

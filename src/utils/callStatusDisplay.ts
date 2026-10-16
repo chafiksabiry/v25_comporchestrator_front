@@ -255,17 +255,22 @@ const VOICEMAIL_REGEX =
 
 const MIN_HUMAN_EXCHANGE_SECONDS = 60;
 
+function isAgentOrMachineSpeaker(label: string): boolean {
+  return /agent|rep|commercial|vendeur|conseiller|seller|harx|r[ée]pondeur|voicemail|messagerie|machine/i.test(label);
+}
+
+/** Prospect text, including turns later relabeled "Voix simulée". */
 function prospectSpeech(call: CallLike): string {
-  const transcript = call.transcript;
+  return prospectSpeechFromTranscript(call.transcript);
+}
+
+function prospectSpeechFromTranscript(transcript: TranscriptEntry[] | undefined | null): string {
   if (!Array.isArray(transcript)) return '';
   return transcript
     .filter((turn) => {
-      if (!turn || turn.simulated) return false;
-      const speaker = String(turn.speaker || '');
-      if (!speaker) return false;
-      if (/agent|rep|commercial|vendeur|conseiller|seller|harx|r[ée]pondeur|voicemail|messagerie|machine/i.test(speaker)) {
-        return false;
-      }
+      if (!turn) return false;
+      const speaker = String(turn.originalSpeaker || turn.speaker || '');
+      if (!speaker || isAgentOrMachineSpeaker(speaker)) return false;
       return true;
     })
     .map((turn) => String(turn.text || '').trim())
@@ -358,9 +363,29 @@ function isAgentSpeakerLabel(label: string): boolean {
   return /agent|rep|commercial|vendeur|conseiller|seller|harx/i.test(label);
 }
 
+const SELF_CALL_FRAUD_REASONS = [
+  'single_speaker_ai',
+  'same_voice_ai',
+  'transcript_no_customer',
+  'transcript_customer_absent',
+];
+
+/** Mono phone audio often reports one voice on a real two-person call. */
+function isFalseSelfCallOnRealConversation(
+  call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }
+): boolean {
+  const duration = Number(call.duration) || 0;
+  if (duration < MIN_HUMAN_EXCHANGE_SECONDS) return false;
+  if (prospectSpeech(call).length < 24) return false;
+  const reason = String(call.ai_call_score?.['Fraud detection']?.voiceAnalysis?.fraudReason || '');
+  if (SELF_CALL_FRAUD_REASONS.includes(reason)) return true;
+  return call.flags?.selfCall === true && !reason;
+}
+
 /** True when AI flagged fraud (including self-call). Excludes voicemail. */
 export function isCallFraudDetected(call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }): boolean {
   if (isCallVoicemail(call)) return false;
+  if (isFalseSelfCallOnRealConversation(call)) return false;
   if (call.flags?.fraud === true || call.flags?.selfCall === true) return true;
   if (call.callOutcome === 'fraud') return true;
   const fraudScore = call.ai_call_score?.['Fraud detection']?.score;
@@ -542,7 +567,12 @@ export function needsHarxProspectRescore(
 }
 
 /** Single-voice self-call: transcript Customer labels were inferred, not real. */
-export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boolean {
+export function isSingleVoiceSelfCall(
+  aiCallScore?: AiCallScoreWithVoice,
+  transcript?: TranscriptEntry[] | null
+): boolean {
+  if (prospectSpeechFromTranscript(transcript).length >= 24) return false;
+
   const fraudScore = aiCallScore?.['Fraud detection']?.score;
   if (typeof fraudScore === 'number' && fraudScore >= 50) return false;
 
@@ -552,20 +582,14 @@ export function isSingleVoiceSelfCall(aiCallScore?: AiCallScoreWithVoice): boole
         sameSpeakerSuspected?: boolean;
         fraudReason?: string;
         confidence?: number;
+        suppressedReason?: string;
       }
     | undefined;
-  if (!voiceAnalysis) return typeof fraudScore === 'number' && fraudScore < 50;
+  if (voiceAnalysis?.suppressedReason) return false;
+  if (!voiceAnalysis) return false;
 
   const reason = String(voiceAnalysis.fraudReason || '');
-  if (['single_speaker_ai', 'same_voice_ai', 'transcript_no_customer', 'transcript_customer_absent'].includes(reason)) {
-    return true;
-  }
-
-  const confidence = typeof voiceAnalysis.confidence === 'number' ? voiceAnalysis.confidence : 0;
-  // Low-confidence "1 voice" is often a quiet customer / mono mix — not self-call UI.
-  if (voiceAnalysis.distinctVoices === 1 && confidence >= 75) return true;
-  if (voiceAnalysis.sameSpeakerSuspected === true && confidence >= 75) return true;
-  return false;
+  return SELF_CALL_FRAUD_REASONS.includes(reason);
 }
 
 /**
@@ -613,7 +637,7 @@ export function getDisplayTranscript(
   const normalised = normalizeGenericSpeakers(transcript);
 
   // Step 2: If self-call fraud — mark customer turns as simulated
-  if (!isSingleVoiceSelfCall(aiCallScore)) return normalised;
+  if (!isSingleVoiceSelfCall(aiCallScore, normalised)) return normalised;
 
   return normalised.map((entry) => {
     const speaker = String(entry.speaker || '');
@@ -629,9 +653,10 @@ export function getDisplayTranscript(
 
 export function getSelfCallTranscriptNotice(
   aiCallScore?: AiCallScoreWithVoice,
-  language: string = 'fr'
+  language: string = 'fr',
+  transcript?: TranscriptEntry[] | null
 ): string | null {
-  if (!isSingleVoiceSelfCall(aiCallScore)) return null;
+  if (!isSingleVoiceSelfCall(aiCallScore, transcript)) return null;
   return language === 'en'
     ? 'Only one human voice was detected on this recording. Customer labels in the transcript were inferred by AI and may be simulated by the same person (self-call).'
     : 'Une seule voix humaine a été détectée sur cet enregistrement. Les tours « Client » du transcript ont été inférés par l\'IA et peuvent être simulés par la même personne (auto-appel).';
