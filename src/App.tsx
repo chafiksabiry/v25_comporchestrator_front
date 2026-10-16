@@ -118,16 +118,20 @@ function HarxToaster() {
         <ToastBar toast={current} style={{ padding: 0, background: 'transparent', boxShadow: 'none', maxWidth: 380 }}>
           {({ icon, message }) => (
             <div className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xl shadow-slate-900/10">
-              <div className="mt-0.5 shrink-0">{icon}</div>
+              {current.type !== 'error' && <div className="mt-0.5 shrink-0">{icon}</div>}
               <div className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-slate-800">{message}</div>
               {current.type !== 'loading' && (
                 <button
                   type="button"
-                  onClick={() => toast.dismiss(current.id)}
                   aria-label={t('common.close', 'Fermer')}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-500 hover:text-white"
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toast.dismiss(current.id);
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-500 hover:text-white"
                 >
-                  <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  <X className="h-4 w-4" strokeWidth={2.5} />
                 </button>
               )}
             </div>
