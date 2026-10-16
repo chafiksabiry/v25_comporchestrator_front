@@ -182,6 +182,7 @@ export type CallLike = {
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
   /** Twilio AMD AnsweredBy */
   answeredBy?: string | null;
+  transcript?: { speaker?: string; text?: string; simulated?: boolean }[] | null;
 };
 
 export const MIN_CALL_ANALYSIS_SECONDS = 30;
@@ -250,15 +251,43 @@ export function getScoreDecisionTooltip(call: CallLike, language: string = 'fr')
 }
 
 const VOICEMAIL_REGEX =
-  /messagerie|messagerie\s+(vocale|automatique)|r[ée]pondeur|laissez\s+(votre|un)\s+message|bo[îi]te\s+vocale|voicemail|answering\s+machine|leave\s+(a|your)\s+message|after\s+(the\s+)?(tone|beep)|appel\s+non\s+productif|non\s+productif|aucun(?:e)?\s+(?:interaction|[ée]change)|aucun\s+(?:él|el)[ée]ment\s+exploitable|n['']?est\s+pas\s+disponible|votre\s+correspondant|tombe?\s+(?:imm[ée]diatement\s+)?sur\s+la?\s?messagerie|redirig[ée]\s+vers\s+la?\s?messagerie/i;
+  /messagerie|messagerie\s+(vocale|automatique)|r[ée]pondeur|laissez\s+(votre|un)\s+message|bo[îi]te\s+vocale|voicemail|answering\s+machine|leave\s+(a|your)\s+message|after\s+(the\s+)?(tone|beep)|appel\s+non\s+productif|non\s+productif|aucun(?:e)?\s+(?:interaction|[ée]change)|aucun\s+(?:él|el)[ée]ment\s+exploitable|votre\s+correspondant|tombe?\s+(?:imm[ée]diatement\s+)?sur\s+la?\s?messagerie|redirig[ée]\s+vers\s+la?\s?messagerie/i;
 
-/** Messagerie / répondeur (Twilio AMD) — distinct de la fraude. */
+const MIN_HUMAN_EXCHANGE_SECONDS = 60;
+
+function prospectSpeech(call: CallLike): string {
+  const transcript = call.transcript;
+  if (!Array.isArray(transcript)) return '';
+  return transcript
+    .filter((turn) => {
+      if (!turn || turn.simulated) return false;
+      const speaker = String(turn.speaker || '');
+      if (!speaker) return false;
+      if (/agent|rep|commercial|vendeur|conseiller|seller|harx|r[ée]pondeur|voicemail|messagerie|machine/i.test(speaker)) {
+        return false;
+      }
+      return true;
+    })
+    .map((turn) => String(turn.text || '').trim())
+    .join(' ');
+}
+
+function hasConversationRubrics(call: CallLike): boolean {
+  return ['Argumentation', 'Script coherence', 'Agent fluency', 'Script adherence'].some(
+    (key) => typeof call.ai_call_score?.[key]?.score === 'number'
+  );
+}
+
+/** Messagerie / répondeur (Twilio AMD) — distinct de la fraude.
+ *  A long call with a prospect on the line, or a scored conversation whose
+ *  summary does not describe a voicemail, is not messagerie — even if AMD
+ *  said "machine" at pickup.
+ */
 export function isCallVoicemail(
   call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }
 ): boolean {
-  if (call.callOutcome === 'voicemail') return true;
-  const answeredBy = String(call.answeredBy || '').toLowerCase();
-  if (answeredBy.startsWith('machine') || answeredBy === 'fax') return true;
+  const duration = Number(call.duration) || 0;
+  if (duration >= MIN_HUMAN_EXCHANGE_SECONDS && prospectSpeech(call).length >= 24) return false;
   const feedback = String(
     call.ai_summary_fr ||
       call.ai_summary ||
@@ -267,7 +296,13 @@ export function isCallVoicemail(
       call.ai_call_score?.overall?.feedback_en ||
       ''
   ).toLowerCase();
-  return VOICEMAIL_REGEX.test(feedback);
+  const feedbackSaysVoicemail = VOICEMAIL_REGEX.test(feedback);
+  if (duration >= MIN_HUMAN_EXCHANGE_SECONDS && hasConversationRubrics(call)) return false;
+  if (duration >= MIN_HUMAN_EXCHANGE_SECONDS && feedback.trim() && !feedbackSaysVoicemail) return false;
+  if (call.callOutcome === 'voicemail') return true;
+  const answeredBy = String(call.answeredBy || '').toLowerCase();
+  if (answeredBy.startsWith('machine') || answeredBy === 'fax') return true;
+  return feedbackSaysVoicemail;
 }
 
 /** Map Twilio CallStatus / AMD → HARX disposition key. */
