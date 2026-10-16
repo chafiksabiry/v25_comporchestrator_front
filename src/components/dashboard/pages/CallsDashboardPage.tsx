@@ -287,7 +287,9 @@ export default function CallsDashboardPage() {
     // calls whose stored duration was wrong — backend will recalculate from
     // endTime-startTime and bypass the gate if a transcript already exists).
     if (!options?.force && target && isCallTooShortForAnalysis(target)) {
-      toast.error(getTooShortAnalysisNotice(i18n.language, Number(target.duration) || undefined));
+      toast.error(getTooShortAnalysisNotice(i18n.language, Number(target.duration) || undefined), {
+        id: 'call-too-short',
+      });
       return;
     }
     try {
@@ -1151,10 +1153,10 @@ export default function CallsDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setFraudPopupAgent(null)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-slate-700"
                   aria-label={t('common.close', 'Fermer')}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-rose-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-500 hover:text-white"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" strokeWidth={2.5} />
                 </button>
               </div>
             </div>
