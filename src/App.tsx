@@ -19,7 +19,7 @@ import {
   Menu,
   Cpu,
 } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster, ToastBar } from 'react-hot-toast';
 import { HashRouter, useLocation, useNavigate } from 'react-router-dom';
 import VisitorTracker from './lib/VisitorTracker';
 import { buildCompanyOrchestratorMeta } from './lib/tracking/pageMeta';
@@ -100,6 +100,40 @@ const ORCHESTRATOR_STEP_TABS = new Set([
   'matching',
   'optimization',
 ]);
+
+function HarxToaster() {
+  const { t } = useTranslation();
+  return (
+    <Toaster
+      position="top-right"
+      containerStyle={{ zIndex: 10060 }}
+      toastOptions={{
+        duration: 6000,
+      }}
+    >
+      {(current) => (
+        <ToastBar toast={current} style={{ padding: 0, background: 'transparent', boxShadow: 'none', maxWidth: 380 }}>
+          {({ icon, message }) => (
+            <div className="flex items-start gap-2.5 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xl shadow-slate-900/10">
+              <div className="mt-0.5 shrink-0">{icon}</div>
+              <div className="min-w-0 flex-1 text-[13px] font-medium leading-snug text-slate-800">{message}</div>
+              {current.type !== 'loading' && (
+                <button
+                  type="button"
+                  onClick={() => toast.dismiss(current.id)}
+                  aria-label={t('common.close', 'Fermer')}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-rose-500 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          )}
+        </ToastBar>
+      )}
+    </Toaster>
+  );
+}
 
 function HeaderBootSkeleton() {
   return (
@@ -945,7 +979,7 @@ function AppContent() {
     return (
       <StripeContainer>
         <div className="flex h-screen bg-gray-50">
-          <Toaster position="top-right" />
+          <HarxToaster />
           <main className="flex-1 overflow-y-auto" data-harx-scroll-root>
             {renderContent()}
           </main>
@@ -956,7 +990,7 @@ function AppContent() {
 
   return (
     <StripeContainer>
-      <Toaster position="top-right" />
+      <HarxToaster />
       <div className="flex h-screen bg-harx-bg overflow-hidden">
         {/* Mobile backdrop: closes the off-canvas sidebar when tapped. */}
         {mobileSidebarOpen && (
