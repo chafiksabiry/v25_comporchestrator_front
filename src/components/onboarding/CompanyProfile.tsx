@@ -10,6 +10,7 @@ import {
   Phone,
   Mail,
   Pencil,
+  Lock,
   Save,
   AlertCircle,
   Target,
@@ -111,6 +112,37 @@ const getNestedValue = (obj: Record<string, any>, path: string) => {
   return path.split(".").reduce((acc, key) => acc && acc[key], obj);
 };
 
+function applyFieldValue(
+  company: Record<string, any>,
+  field: string,
+  value: unknown,
+  lang: string
+) {
+  const next = JSON.parse(JSON.stringify(company || {}));
+  if (field.includes(".")) {
+    const parts = field.split(".");
+    let current = next;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const key = parts[i];
+      if (!current[key] || typeof current[key] !== "object") current[key] = {};
+      current = current[key];
+    }
+    current[parts[parts.length - 1]] = value;
+  } else {
+    next[field] = value;
+    if (field === "overview" || field === "mission" || field === "industry" || field === "companyIntro") {
+      const i18nKey = `${field}_i18n`;
+      next[i18nKey] = {
+        en: "",
+        fr: "",
+        ...(next[i18nKey] || {}),
+        [lang]: String(value ?? ""),
+      };
+    }
+  }
+  return next;
+}
+
 // EditableField component
 const EditableField = ({
   value,
@@ -133,19 +165,14 @@ const EditableField = ({
   const isHeroField = className.includes('text-white') || className.includes('text-5xl');
   const isLongTextField = field.includes("overview") || field.includes("mission") || field.includes("address");
 
-  const handleFieldSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    handleApplyChanges(field);
-  };
-
   return (
     <div className={`relative group ${className}`}>
       {Icon && <Icon size={18} className="flex-shrink-0" />}
 
-      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>}
+      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || "—"}</span>}
 
       {editMode && (
-        <div className={`w-full ${isHeroField ? "mt-1" : "mt-1"}`}>
+        <div className="mt-1 w-full">
           {isLongTextField ? (
             <textarea
               value={(tempValues[field] ?? value ?? "") as string}
@@ -156,10 +183,9 @@ const EditableField = ({
                   [field]: e.target.value,
                 }))
               }
-              onBlur={(e) => handleFieldSave(e as unknown as React.MouseEvent)}
-              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all ${isHeroField
-                ? "border-white/30 bg-white/15 text-white placeholder-white/70 focus:border-white/70"
-                : "border-harx-100 bg-white text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              className={`w-full rounded-xl border px-3 py-2 outline-none transition-all ${isHeroField
+                ? "border-white/30 bg-white/15 text-3xl font-bold text-white placeholder-white/70 focus:border-white/70"
+                : "border-harx-100 bg-white text-sm text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
                 }`}
             />
           ) : (
@@ -172,15 +198,9 @@ const EditableField = ({
                   [field]: e.target.value,
                 }))
               }
-              onBlur={(e) => handleFieldSave(e as unknown as React.MouseEvent)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleFieldSave(e as unknown as React.MouseEvent);
-                }
-              }}
-              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all ${isHeroField
-                ? "border-white/30 bg-white/15 text-white placeholder-white/70 focus:border-white/70"
-                : "border-harx-100 bg-white text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              className={`w-full rounded-xl border px-3 py-2 outline-none transition-all ${isHeroField
+                ? "min-w-[12rem] border-white/30 bg-white/15 text-3xl font-bold text-white placeholder-white/70 focus:border-white/70"
+                : "border-harx-100 bg-white text-sm text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
                 }`}
             />
           )}
@@ -207,6 +227,7 @@ function CompanyProfile({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -442,49 +463,16 @@ function CompanyProfile({
   };
 
   const handleApplyChanges = (field: string) => {
-    setCompany((prev) => {
-      const newCompany = JSON.parse(JSON.stringify(prev));
-      const nextValue = tempValues[field];
-
-      if (field.includes('.')) {
-        const parts = field.split('.');
-        let current = newCompany;
-
-        for (let i = 0; i < parts.length - 1; i++) {
-          const key = parts[i];
-          if (!current[key]) {
-            const nextKey = parts[i + 1];
-            const isNextIndex = !isNaN(Number(nextKey));
-            current[key] = isNextIndex ? [] : {};
-          }
-          current = current[key];
-        }
-
-        current[parts[parts.length - 1]] = nextValue;
-      } else {
-        newCompany[field] = nextValue;
-        // Keep bilingual mirrors in sync for narrative fields.
-        if (field === 'overview' || field === 'mission' || field === 'industry' || field === 'companyIntro') {
-          const i18nKey = `${field}_i18n`;
-          newCompany[i18nKey] = {
-            en: '',
-            fr: '',
-            ...(newCompany[i18nKey] || {}),
-            [lang]: String(nextValue ?? ''),
-          };
-        }
-      }
-
-      return newCompany;
-    });
-
+    setCompany((prev) => applyFieldValue(prev, field, tempValues[field], lang));
     setEditingField(null);
     setTempValues({});
     setHasChanges(true);
   };
 
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = async (source?: Record<string, any>) => {
+    const current = source || company;
+    setSaving(true);
     try {
       
       
@@ -515,33 +503,33 @@ function CompanyProfile({
 
       // Plain fields follow active UI language; *_i18n keeps both sides.
       const plainIndustry =
-        localizeText(company.industry_i18n, lang) || company.industry;
+        localizeText(current.industry_i18n, lang) || current.industry;
       const plainOverview =
-        localizeText(company.overview_i18n, lang) ||
-        localizeText(company.companyIntro_i18n, lang) ||
-        company.overview;
+        localizeText(current.overview_i18n, lang) ||
+        localizeText(current.companyIntro_i18n, lang) ||
+        current.overview;
       const plainMission =
-        localizeText(company.mission_i18n, lang) || company.mission;
+        localizeText(current.mission_i18n, lang) || current.mission;
 
       const rawPayload = {
-        userId: company.userId,
-        name: company.name,
-        logo: company.logo || logoUrl,
+        userId: current.userId,
+        name: current.name,
+        logo: current.logo || logoUrl,
         industry: plainIndustry,
-        industry_i18n: company.industry_i18n,
-        founded: company.founded,
-        headquarters: company.headquarters,
+        industry_i18n: current.industry_i18n,
+        founded: current.founded,
+        headquarters: current.headquarters,
         overview: plainOverview,
-        overview_i18n: company.overview_i18n,
+        overview_i18n: current.overview_i18n,
         mission: plainMission,
-        mission_i18n: company.mission_i18n,
-        companyIntro: company.companyIntro,
-        companyIntro_i18n: company.companyIntro_i18n,
-        culture: company.culture,
-        opportunities: company.opportunities,
-        technology: company.technology,
-        contact: company.contact,
-        socialMedia: company.socialMedia,
+        mission_i18n: current.mission_i18n,
+        companyIntro: current.companyIntro,
+        companyIntro_i18n: current.companyIntro_i18n,
+        culture: current.culture,
+        opportunities: current.opportunities,
+        technology: current.technology,
+        contact: current.contact,
+        socialMedia: current.socialMedia,
       };
       const payload = cleanData(rawPayload) || {};
 
@@ -605,10 +593,10 @@ function CompanyProfile({
 
       // Afficher un popup SweetAlert2 pour indiquer le succès
       Swal.fire({
-        title: "Success!",
-        text: "Company profile updated successfully and step marked as completed!",
+        title: t("searchCompanyWizard.profile.savedTitle", "Enregistré"),
+        text: t("searchCompanyWizard.profile.savedText", "Le profil de l'entreprise a été mis à jour."),
         icon: "success",
-        confirmButtonText: "Ok",
+        confirmButtonText: t("searchCompanyWizard.profile.close", "Ok"),
       });
 
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -617,13 +605,15 @@ function CompanyProfile({
       const errorMessage =
         (err as any)?.response?.data?.message ||
         (err as any)?.response?.data?.error ||
-        "There was an error updating the company profile.";
+        t("searchCompanyWizard.profile.saveError", "Le profil n'a pas pu être enregistré.");
       Swal.fire({
-        title: "Error!",
+        title: t("searchCompanyWizard.profile.errorTitle", "Erreur"),
         text: errorMessage,
         icon: "error",
-        confirmButtonText: "Try Again",
+        confirmButtonText: t("searchCompanyWizard.profile.close", "Ok"),
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -769,6 +759,37 @@ function CompanyProfile({
     },
   ];
 
+  const startEditing = () => {
+    setTempValues({
+      name: profile.name || "",
+      industry: localizedIndustry,
+      founded: profile.founded || "",
+      headquarters: profile.headquarters || "",
+      overview: localizedOverview,
+      mission: localizedMission,
+      "contact.email": profile.contact?.email || "",
+      "contact.phone": profile.contact?.phone || "",
+      "contact.website": profile.contact?.website || "",
+      "contact.address": profile.contact?.address || "",
+    });
+    setEditingField(null);
+    setEditMode(true);
+  };
+
+  const finishEditing = async () => {
+    const merged = Object.entries(tempValues).reduce(
+      (acc, [field, value]) => applyFieldValue(acc, field, value, lang),
+      company
+    );
+    if (logoUrl) merged.logo = logoUrl;
+    setCompany(merged);
+    setTempValues({});
+    setEditingField(null);
+    setEditMode(false);
+    setHasChanges(false);
+    await handleSaveAll(merged);
+  };
+
   const contextValue: CompanyContextType = {
     company,
     editingField,
@@ -808,6 +829,36 @@ function CompanyProfile({
                   }
                 `}
                 </style>
+              </div>
+
+              <div className="absolute top-4 right-4 z-20">
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    if (editMode) void finishEditing();
+                    else startEditing();
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-70 ${
+                    editMode
+                      ? "bg-white text-emerald-700 ring-1 ring-emerald-300 hover:bg-white"
+                      : "bg-white text-harx-700 ring-1 ring-harx-300 hover:bg-white"
+                  }`}
+                >
+                  {editMode ? (
+                    <>
+                      <Lock size={14} />
+                      {saving
+                        ? t("searchCompanyWizard.profile.saving", "Enregistrement…")
+                        : t("searchCompanyWizard.profile.doneEditing", "Terminé")}
+                    </>
+                  ) : (
+                    <>
+                      <Pencil size={14} />
+                      {t("searchCompanyWizard.profile.editProfile", "Modifier")}
+                    </>
+                  )}
+                </button>
               </div>
 
               <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
@@ -911,7 +962,7 @@ function CompanyProfile({
                       />
                     </div>
                     <div className="flex flex-wrap gap-6 text-white/90">
-                      {localizedIndustry ? (
+                      {(localizedIndustry || editMode) ? (
                         <EditableField
                           key={`industry-${lang}`}
                           value={localizedIndustry}
@@ -949,14 +1000,14 @@ function CompanyProfile({
             <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200">
               <div className="p-6 space-y-8">
                 {/* Contact Information */}
-                {hasContactInfo && (
+                {(hasContactInfo || editMode) && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <Mail className="text-blue-600" size={20} />
                       {t('searchCompanyWizard.profile.contactInfo')}
                     </h3>
                     <div className="space-y-3">
-                      {profile.contact?.email && (
+                      {(profile.contact?.email || editMode) && (
                         <EditableField
                           value={profile.contact.email}
                           field="contact.email"
@@ -964,7 +1015,7 @@ function CompanyProfile({
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.phone && (
+                      {(profile.contact?.phone || editMode) && (
                         <EditableField
                           value={profile.contact.phone}
                           field="contact.phone"
@@ -972,7 +1023,7 @@ function CompanyProfile({
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.website && (
+                      {(profile.contact?.website || editMode) && (
                         <EditableField
                           value={profile.contact.website}
                           field="contact.website"
@@ -980,7 +1031,7 @@ function CompanyProfile({
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.address && (
+                      {(profile.contact?.address || editMode) && (
                         <EditableField
                           value={profile.contact.address}
                           field="contact.address"
