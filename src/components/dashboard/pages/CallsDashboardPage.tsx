@@ -1232,7 +1232,7 @@ export default function CallsDashboardPage() {
                   const recordingUrl = selectedCall.recording_url_cloudinary || selectedCall.recording_url;
                   if (!recordingUrl) return <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">{t('calls.modal.noRecording')}</div>;
                   const finalUrl = (recordingUrl.includes('twilio.com') && !recordingUrl.endsWith('.mp3')) ? `${recordingUrl}.mp3` : recordingUrl;
-                  return <PremiumAudioPlayer url={finalUrl} />;
+                  return <PremiumAudioPlayer url={finalUrl} durationSec={selectedCall.duration} />;
                 })()}
               </div>
 

@@ -6,14 +6,26 @@ interface PremiumAudioPlayerProps {
   url?: string;
   // Backwards-compatible alias: some callers historically passed `audioUrl`.
   audioUrl?: string;
+  /** Call length already stored on the call, shown until the file metadata arrives. */
+  durationSec?: number | null;
 }
 
-export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
-  const safeUrl = typeof url === 'string' && url.length > 0
-    ? url
-    : typeof audioUrl === 'string' && audioUrl.length > 0
-      ? audioUrl
-      : '';
+/** Cloudinary stores call audio as a video resource. Force an mp3 the <audio> tag can read. */
+function playableMediaUrl(url: string): string {
+  if (!url.includes('res.cloudinary.com') || !url.includes('/video/upload/')) return url;
+  if (url.includes('/f_mp3/') || url.includes('/f_mp3,')) return url;
+  return url.replace('/video/upload/', '/video/upload/f_mp3/');
+}
+
+export function PremiumAudioPlayer({ url, audioUrl, durationSec }: PremiumAudioPlayerProps) {
+  const safeUrl = playableMediaUrl(
+    typeof url === 'string' && url.length > 0
+      ? url
+      : typeof audioUrl === 'string' && audioUrl.length > 0
+        ? audioUrl
+        : ''
+  );
+  const knownDuration = Number(durationSec) > 0 ? Number(durationSec) : 0;
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -31,6 +43,18 @@ export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
     }
     setWaveform(data);
   }, [safeUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(knownDuration);
+    if (!safeUrl) return;
+    audio.src = safeUrl;
+    audio.load();
+  }, [safeUrl, knownDuration]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,8 +75,9 @@ export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
   };
 
   const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+    const next = audioRef.current?.duration;
+    if (typeof next === 'number' && Number.isFinite(next) && next > 0) {
+      setDuration(next);
     }
   };
 
@@ -76,9 +101,10 @@ export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
     <div className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 w-full max-w-lg mx-auto group">
       <audio
         ref={audioRef}
-        src={safeUrl}
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onDurationChange={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
       />
 
@@ -106,7 +132,7 @@ export function PremiumAudioPlayer({ url, audioUrl }: PremiumAudioPlayerProps) {
                   isPlayed ? 'bg-gradient-to-t from-harx-500 to-harx-alt-400' : 'bg-slate-200'
                 } ${isPlaying && isPlayed ? 'animate-pulse' : ''}`}
                 style={{ 
-                  height: `${val * 100}%`,
+                  height: `${Math.max(4, Math.round(val * 28))}px`,
                   animationDelay: animDelay,
                   minWidth: '2px'
                 }}
