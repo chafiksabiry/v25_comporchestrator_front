@@ -161,7 +161,7 @@ export function resolveTwilioOrPostAnalysisBadge(call: CallLike): StatusBadge | 
   const outcome = String(call.callOutcome || '').toLowerCase();
   if (outcome && outcome !== 'too_short') {
     const badge = callOutcomeBadge(outcome);
-    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
+    if (badge) return badge;
   }
 
   // Short connected call (QA skipped) → Sans suite, never « Trop court ».
@@ -178,6 +178,9 @@ export type CallLike = {
   suggestedDisposition?: string | null;
   ai_summary?: string | null;
   ai_summary_fr?: string | null;
+  ai_summary_en?: string | null;
+  statusComment_fr?: string | null;
+  statusComment_en?: string | null;
   ai_call_score?: Record<string, { passed?: boolean; score?: number; feedback?: string; feedback_fr?: string; feedback_en?: string }> | null;
   transaction?: { validByCompany?: boolean | null; validByAI?: boolean | null } | null;
   /** Twilio AMD AnsweredBy */
@@ -499,6 +502,27 @@ export function getExecutiveSummaryText(call: CallLike, language: string = 'fr')
     ? (call.ai_call_score?.overall?.feedback_en || call.ai_call_score?.overall?.feedback || '')
     : (call.ai_call_score?.overall?.feedback_fr || call.ai_call_score?.overall?.feedback || '');
   return stripSummaryDurationText(fromOverall);
+}
+
+function firstPlainSentence(text: string): string {
+  const raw = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return '';
+  return (raw.split(/(?<=[.!?])\s+/)[0] || raw).slice(0, 320);
+}
+
+/** Hover comment for the call-status pill. Saved by the analysis; older calls use the AI summary. */
+export function getStatusHoverComment(call: CallLike, language: string = 'fr'): string {
+  const isEn = String(language || '').toLowerCase().startsWith('en');
+  const saved = isEn
+    ? (call.statusComment_en || call.statusComment_fr)
+    : (call.statusComment_fr || call.statusComment_en);
+  const source = (saved && saved.trim())
+    ? saved
+    : firstPlainSentence(getExecutiveSummaryText(call, language));
+  const cleaned = stripSummaryDurationText(source).trim();
+  if (!cleaned) return '';
+  if (/connected_no_sale|not_argumented|too_short|call outcome|résultat appel/i.test(cleaned)) return '';
+  return cleaned;
 }
 
 export function hasAiCallAnalysis(call: CallLike): boolean {
@@ -881,16 +905,14 @@ export function resolveCallDispositionStatus(call: CallLike): StatusBadge {
 
   if (outcome && PRIORITY_CALLOUTCOMES.has(outcome)) {
     const badge = callOutcomeBadge(outcome);
-    if (badge) return { ...badge, title: badge.title || tb('outcomeTitle', { outcome }) };
+    if (badge) return badge;
   }
 
   const prospect = getProspectStatusBadge(call.ai_call_score);
   if (prospect) return prospect;
 
   const outcomeBadge = callOutcomeBadge(outcome);
-  if (outcomeBadge) {
-    return { ...outcomeBadge, title: outcomeBadge.title || tb('outcomeTitle', { outcome }) };
-  }
+  if (outcomeBadge) return outcomeBadge;
 
   if (call.transaction?.validByAI === false) {
     return {

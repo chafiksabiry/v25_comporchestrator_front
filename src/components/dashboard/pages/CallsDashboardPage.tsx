@@ -19,6 +19,7 @@ import {
   resolveTransactionColumnStatus,
   getDisplayOverallScore,
   getScoreDecisionTooltip,
+  getStatusHoverComment,
   getTooShortAnalysisNotice,
   isCallTooShortForAnalysis,
   getDisplayTranscript,
@@ -971,13 +972,18 @@ export default function CallsDashboardPage() {
                               {(() => {
                                 const callStatus = resolveCallListStatus(call);
                                 const pending = isCallAnalysisPending(call);
+                                const comment = getStatusHoverComment(call, i18n.language);
                                 return (
                                   <span
-                                    className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[14rem] text-center leading-tight ${callStatus.tone}`}
-                                    title={callStatus.title}
+                                    className={`relative group/status inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm min-w-[7rem] max-w-[14rem] text-center leading-tight ${callStatus.tone} ${comment ? 'cursor-help' : ''}`}
                                   >
                                     {pending ? <Clock className="w-3.5 h-3.5 shrink-0 animate-pulse" /> : null}
                                     {callStatus.label}
+                                    {comment ? (
+                                      <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-72 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-[12px] font-medium normal-case tracking-normal leading-relaxed text-slate-700 shadow-xl group-hover/status:block">
+                                        {comment}
+                                      </span>
+                                    ) : null}
                                   </span>
                                 );
                               })()}
