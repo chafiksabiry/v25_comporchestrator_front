@@ -297,7 +297,7 @@ function outcomeTag(
     return { label: t('calls.statusBadges.fraud', 'Fraude'), tone: 'rose' };
   }
   if (outcome === 'too_short' || outcome === 'connected_no_sale') {
-    return { label: t('calls.statusBadges.connectedNoSale', 'Sans suite'), tone: 'slate' };
+    return { label: t('calls.statusBadges.connectedNoSale', 'Échange sans issue'), tone: 'slate' };
   }
   return undefined;
 }
