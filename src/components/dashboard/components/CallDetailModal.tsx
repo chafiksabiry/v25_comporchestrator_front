@@ -321,7 +321,7 @@ export default function CallDetailModal({ call, agentFraudCount = 0, onClose, on
           {/* Audio player */}
           <div className="w-full md:w-auto md:flex-1 max-w-full md:max-w-md shrink-0">
             {finalUrl
-              ? <PremiumAudioPlayer url={finalUrl} />
+              ? <PremiumAudioPlayer url={finalUrl} durationSec={call.duration} />
               : <div className="text-[10px] font-black text-slate-400 uppercase text-center py-2 bg-slate-100/50 rounded-xl italic">{t('calls.modal.noRecording')}</div>
             }
           </div>
