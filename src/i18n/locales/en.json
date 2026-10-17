@@ -3128,7 +3128,7 @@
       "wrongNumber": "Called – Number not attributed",
       "fraud": "Fraud",
       "tooShort": "Too short",
-      "connectedNoSale": "No follow-up",
+      "connectedNoSale": "Exchange with no outcome",
       "notValidated": "Not validated",
       "notValidatedTitle": "Transaction not validated",
       "noTransaction": "No transaction",
