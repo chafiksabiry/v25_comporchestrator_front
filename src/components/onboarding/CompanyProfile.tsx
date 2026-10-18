@@ -161,57 +161,17 @@ const EditableField = ({
   icon?: React.ElementType;
   className?: string;
 }) => {
-  const {
-    editMode,
-    tempValues,
-    setTempValues,
-    handleApplyChanges
-  } = useContext(CompanyContext)!;
-
-  const isHeroField = className.includes('text-white') || className.includes('text-5xl');
+  const { tempValues } = useContext(CompanyContext)!;
+  const isHeroField = className.includes("text-white") || className.includes("text-5xl");
   const isLongTextField = field.includes("overview") || field.includes("mission") || field.includes("address");
+  const shown = String(tempValues[field] ?? value ?? "");
 
   return (
     <div className={`relative group ${className}`}>
       {Icon && <Icon size={18} className="flex-shrink-0" />}
-
-      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || "—"}</span>}
-
-      {editMode && (
-        <div className="mt-1 w-full">
-          {isLongTextField ? (
-            <textarea
-              value={(tempValues[field] ?? value ?? "") as string}
-              rows={4}
-              onChange={(e) =>
-                setTempValues((prev: any) => ({
-                  ...prev,
-                  [field]: e.target.value,
-                }))
-              }
-              className={`w-full rounded-xl border px-3 py-2 outline-none transition-all ${isHeroField
-                ? "border-white/30 bg-white/15 text-3xl font-bold text-white placeholder-white/70 focus:border-white/70"
-                : "border-harx-100 bg-white text-sm text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                }`}
-            />
-          ) : (
-            <input
-              type="text"
-              value={(tempValues[field] ?? value ?? "") as string}
-              onChange={(e) =>
-                setTempValues((prev: any) => ({
-                  ...prev,
-                  [field]: e.target.value,
-                }))
-              }
-              className={`w-full rounded-xl border px-3 py-2 outline-none transition-all ${isHeroField
-                ? "min-w-[12rem] border-white/30 bg-white/15 text-3xl font-bold text-white placeholder-white/70 focus:border-white/70"
-                : "border-harx-100 bg-white text-sm text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                }`}
-            />
-          )}
-        </div>
-      )}
+      <span className={`${isHeroField ? "" : "text-gray-800"} ${isLongTextField ? "whitespace-pre-line" : ""}`}>
+        {shown || "—"}
+      </span>
     </div>
   );
 };
@@ -242,7 +202,7 @@ function CompanyProfile({
   const [logoCompletedCrop, setLogoCompletedCrop] = useState<PixelCrop>();
   const [logoCropOpen, setLogoCropOpen] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
-  const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoPreviewOpen, setLogoPreviewOpen] = useState(false);
   const logoFileRef = useRef<HTMLInputElement>(null);
   const logoImgRef = useRef<HTMLImageElement>(null);
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
@@ -974,12 +934,13 @@ function CompanyProfile({
 
               <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
                 <div className="flex items-center gap-6">
-                  <div className="relative group">
-                    <div
-                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""}`}
+                  <div className="relative">
+                    <button
+                      type="button"
                       onClick={() => {
-                        if (editMode) openLogoPicker();
+                        if (logoUrl) setLogoPreviewOpen(true);
                       }}
+                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${logoUrl ? "cursor-zoom-in" : "cursor-default"}`}
                     >
                       {logoUrl ? (
                         <img
@@ -989,7 +950,6 @@ function CompanyProfile({
                           onError={() => {
                             const domain = getDomainFromWebsite(profile.contact?.website);
                             if (domain) {
-                              // Try stable favicon first, then Clearbit fallback.
                               if (!logoUrl.includes("google.com/s2/favicons")) {
                                 setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
                                 return;
@@ -1004,17 +964,8 @@ function CompanyProfile({
                         />
                       ) : (
                         <Globe className="w-full h-full text-harx-500" />
-
                       )}
-                      {editMode && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="text-white text-center">
-                            <Upload size={20} className="mx-auto mb-1" />
-                            <span className="text-xs">{t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    </button>
                     {editMode && (
                       <button
                         type="button"
@@ -1023,6 +974,7 @@ function CompanyProfile({
                           openLogoPicker();
                         }}
                         className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+                        aria-label={t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
                       >
                         <Edit2 size={12} />
                       </button>
@@ -1068,6 +1020,94 @@ function CompanyProfile({
               </div>
             </div>
           </div>
+
+          {editMode && (
+            <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-6 sm:px-10">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.name", "Nom")}
+                  </span>
+                  <input
+                    type="text"
+                    value={String(tempValues.name ?? profile.name ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, name: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.industry", "Secteur")}
+                  </span>
+                  <input
+                    type="text"
+                    value={String(tempValues.industry ?? localizedIndustry ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, industry: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.email", "E-mail")}
+                  </span>
+                  <input
+                    type="email"
+                    value={String(tempValues["contact.email"] ?? profile.contact?.email ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, "contact.email": e.target.value }))}
+                    placeholder={t("searchCompanyWizard.profile.placeholderEmail", "nom@entreprise.com")}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.phone", "Téléphone")}
+                  </span>
+                  <input
+                    type="tel"
+                    value={String(tempValues["contact.phone"] ?? profile.contact?.phone ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, "contact.phone": e.target.value }))}
+                    placeholder={t("searchCompanyWizard.profile.placeholderPhone", "+33 1 23 45 67 89")}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.website", "Site web")}
+                  </span>
+                  <input
+                    type="url"
+                    value={String(tempValues["contact.website"] ?? profile.contact?.website ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, "contact.website": e.target.value }))}
+                    placeholder={t("searchCompanyWizard.profile.placeholderWebsite", "https://exemple.com")}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.address", "Adresse")}
+                  </span>
+                  <input
+                    type="text"
+                    value={String(tempValues["contact.address"] ?? profile.contact?.address ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, "contact.address": e.target.value }))}
+                    placeholder={t("searchCompanyWizard.profile.placeholderAddress", "Rue, ville, pays")}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+                <label className="block space-y-1.5 md:col-span-2">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                    {t("searchCompanyWizard.manual.fields.overview", "Aperçu de l'entreprise")}
+                  </span>
+                  <textarea
+                    rows={4}
+                    value={String(tempValues.overview ?? localizedOverview ?? "")}
+                    onChange={(e) => setTempValues((prev) => ({ ...prev, overview: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-900 outline-none focus:border-harx-500 focus:ring-4 focus:ring-harx-500/10"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
 
           {/* Main Content */}
           <div className="flex">
@@ -1258,7 +1298,33 @@ function CompanyProfile({
               </div>
             </div>
           </div>
+          </div>
         </div>
+        </div>
+        {logoPreviewOpen && logoUrl && createPortal(
+          <div
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md"
+            onClick={() => setLogoPreviewOpen(false)}
+          >
+            <div
+              className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setLogoPreviewOpen(false)}
+                className="absolute right-4 top-4 z-10 rounded-full bg-slate-900/10 p-2 text-slate-700 hover:bg-slate-900/20"
+                aria-label={t("searchCompanyWizard.profile.close", "Fermer")}
+              >
+                <X size={18} />
+              </button>
+              <div className="flex min-h-[280px] items-center justify-center bg-slate-50 p-10">
+                <img src={logoUrl} alt={profile.name} className="max-h-[70vh] w-full object-contain" />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
         {editMode && editingField === "logo" && createPortal(
           <div
             className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
