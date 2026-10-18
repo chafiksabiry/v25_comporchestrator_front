@@ -385,14 +385,28 @@ function CompanyProfile({
     return null;
   };
 
-  const applyLogoUrl = (url: string) => {
+  const applyLogoUrl = async (url: string) => {
     const next = url.trim();
+    if (!next) return;
     setLogoUrl(next);
     setCompany((prev) => ({ ...prev, logo: next }));
     setHasChanges(true);
+    setLogoError(null);
+    if (!companyId) return;
+    const name = String(company.name || "").trim();
+    const overview = String(company.overview || company.companyIntro || " ").trim() || " ";
+    if (!name) {
+      setEditingField(null);
+      setLogoShowLink(false);
+      return;
+    }
+    await axios.put(`${API_BASE_URL}/companies/${companyId}`, {
+      name,
+      overview,
+      logo: next,
+    });
     setEditingField(null);
     setLogoShowLink(false);
-    setLogoError(null);
   };
 
   const openLogoPicker = () => {
@@ -466,7 +480,7 @@ function CompanyProfile({
       const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
       const { url } = await uploadImage(file);
       if (!url) throw new Error("No URL returned");
-      applyLogoUrl(url);
+      await applyLogoUrl(url);
       setLogoCropOpen(false);
       setLogoImgSrc("");
     } catch (err: any) {
@@ -966,19 +980,17 @@ function CompanyProfile({
                         <Globe className="w-full h-full text-harx-500" />
                       )}
                     </button>
-                    {editMode && (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openLogoPicker();
-                        }}
-                        className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
-                        aria-label={t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openLogoPicker();
+                      }}
+                      className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+                      aria-label={t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
+                    >
+                      <Edit2 size={12} />
+                    </button>
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -1325,7 +1337,7 @@ function CompanyProfile({
           </div>,
           document.body
         )}
-        {editMode && editingField === "logo" && createPortal(
+        {editingField === "logo" && createPortal(
           <div
             className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
             onClick={() => setEditingField(null)}
@@ -1386,7 +1398,16 @@ function CompanyProfile({
                       </button>
                       <button
                         type="button"
-                        onClick={() => applyLogoUrl(logoLink)}
+                        onClick={async () => {
+                          try {
+                            await applyLogoUrl(logoLink);
+                          } catch (err: any) {
+                            setLogoError(
+                              err?.response?.data?.message ||
+                                t("searchCompanyWizard.manual.logo.uploadFailed", "L'envoi du logo a échoué.")
+                            );
+                          }
+                        }}
                         disabled={!logoLink.trim()}
                         className="rounded-xl bg-gradient-harx px-4 py-1.5 text-sm font-bold text-white disabled:opacity-50"
                       >
