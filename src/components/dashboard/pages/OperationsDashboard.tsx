@@ -2305,7 +2305,7 @@ function LeadsView({
                 >
                   {rep.initials}
                 </span>
-                <span className="w-24 shrink-0 truncate text-[12px] font-bold text-slate-800">
+                <span className="w-40 shrink-0 truncate text-[12px] font-bold text-slate-800" title={rep.name}>
                   {rep.name}
                 </span>
                 <div className="flex h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
