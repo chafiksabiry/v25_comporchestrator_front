@@ -1,7 +1,11 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useTranslation } from "react-i18next";
+import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { uploadImage } from "./searchCompanyWizard/api/uploads";
 
 import {
   Building2,
@@ -25,6 +29,8 @@ import {
   Code,
   Edit2,
   Upload,
+  Link2,
+  X,
   Calendar,
   Factory,
   Linkedin,
@@ -229,6 +235,16 @@ function CompanyProfile({
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoLink, setLogoLink] = useState("");
+  const [logoShowLink, setLogoShowLink] = useState(false);
+  const [logoImgSrc, setLogoImgSrc] = useState("");
+  const [logoCrop, setLogoCrop] = useState<Crop>();
+  const [logoCompletedCrop, setLogoCompletedCrop] = useState<PixelCrop>();
+  const [logoCropOpen, setLogoCropOpen] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  const logoImgRef = useRef<HTMLImageElement>(null);
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
 
@@ -409,8 +425,103 @@ function CompanyProfile({
     return null;
   };
 
+  const applyLogoUrl = (url: string) => {
+    const next = url.trim();
+    setLogoUrl(next);
+    setCompany((prev) => ({ ...prev, logo: next }));
+    setHasChanges(true);
+    setEditingField(null);
+    setLogoShowLink(false);
+    setLogoError(null);
+  };
+
+  const openLogoPicker = () => {
+    setLogoError(null);
+    setLogoShowLink(false);
+    setLogoLink(logoUrl || "");
+    setEditingField("logo");
+  };
+
+  const onLogoImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = event.currentTarget;
+    setLogoCrop(centerCrop(makeAspectCrop({ unit: "%", width: 90 }, 1, width, height), width, height));
+  };
+
+  const cropLogoToBlob = (image: HTMLImageElement, pixelCrop: PixelCrop) => {
+    const canvas = document.createElement("canvas");
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = Math.max(1, Math.round(pixelCrop.width * scaleX));
+    canvas.height = Math.max(1, Math.round(pixelCrop.height * scaleY));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas unavailable");
+    ctx.drawImage(
+      image,
+      pixelCrop.x * scaleX,
+      pixelCrop.y * scaleY,
+      pixelCrop.width * scaleX,
+      pixelCrop.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("empty"));
+          return;
+        }
+        resolve(blob);
+      }, "image/jpeg", 0.95);
+    });
+  };
+
+  const handleLogoFile = (file: File) => {
+    setLogoError(null);
+    if (!file.type.startsWith("image/")) {
+      setLogoError(t("searchCompanyWizard.manual.logo.invalidType", "Choisis une image."));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError(t("searchCompanyWizard.manual.logo.tooBig", "L'image doit faire moins de 5 Mo."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setLogoImgSrc(reader.result?.toString() || "");
+      setEditingField(null);
+      setLogoCropOpen(true);
+    });
+    reader.readAsDataURL(file);
+    if (logoFileRef.current) logoFileRef.current.value = "";
+  };
+
+  const handleLogoCropSave = async () => {
+    if (!logoImgRef.current || !logoCompletedCrop) return;
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      const blob = await cropLogoToBlob(logoImgRef.current, logoCompletedCrop);
+      const file = new File([blob], "logo.jpg", { type: "image/jpeg" });
+      const { url } = await uploadImage(file);
+      if (!url) throw new Error("No URL returned");
+      applyLogoUrl(url);
+      setLogoCropOpen(false);
+      setLogoImgSrc("");
+    } catch (err: any) {
+      setLogoError(
+        err?.response?.data?.message ||
+          err?.message ||
+          t("searchCompanyWizard.manual.logo.uploadFailed", "L'envoi du logo a échoué.")
+      );
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLogoUrl(e.target.value);
+    setLogoLink(e.target.value);
   };
 
   const getDomainFromWebsite = (website?: string): string | null => {
@@ -865,8 +976,10 @@ function CompanyProfile({
                 <div className="flex items-center gap-6">
                   <div className="relative group">
                     <div
-                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""
-                        }`}
+                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""}`}
+                      onClick={() => {
+                        if (editMode) openLogoPicker();
+                      }}
                     >
                       {logoUrl ? (
                         <img
@@ -897,57 +1010,19 @@ function CompanyProfile({
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="text-white text-center">
                             <Upload size={20} className="mx-auto mb-1" />
-                            <span className="text-xs">Edit Logo</span>
+                            <span className="text-xs">{t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}</span>
                           </div>
                         </div>
                       )}
                     </div>
-                    {editMode && editingField === "logo" && (
-                      <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-                        <div className="space-y-2">
-                          <label className="text-sm text-gray-600 block">
-                            Logo URL
-                          </label>
-                          <input
-                            type="text"
-                            value={logoUrl}
-                            onChange={handleLogoChange}
-                            placeholder="Enter logo URL..."
-                             className="w-full px-3 py-2 text-sm border-2 border-harx-100 rounded-xl focus:ring-4 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all !text-black !bg-white"
-
-                          />
-                          <div className="flex justify-end gap-2 mt-2">
-                            <button
-                              onClick={() => setEditingField(null)}
-                              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => {
-                                setCompany((prev) => ({
-                                  ...prev,
-                                  logo: logoUrl
-                                }));
-                                setEditingField(null);
-                                setHasChanges(true);
-                              }}
-                               className="px-4 py-2 text-sm bg-gradient-harx text-white rounded-xl font-bold shadow-lg shadow-harx-500/30 hover:scale-105 transition-all"
-
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                     {editMode && (
                       <button
-                        onClick={() =>
-                          setEditingField(editingField === "logo" ? null : "logo")
-                        }
-                         className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
-
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openLogoPicker();
+                        }}
+                        className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
                       >
                         <Edit2 size={12} />
                       </button>
@@ -1184,6 +1259,153 @@ function CompanyProfile({
             </div>
           </div>
         </div>
+        {editMode && editingField === "logo" && createPortal(
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+            onClick={() => setEditingField(null)}
+          >
+            <div
+              className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 className="text-base font-black uppercase tracking-wide text-slate-900">
+                  {t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
+                </h3>
+                <button type="button" onClick={() => setEditingField(null)} className="rounded-xl p-2 hover:bg-slate-50">
+                  <X size={18} className="text-slate-400" />
+                </button>
+              </div>
+              <div className="space-y-2 p-4">
+                <button
+                  type="button"
+                  onClick={() => logoFileRef.current?.click()}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 px-4 py-3.5 text-left transition-all hover:border-harx-200 hover:bg-harx-50/40"
+                >
+                  <div className="rounded-xl bg-slate-100 p-2.5 text-slate-600">
+                    <Upload size={18} />
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">
+                    {t("searchCompanyWizard.profile.chooseImage", "Choisir une image")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLogoShowLink((open) => !open)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 px-4 py-3.5 text-left transition-all hover:border-harx-200 hover:bg-harx-50/40"
+                >
+                  <div className="rounded-xl bg-harx-50 p-2.5 text-harx-600">
+                    <Link2 size={18} />
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">
+                    {t("searchCompanyWizard.profile.useLink", "Utiliser un lien")}
+                  </span>
+                </button>
+                {logoShowLink && (
+                  <div className="space-y-3 rounded-2xl border border-slate-100 p-3">
+                    <input
+                      type="url"
+                      value={logoLink}
+                      onChange={handleLogoChange}
+                      placeholder="https://"
+                      className="w-full rounded-xl border-2 border-harx-100 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-harx-500"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingField(null)}
+                        className="px-3 py-1.5 text-sm font-bold text-slate-500"
+                      >
+                        {t("searchCompanyWizard.profile.cancel", "Annuler")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyLogoUrl(logoLink)}
+                        disabled={!logoLink.trim()}
+                        className="rounded-xl bg-gradient-harx px-4 py-1.5 text-sm font-bold text-white disabled:opacity-50"
+                      >
+                        {t("searchCompanyWizard.profile.save", "Enregistrer")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {logoError && <p className="px-1 text-xs font-semibold text-rose-600">{logoError}</p>}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        {logoCropOpen && logoImgSrc && createPortal(
+          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md">
+            <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h3 className="text-xl font-black text-slate-900">
+                  {t("searchCompanyWizard.profile.cropLogo", "Rogner le logo")}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogoCropOpen(false);
+                    setLogoImgSrc("");
+                  }}
+                  className="rounded-xl p-2 hover:bg-slate-50"
+                >
+                  <X size={18} className="text-slate-400" />
+                </button>
+              </div>
+              <div className="flex flex-1 items-center justify-center overflow-auto bg-slate-50/50 p-6">
+                <ReactCrop
+                  crop={logoCrop}
+                  onChange={(next) => setLogoCrop(next)}
+                  onComplete={(next) => setLogoCompletedCrop(next)}
+                  aspect={1}
+                >
+                  <img
+                    ref={logoImgRef}
+                    src={logoImgSrc}
+                    alt=""
+                    onLoad={onLogoImageLoad}
+                    className="max-h-[50vh] max-w-full object-contain"
+                  />
+                </ReactCrop>
+              </div>
+              {logoError && <p className="px-6 pb-2 text-xs font-semibold text-rose-600">{logoError}</p>}
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogoCropOpen(false);
+                    setLogoImgSrc("");
+                  }}
+                  className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50"
+                >
+                  {t("searchCompanyWizard.profile.cancel", "Annuler")}
+                </button>
+                <button
+                  type="button"
+                  disabled={logoUploading || !logoCompletedCrop}
+                  onClick={() => void handleLogoCropSave()}
+                  className="rounded-xl bg-gradient-harx px-8 py-2.5 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-harx-500/20 disabled:opacity-60"
+                >
+                  {logoUploading
+                    ? t("searchCompanyWizard.profile.saving", "Enregistrement…")
+                    : t("searchCompanyWizard.profile.save", "Enregistrer")}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+        <input
+          ref={logoFileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) handleLogoFile(file);
+          }}
+        />
       </ErrorBoundary>
     </CompanyContext.Provider>
   );
