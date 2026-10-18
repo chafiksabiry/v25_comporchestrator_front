@@ -1272,35 +1272,38 @@ function CompanyProfile({
                       <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                         <Building2 className="text-indigo-600" size={24} />
                       </div>
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">
                           {t('searchCompanyWizard.profile.companyOverview')}
                         </h2>
-                        <EditableField
-                          key={`overview-${lang}`}
-                          value={localizedOverview}
-                          field="overview"
-                          className="text-gray-700 leading-relaxed text-lg"
-                        />
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                          {String(tempValues.overview ?? localizedOverview ?? "") || "—"}
+                        </p>
                       </div>
                     </div>
 
-                    {localizedMission ? (
+                    {(localizedMission || editMode) ? (
                       <div className="ml-18 p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-white rounded-2xl border border-indigo-100/50 shadow-sm">
                         <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center">
+                          <div className="w-12 h-12 shrink-0 rounded-2xl bg-indigo-500 flex items-center justify-center">
                             <Target className="text-white" size={24} />
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <h3 className="text-xl font-bold text-indigo-700 mb-3">
                               {t('searchCompanyWizard.profile.ourMission')}
                             </h3>
-                            <EditableField
-                              key={`mission-${lang}`}
-                              value={localizedMission}
-                              field="mission"
-                              className="text-gray-700"
-                            />
+                            {editMode ? (
+                              <textarea
+                                value={String(tempValues.mission ?? localizedMission ?? "")}
+                                onChange={(e) => setTempValues((prev) => ({ ...prev, mission: e.target.value }))}
+                                rows={4}
+                                className="w-full resize-y rounded-xl border border-indigo-100 bg-white px-4 py-3 text-sm leading-relaxed text-slate-800 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                              />
+                            ) : (
+                              <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                                {localizedMission}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
