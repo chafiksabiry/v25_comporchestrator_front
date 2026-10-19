@@ -1101,7 +1101,6 @@ export default function CallsDashboardPage() {
           transaction: selectedCall.transaction,
           duration: selectedCall.duration,
           ai_call_status: selectedCall.ai_call_status,
-          status: selectedCall.status,
           answeredBy: selectedCall.answeredBy,
           suggestedDisposition: selectedCall.suggestedDisposition,
           scoreCalibration: selectedCall.scoreCalibration,

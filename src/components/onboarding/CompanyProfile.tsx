@@ -1031,7 +1031,6 @@ function CompanyProfile({
                 </div>
               </div>
             </div>
-          </div>
 
           {editMode && (
             <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-6 sm:px-10">
@@ -1314,7 +1313,6 @@ function CompanyProfile({
             </div>
           </div>
           </div>
-        </div>
         </div>
         {logoPreviewOpen && logoUrl && createPortal(
           <div
