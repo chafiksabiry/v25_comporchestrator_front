@@ -62,6 +62,8 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 // ignore VITE_API_URL_CALL (which targets the CRUD dashboard backend)
 // so swapping the CRUD provider never breaks the charts.
 import { getDashCallsApiBase } from '../lib/callsApiBase';
+import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
+import { isCallFraudDetected } from '../../../utils/callStatusDisplay';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
 import {
   extractGigAgentList,
@@ -385,6 +387,7 @@ interface StatusBucket {
 }
 
 interface RecentCall {
+  id: string;
   score: number | null;
   agent: string;
   lead: string;
@@ -1354,6 +1357,7 @@ export default function OperationsDashboard() {
           : '';
       const isVoicebot = Boolean(c.aiVoiceEnabled);
       return {
+        id: String(c._id || ''),
         score: c.score ?? null,
         agent: isVoicebot
           ? t('calls.voicebot', 'Assistant vocal IA')
@@ -4451,6 +4455,68 @@ function CallsView({
   const { t } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
   const recentCallsRef = useRef<HTMLElement>(null);
+  const [openedCall, setOpenedCall] = useState<NormalizedCall | null>(null);
+  const [openingCallId, setOpeningCallId] = useState<string | null>(null);
+
+  const openRecentCall = async (callId: string) => {
+    if (!callId || openingCallId) return;
+    const callsBase = getCallsApiBase();
+    if (!callsBase) return;
+    setOpeningCallId(callId);
+    try {
+      const res = await fetch(`${callsBase}/calls/${encodeURIComponent(callId)}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const call = json?.data;
+      if (!call) return;
+      const lead = call.lead;
+      const agent = call.agent;
+      const leadName =
+        lead && typeof lead === 'object'
+          ? `${lead.First_Name || ''} ${lead.Last_Name || ''}`.trim()
+          : '';
+      const agentName =
+        agent && typeof agent === 'object'
+          ? `${agent.firstName || agent.first_name || ''} ${agent.lastName || agent.last_name || ''}`.trim() ||
+            agent.personalInfo?.name ||
+            agent.name ||
+            ''
+          : '';
+      const id = typeof call._id === 'object' ? call._id.$oid : call._id;
+      setOpenedCall({
+        id: String(id || callId),
+        leadName,
+        agentName,
+        status: call.status,
+        createdAt: call.createdAt || call.date || '',
+        recording_url: call.recording_url,
+        recording_url_cloudinary: call.recording_url_cloudinary,
+        transcript: call.transcript,
+        ai_call_score: call.ai_call_score,
+        ai_summary_en: call.ai_summary_en,
+        ai_summary_fr: call.ai_summary_fr,
+        validByAI: call.validByAI,
+        callOutcome: call.callOutcome,
+        flags: call.flags,
+        transaction: call.transaction,
+        duration: call.duration,
+        ai_call_status: call.ai_call_status,
+        answeredBy: call.answeredBy,
+        suggestedDisposition: call.suggestedDisposition,
+        scoreCalibration: call.scoreCalibration,
+        leadId:
+          lead && typeof lead === 'object'
+            ? String(typeof lead._id === 'object' ? lead._id?.$oid : lead._id || lead.id || '')
+            : null,
+        repDisposition: lead?.repDisposition || null,
+        pendingDisposition: lead?.pendingDisposition || null,
+      });
+    } catch {
+      /* leave the list in place */
+    } finally {
+      setOpeningCallId(null);
+    }
+  };
 
   const toggleKpi = (id: string) => {
     setSelectedKpi((prev) => (prev === id ? null : id));
@@ -4668,8 +4734,14 @@ function CallsView({
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {recentCalls.map((c, idx) => (
-                <li key={idx} className="flex items-center gap-3 py-2.5">
+              {recentCalls.map((c) => (
+                <li key={c.id || c.when}>
+                  <button
+                    type="button"
+                    disabled={!c.id || openingCallId === c.id}
+                    onClick={() => void openRecentCall(c.id)}
+                    className="flex w-full items-center gap-3 py-2.5 text-left rounded-xl hover:bg-slate-50 disabled:opacity-60"
+                  >
                   <AgentAvatar name={c.agent} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-slate-900">
@@ -4685,6 +4757,7 @@ function CallsView({
                   <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-400">
                     {c.when}
                   </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -4734,6 +4807,13 @@ function CallsView({
           />
         </div>
       </section>
+      {openedCall && (
+        <CallDetailModal
+          call={openedCall}
+          agentFraudCount={isCallFraudDetected(openedCall) ? 1 : 0}
+          onClose={() => setOpenedCall(null)}
+        />
+      )}
     </>
   );
 }
