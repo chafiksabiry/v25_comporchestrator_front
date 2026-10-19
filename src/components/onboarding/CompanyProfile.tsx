@@ -902,7 +902,7 @@ function CompanyProfile({
             {/* Hero Section */}
             <div className="relative h-80">
               <div
-                className="absolute inset-0 bg-cover bg-center"
+                className="pointer-events-none absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage:
                     "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')",
@@ -950,7 +950,7 @@ function CompanyProfile({
                 </button>
               </div>
 
-              <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
+              <div className="relative z-20 h-full flex flex-col justify-end p-12 space-y-6">
                 <div className="flex items-center gap-6">
                   <div className="relative z-10">
                     <button
@@ -1317,8 +1317,11 @@ function CompanyProfile({
         </div>
         {logoPreviewOpen && logoUrl && createPortal(
           <div
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md"
-            onClick={() => setLogoPreviewOpen(false)}
+            className="fixed inset-0 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md"
+            style={{ zIndex: 100000 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setLogoPreviewOpen(false);
+            }}
           >
             <div
               className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
@@ -1341,8 +1344,11 @@ function CompanyProfile({
         )}
         {logoPickerOpen && createPortal(
           <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
-            onClick={() => setLogoPickerOpen(false)}
+            className="fixed inset-0 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+            style={{ zIndex: 100000 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setLogoPickerOpen(false);
+            }}
           >
             <div
               className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
@@ -1425,7 +1431,7 @@ function CompanyProfile({
           document.body
         )}
         {logoCropOpen && logoImgSrc && createPortal(
-          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md" style={{ zIndex: 100000 }}>
             <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 className="text-xl font-black text-slate-900">
