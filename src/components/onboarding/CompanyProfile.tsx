@@ -203,6 +203,7 @@ function CompanyProfile({
   const [logoCropOpen, setLogoCropOpen] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoPreviewOpen, setLogoPreviewOpen] = useState(false);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const logoFileRef = useRef<HTMLInputElement>(null);
   const logoImgRef = useRef<HTMLImageElement>(null);
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
@@ -396,7 +397,7 @@ function CompanyProfile({
     const name = String(company.name || "").trim();
     const overview = String(company.overview || company.companyIntro || " ").trim() || " ";
     if (!name) {
-      setEditingField(null);
+      setLogoPickerOpen(false);
       setLogoShowLink(false);
       return;
     }
@@ -405,15 +406,18 @@ function CompanyProfile({
       overview,
       logo: next,
     });
-    setEditingField(null);
+    setLogoPickerOpen(false);
     setLogoShowLink(false);
   };
 
-  const openLogoPicker = () => {
+  const openLogoPicker = (event?: { preventDefault: () => void; stopPropagation: () => void }) => {
+    event?.preventDefault();
+    event?.stopPropagation();
+    setLogoPreviewOpen(false);
     setLogoError(null);
     setLogoShowLink(false);
     setLogoLink(logoUrl || "");
-    setEditingField("logo");
+    setLogoPickerOpen(true);
   };
 
   const onLogoImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
@@ -948,7 +952,7 @@ function CompanyProfile({
 
               <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
                 <div className="flex items-center gap-6">
-                  <div className="relative">
+                  <div className="relative z-10">
                     <button
                       type="button"
                       onClick={() => {
@@ -982,11 +986,8 @@ function CompanyProfile({
                     </button>
                     <button
                       type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openLogoPicker();
-                      }}
-                      className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+                      onClick={(event) => openLogoPicker(event)}
+                      className="absolute -right-2 -top-2 z-30 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
                       aria-label={t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
                     >
                       <Edit2 size={12} />
@@ -1338,10 +1339,10 @@ function CompanyProfile({
           </div>,
           document.body
         )}
-        {editingField === "logo" && createPortal(
+        {logoPickerOpen && createPortal(
           <div
             className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
-            onClick={() => setEditingField(null)}
+            onClick={() => setLogoPickerOpen(false)}
           >
             <div
               className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
@@ -1351,7 +1352,7 @@ function CompanyProfile({
                 <h3 className="text-base font-black uppercase tracking-wide text-slate-900">
                   {t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
                 </h3>
-                <button type="button" onClick={() => setEditingField(null)} className="rounded-xl p-2 hover:bg-slate-50">
+                <button type="button" onClick={() => setLogoPickerOpen(false)} className="rounded-xl p-2 hover:bg-slate-50">
                   <X size={18} className="text-slate-400" />
                 </button>
               </div>
@@ -1392,7 +1393,7 @@ function CompanyProfile({
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => setEditingField(null)}
+                        onClick={() => setLogoPickerOpen(false)}
                         className="px-3 py-1.5 text-sm font-bold text-slate-500"
                       >
                         {t("searchCompanyWizard.profile.cancel", "Annuler")}
