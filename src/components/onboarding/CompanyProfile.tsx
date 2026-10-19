@@ -206,6 +206,7 @@ function CompanyProfile({
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const logoFileRef = useRef<HTMLInputElement>(null);
   const logoImgRef = useRef<HTMLImageElement>(null);
+  const logoPickerDialogRef = useRef<HTMLDialogElement>(null);
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
 
@@ -214,6 +215,16 @@ function CompanyProfile({
     setTempValues({});
     setEditingField(null);
   }, [lang]);
+
+  useEffect(() => {
+    const dialog = logoPickerDialogRef.current;
+    if (!dialog) return;
+    if (logoPickerOpen) {
+      if (!dialog.open) dialog.showModal();
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [logoPickerOpen]);
 
   const cookieCompanyId = Cookies.get('companyId');
   const companyId = propCompanyId || cookieCompanyId;
@@ -955,10 +966,8 @@ function CompanyProfile({
                   <div className="relative z-10">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (logoUrl) setLogoPreviewOpen(true);
-                      }}
-                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${logoUrl ? "cursor-zoom-in" : "cursor-default"}`}
+                      onClick={(event) => openLogoPicker(event)}
+                      className="w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden cursor-pointer"
                     >
                       {logoUrl ? (
                         <img
@@ -986,8 +995,9 @@ function CompanyProfile({
                     </button>
                     <button
                       type="button"
+                      onPointerDown={(event) => openLogoPicker(event)}
                       onClick={(event) => openLogoPicker(event)}
-                      className="absolute -right-2 -top-2 z-30 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+                      className="absolute -right-2 -top-2 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-white text-harx-500 shadow-lg hover:text-harx-600"
                       aria-label={t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
                     >
                       <Edit2 size={12} />
@@ -1342,18 +1352,13 @@ function CompanyProfile({
           </div>,
           document.body
         )}
-        {logoPickerOpen && createPortal(
-          <div
-            className="fixed inset-0 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
-            style={{ zIndex: 100000 }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setLogoPickerOpen(false);
-            }}
+        {createPortal(
+          <dialog
+            ref={logoPickerDialogRef}
+            className="w-[min(100%-2rem,24rem)] rounded-3xl border-0 bg-white p-0 shadow-2xl backdrop:bg-slate-900/70"
+            onClose={() => setLogoPickerOpen(false)}
           >
-            <div
-              className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <div className="overflow-hidden rounded-3xl bg-white">
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                 <h3 className="text-base font-black uppercase tracking-wide text-slate-900">
                   {t("searchCompanyWizard.profile.editLogo", "Modifier le logo")}
@@ -1427,7 +1432,7 @@ function CompanyProfile({
                 {logoError && <p className="px-1 text-xs font-semibold text-rose-600">{logoError}</p>}
               </div>
             </div>
-          </div>,
+          </dialog>,
           document.body
         )}
         {logoCropOpen && logoImgSrc && createPortal(
