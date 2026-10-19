@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
@@ -893,7 +894,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="relative h-80">
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')" }}>
+          <div className="pointer-events-none absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')" }}>
             <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-harx-900/90 to-gray-900" />
             <div className="absolute inset-0 opacity-20" style={{ background: "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.3) 25%, transparent 30%)", animation: "shine 8s infinite linear" }} />
             <div className="absolute inset-0 opacity-10" style={{ background: "linear-gradient(90deg, transparent 45%, rgba(255,255,255,0.4) 50%, transparent 55%)", animation: "shine 6s infinite linear" }} />
@@ -934,7 +935,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
             </button>
           </div>
 
-          <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
+          <div className="relative z-20 h-full flex flex-col justify-end p-12 space-y-6">
             <div className="flex items-center gap-6">
               <div className="relative group">
                 <div className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""}`}>
@@ -968,8 +969,18 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                     </div>
                   )}
                 </div>
-                {editingField === "logo" && (
-                  <div className="absolute top-full left-0 mt-3 w-[340px] z-30 rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+                {editingField === "logo" && createPortal(
+                  <div
+                    className="fixed inset-0 flex items-center justify-center bg-slate-900/70 p-4"
+                    style={{ zIndex: 100000 }}
+                    onMouseDown={(event) => {
+                      if (event.target === event.currentTarget) {
+                        setEditingField(null);
+                        setLogoError(null);
+                      }
+                    }}
+                  >
+                  <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden" onMouseDown={(event) => event.stopPropagation()}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-harx-50 to-harx-alt-50">
                       <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
@@ -1126,6 +1137,8 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                       </div>
                     )}
                   </div>
+                  </div>,
+                  document.body
                 )}
                 <button
                   type="button"
