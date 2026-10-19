@@ -928,7 +928,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                     </div>
                   )}
                 </div>
-                {editMode && editingField === "logo" && (
+                {editingField === "logo" && (
                   <div className="absolute top-full left-0 mt-3 w-[340px] z-30 rounded-2xl border border-slate-200 bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-harx-50 to-harx-alt-50">
                       <div className="flex items-center gap-2">
@@ -1087,11 +1087,17 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                     )}
                   </div>
                 )}
-                {editMode && (
-                  <button onClick={() => setEditingField(editingField === "logo" ? null : "logo")} className="absolute -right-2 -top-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-harx-600 transition-colors">
-                    <Edit2 size={12} />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setEditingField(editingField === "logo" ? null : "logo");
+                  }}
+                  className="absolute -right-2 -top-2 z-30 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-colors"
+                >
+                  <Edit2 size={12} />
+                </button>
               </div>
 
               <div>
