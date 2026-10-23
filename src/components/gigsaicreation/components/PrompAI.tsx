@@ -496,6 +496,11 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   };
 
   const handleGenerateSuggestions = async () => {
+    const brief = input.trim();
+    if (brief.length < 25 || brief.split(/\s+/).filter(Boolean).length < 5) {
+      toast.error(t('gigCreation.prompt.briefTooShort'));
+      return;
+    }
     try {
       await assertCompanyHasAiTokens(1, undefined, { allowFirstGigFree: true });
     } catch (err: any) {

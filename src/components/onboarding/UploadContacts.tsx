@@ -852,10 +852,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       if (dataString.length > maxSize) {
         if (useSessionStorage) {
-          console.warn(`ÔÜá´©Å Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
+          console.warn(`⚠️ Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
           return false;
         } else {
-          console.warn(`ÔÜá´©Å Data for ${key} too large for localStorage, using sessionStorage`);
+          console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
           return safeStorageSet(key, data, true);
         }
       }
@@ -867,7 +867,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
       return true;
     } catch (error) {
-      console.warn(`ÔÜá´©Å Storage full for ${key}, cleaning up and retrying`);
+      console.warn(`⚠️ Storage full for ${key}, cleaning up and retrying`);
 
       // Clean up storage and try again
       cleanupLocalStorage();
@@ -885,10 +885,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         return true;
       } catch (retryError) {
         if (useSessionStorage) {
-          console.error(`ÔØî Both localStorage and sessionStorage are full for ${key}`);
+          console.error(`❌ Both localStorage and sessionStorage are full for ${key}`);
           return false;
         } else {
-          console.warn(`ÔÜá´©Å Still full after cleanup, trying sessionStorage for ${key}`);
+          console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
           return safeStorageSet(key, data, true);
         }
       }
@@ -912,7 +912,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       return null;
     } catch (error) {
-      console.error(`ÔØî Error parsing data for ${key}:`, error);
+      console.error(`❌ Error parsing data for ${key}:`, error);
       return null;
     }
   };
@@ -937,7 +937,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
       return data;
     } catch (error) {
-      console.error('ÔØî Error compressing data:', error);
+      console.error('❌ Error compressing data:', error);
       return data;
     }
   };
@@ -948,13 +948,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       if (Array.isArray(data)) {
         // If data is too large, keep only the most recent items
         if (data.length > maxItems) {
-          console.warn(`ÔÜá´©Å Limiting data to ${maxItems} items (was ${data.length})`);
+          console.warn(`⚠️ Limiting data to ${maxItems} items (was ${data.length})`);
           return data.slice(-maxItems); // Keep last 100 items
         }
       }
       return data;
     } catch (error) {
-      console.error('ÔØî Error limiting data size:', error);
+      console.error('❌ Error limiting data size:', error);
       return data;
     }
   };
@@ -986,7 +986,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       
     } catch (error) {
-      console.error('ÔØî Error cleaning up localStorage:', error);
+      console.error('❌ Error cleaning up localStorage:', error);
     }
   };
 
@@ -1246,15 +1246,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     companyCustomColumns.length +
     3; // addedAt, status, actions
 
-  /** Always-required scalar fields (name is handled separately). */
-  const REQUIRED_SCALAR_FIELDS = [
-    'Email_1',
-    'Phone',
-    'Address',
-    'Postal_Code',
-    'City',
-    'Date_of_Birth',
-  ] as const;
+  /** Always-required scalar fields (name is handled separately). Address, e-mail, … stay optional: matching works with what the file provides. */
+  const REQUIRED_SCALAR_FIELDS = ['Phone'] as const;
 
   const mappedFieldSet = (mapping: ColumnMapping) =>
     new Set(Object.values(mapping).filter(Boolean));
@@ -1992,13 +1985,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
 
-    // D├®but de la sauvegarde (s├®par├® du processing)
+    // Début de la sauvegarde (séparé du processing)
     setIsSavingLeads(true);
     setSavedLeadsCount(0);
     setRecentlySavedLeads([]);
     setShowSaveButton(false);
 
-    // Utiliser la r├®f├®rence pour suivre l'├®tat de traitement de mani├¿re fiable
+    // Utiliser la référence pour suivre l'état de traitement de manière fiable
     processingRef.current = true;
 
     let didSave = false;
@@ -2048,10 +2041,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           : {}),
       }));
 
-      // D├®doublonnage c├┤t├® client avant l'envoi : on ne renvoie pas deux fois
-      // le m├¬me email/t├®l├®phone (le backend filtre aussi mais on ├®vite la
-      // bande passante inutile et on ├®vite que le toast annonce un nombre
-      // de doublons gonfl├® par notre propre payload).
+      // Dédoublonnage côté client avant l'envoi : on ne renvoie pas deux fois
+      // le même email/téléphone (le backend filtre aussi mais on évite la
+      // bande passante inutile et on évite que le toast annonce un nombre
+      // de doublons gonflé par notre propre payload).
       const seenEmails = new Set<string>();
       const seenPhones = new Set<string>();
       const leadsForAPI = mappedLeads.filter((lead) => {
@@ -2073,7 +2066,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error('Processing cancelled by user');
       }
 
-      // Progression fictive pour montrer que ├ºa travaille
+      // Progression fictive pour montrer que ça travaille
       setUploadProgress(30);
 
       const response = await axios.post(
@@ -2101,11 +2094,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         if (savedCount > 0) {
           toast.success(
             totalSkipped > 0
-              ? `${savedCount} contact(s) enregistr├®(s), ${totalSkipped} doublon(s) ignor├®(s)`
+              ? `${savedCount} contact(s) enregistré(s), ${totalSkipped} doublon(s) ignoré(s)`
               : t('uploadContacts.success.savedContacts', { count: savedCount })
           );
         } else if (totalSkipped > 0) {
-          toast(`Aucun nouveau contact : ${totalSkipped} doublon(s) ignor├®(s)`, { icon: 'Ôä╣´©Å' });
+          toast(`Aucun nouveau contact : ${totalSkipped} doublon(s) ignoré(s)`, { icon: 'ℹ️' });
         }
 
         // Persist the per-gig setupSteps.uploadContacts flag so the
@@ -2114,13 +2107,13 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           markGigStepDone(selectedGigId, 'uploadContacts', true);
         }
 
-        // Les leads sont maintenant ajout├®s, on peut mettre ├á jour l'├®tat local si n├®cessaire
-        // Pour l'instant, on se fie au rechargement ou ├á la r├®ponse
+        // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
+        // Pour l'instant, on se fie au rechargement ou à la réponse
         didSave = true;
         setSavedLeadsCount(savedCount);
         setTotalCount((prev) => prev + savedCount);
 
-        // Les leads ont ├®t├® ajout├®s, effacer les leads pars├®s
+        // Les leads ont été ajoutés, effacer les leads parsés
         setParsedLeads([]);
 
         // Clear validation results immediately after save
@@ -2129,7 +2122,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         sessionStorage.removeItem('validationResults');
 
 
-        // Mettre ├á jour l'onboarding
+        // Mettre à jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
           if (companyId) {
@@ -2160,7 +2153,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       toast.error(errorMessage);
 
     } finally {
-      // TOUJOURS r├®initialiser l'├®tat, m├¬me en cas d'erreur
+      // TOUJOURS réinitialiser l'état, même en cas d'erreur
       setIsSavingLeads(false);
       processingRef.current = false;
       setShowSaveButton(true);
@@ -2203,7 +2196,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  // Fonction pour forcer la r├®initialisation compl├¿te
+  // Fonction pour forcer la réinitialisation complète
 
   const handleZohoConnect = async () => {
     try {
@@ -2314,10 +2307,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const accountsServer = urlParams.get('accounts-server');
 
       const params = new URLSearchParams(window.location.search);
-      // V├®rifier si l'URL contient le param├¿tre startStep=5
+      // Vérifier si l'URL contient le paramètre startStep=5
       if (params.get('session') === 'someGeneratedSessionId') {
 
-        // Nettoyer l'URL pour ├®viter de relancer ├á chaque render
+        // Nettoyer l'URL pour éviter de relancer à chaque render
         params.delete('session');
         const newSearch = params.toString();
         window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
@@ -2406,7 +2399,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         headers,
       });
       if (refreshRes.ok) {
-        // R├®essayer la requ├¬te initiale
+        // Réessayer la requête initiale
         response = await fetch(url, { ...options, headers });
       } else {
         toast.error(t('uploadContacts.errors.zohoTokenExpired'));
@@ -2739,7 +2732,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       return;
     }
 
-    // Skip fetchLeads if we have parsed leads waiting to be saved ÔÇö fetchLeads would wipe them
+    // Skip fetchLeads if we have parsed leads waiting to be saved — fetchLeads would wipe them
     if (parsedLeads.length > 0) {
       
       return;
@@ -2766,7 +2759,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   }, [selectedGigId, isProcessing, leadStatsFilter, callFilterGigId]);
 
-  // useEffect pour recharger les leads apr├¿s l'import Zoho
+  // useEffect pour recharger les leads après l'import Zoho
   useEffect(() => {
     
     // Recharger les leads si on vient de finir l'import Zoho et qu'on a des leads
@@ -2782,7 +2775,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   useEffect(() => {
     
 
-    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affich├®s
+    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
     if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
       
       fetchLeads(1, '').catch(error => {
@@ -2790,7 +2783,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         setError('Failed to load leads');
       });
     }
-  }, []); // Se d├®clenche seulement au montage
+  }, []); // Se déclenche seulement au montage
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
@@ -2832,7 +2825,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     const buttons = [];
     const maxVisiblePages = 5; // Nombre maximum de pages visibles
 
-    // Si le nombre total de pages est inf├®rieur ou ├®gal au maximum visible, afficher toutes les pages
+    // Si le nombre total de pages est inférieur ou égal au maximum visible, afficher toutes les pages
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         buttons.push(
@@ -2851,7 +2844,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       return buttons;
     }
 
-    // Toujours afficher la premi├¿re page
+    // Toujours afficher la première page
     buttons.push(
       <button
         key={1}
@@ -2865,18 +2858,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       </button>
     );
 
-    // Calculer les pages ├á afficher autour de la page courante
+    // Calculer les pages à afficher autour de la page courante
     let startPage = Math.max(2, currentPage - 1);
     let endPage = Math.min(totalPages - 1, currentPage + 1);
 
-    // Ajuster si on est proche du d├®but ou de la fin
+    // Ajuster si on est proche du début ou de la fin
     if (currentPage <= 3) {
       endPage = Math.min(4, totalPages - 1);
     } else if (currentPage >= totalPages - 2) {
       startPage = Math.max(2, totalPages - 3);
     }
 
-    // Ajouter les points de suspension au d├®but si n├®cessaire
+    // Ajouter les points de suspension au début si nécessaire
     if (startPage > 2) {
       buttons.push(
         <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
@@ -2901,7 +2894,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       );
     }
 
-    // Ajouter les points de suspension ├á la fin si n├®cessaire
+    // Ajouter les points de suspension à la fin si nécessaire
     if (endPage < totalPages - 1) {
       buttons.push(
         <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
@@ -2910,7 +2903,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       );
     }
 
-    // Toujours afficher la derni├¿re page si elle existe et est diff├®rente de la premi├¿re
+    // Toujours afficher la dernière page si elle existe et est différente de la première
     if (totalPages > 1) {
       buttons.push(
         <button
@@ -2964,7 +2957,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               targetGigId = urlGigId;
             }
           } catch {
-            // Non-browser environment or malformed URL ÔÇö keep default.
+            // Non-browser environment or malformed URL — keep default.
           }
           setSelectedGigId(targetGigId);
         }
@@ -3117,25 +3110,25 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
-  // Fonction de filtrage des leads - maintenant d├®clenche une recherche API
+  // Fonction de filtrage des leads - maintenant déclenche une recherche API
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
-    // Annuler le timeout pr├®c├®dent s'il existe
+    // Annuler le timeout précédent s'il existe
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // D├®lai pour ├®viter trop d'appels API pendant la frappe
+    // Délai pour éviter trop d'appels API pendant la frappe
     searchTimeoutRef.current = setTimeout(async () => {
-      // Si on a une requ├¬te de recherche, r├®cup├®rer tous les r├®sultats
+      // Si on a une requête de recherche, récupérer tous les résultats
       if (query.trim()) {
-        await fetchLeads(1, query); // R├®cup├®rer tous les r├®sultats de recherche
+        await fetchLeads(1, query); // Récupérer tous les résultats de recherche
       } else {
         // Si pas de recherche, recharger les leads normaux avec pagination
         await fetchLeads(1);
       }
-    }, 500); // 500ms de d├®lai
+    }, 500); // 500ms de délai
   };
 
   // Fonction de filtrage par statut (local uniquement)
@@ -3152,7 +3145,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     });
   };
 
-  // Effet pour filtrer les leads par statut seulement (la recherche est g├®r├®e par l'API)
+  // Effet pour filtrer les leads par statut seulement (la recherche est gérée par l'API)
   useEffect(() => {
     const filtered = filterLeadsByStatus(leads, filterStatus);
     setFilteredLeads(filtered);
@@ -3499,7 +3492,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 <span>
                   {isProcessing && !uploadError && !uploadSuccess
                     ? `Analyse en cours... ${uploadProgress}%`
-                    : uploadProgress > 0 ? `${uploadProgress}% termin├®` : 'Pr├¬t'
+                    : uploadProgress > 0 ? `${uploadProgress}% terminé` : 'Prêt'
                   }
                 </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
@@ -4189,7 +4182,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                           <div className="mt-3 space-y-2">
                             {validationResults.errors.slice(0, MAX_VALIDATION_ERRORS).map((error: string, index: number) => (
                               <div key={index} className="text-red-700 bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-100 text-xs font-semibold">
-                                ÔÇó {error}
+                                • {error}
                               </div>
                             ))}
                             {(validationResults.errorTotal ?? validationResults.errors.length) > validationResults.errors.length && (
@@ -4405,7 +4398,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 </button>
 
 
-                {/* Bouton de sauvegarde s├®par├® qui appara├«t pendant la sauvegarde */}
+                {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
                 {isSavingLeads && (
                   <div className="mt-4 space-y-3">
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
@@ -4831,7 +4824,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         )}
       </div>
 
-      {/* Ajout d'une section pour afficher les leads en temps r├®el */}
+      {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
         <div className="bg-white/60 backdrop-blur-xl rounded-[24px] shadow-lg border border-white/70 p-5">
           <h3 className="text-base font-black text-slate-900 mb-3 flex items-center tracking-tight">
