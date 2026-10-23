@@ -204,6 +204,7 @@ function CompanyProfile({
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoPreviewOpen, setLogoPreviewOpen] = useState(false);
   const [logoPickerOpen, setLogoPickerOpen] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const logoFileRef = useRef<HTMLInputElement>(null);
   const logoImgRef = useRef<HTMLImageElement>(null);
   const logoPickerDialogRef = useRef<HTMLDialogElement>(null);
