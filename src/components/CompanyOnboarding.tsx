@@ -490,6 +490,31 @@ const CompanyOnboarding = () => {
     setStepGuide(null);
   };
 
+  const handleConfirmStepGuide = () => {
+    if (!stepGuide) return;
+
+    const { stepId, variant } = stepGuide;
+    markStepGuideSeen(stepId, variant);
+
+    const pending = pendingStep;
+    setStepGuide(null);
+    setPendingStep(null);
+
+    if (getFocusedStepId() === stepId) return;
+
+    const targetPhase = findPhaseIdForStep(stepId);
+    if (targetPhase !== displayedPhase) {
+      setDisplayedPhase(targetPhase);
+    }
+
+    const mode = pending?.mode ?? (completedSteps.includes(stepId) ? 'review' : 'start');
+    if (mode === 'start') {
+      void executeStartStep(stepId);
+    } else {
+      void executeReviewStep(stepId);
+    }
+  };
+
   // Step-specific guide modals no longer auto-trigger (shouldShowStepGuide stays
   // false for the automatic before/inside popups), but the user can always open
   // the same guide on demand via the persistent "?" button — see
@@ -512,6 +537,7 @@ const CompanyOnboarding = () => {
       phaseId={stepGuide.phaseId}
       variant={stepGuide.variant}
       onClose={handleCloseStepGuide}
+      onConfirm={handleConfirmStepGuide}
     />
   ) : null;
 

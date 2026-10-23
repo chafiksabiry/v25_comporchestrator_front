@@ -22,6 +22,7 @@ interface StepGuideModalProps {
   phaseId: number;
   variant: StepGuideVariant;
   onClose: () => void;
+  onConfirm?: () => void;
 }
 
 const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) => {
@@ -293,6 +294,7 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
   phaseId,
   variant,
   onClose,
+  onConfirm,
 }) => {
   const { t } = useTranslation();
 
@@ -361,7 +363,7 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
 
         <button
           type="button"
-          onClick={onClose}
+          onClick={onConfirm ?? onClose}
           className="mt-4 w-full rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition hover:opacity-90"
         >
           {t('companyOnboarding.stepGuide.start', 'Compris')}
