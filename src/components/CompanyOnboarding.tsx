@@ -2026,10 +2026,10 @@ const CompanyOnboarding = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Re-launch the guided tour for this phase */}
+              {/* Open the on-demand help guide (the automatic phase tour no longer exists) */}
               <button
                 type="button"
-                onClick={() => setTourPhase(displayedPhase)}
+                onClick={openStepGuideOnDemand}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-dashed border-harx-300 text-harx-500 hover:bg-harx-50 hover:border-harx-400 transition-all text-xs font-bold"
                 title="Revoir le guide de cette phase"
               >
@@ -2075,7 +2075,7 @@ const CompanyOnboarding = () => {
               <div
                 key={step.id}
                 {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled && !isCallCenterWorkspace())
+                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
@@ -2097,7 +2097,7 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase
                       ? "bg-gray-100 text-gray-400"
                       : step.disabled
                         ? "bg-gray-100 text-gray-400"
@@ -2140,7 +2140,7 @@ const CompanyOnboarding = () => {
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          {t('companyOnboarding.ui.locked')}
+                          {t('companyOnboarding.ui.todo')}
                         </span>
                       )}
                     </div>

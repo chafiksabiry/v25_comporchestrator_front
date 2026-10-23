@@ -325,7 +325,7 @@ function AccountSettingsPanel() {
             Paramètres du compte
           </h1>
           <p className="text-xs text-gray-500 mt-0.5 font-medium">
-            Tout changement sensible est confirmé par email (Brevo) ou OTP SMS.
+            Tout changement sensible est confirmé par e-mail ou par code SMS.
           </p>
         </div>
       </div>
