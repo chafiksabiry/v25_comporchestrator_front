@@ -15,7 +15,6 @@ import {
   Calendar,
   Settings,
   Rocket,
-  HelpCircle,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
@@ -27,7 +26,6 @@ import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
 import SessionPlanning from "./onboarding/SessionPlanning";
-import OnboardingProductTour, { hasSeenProductTour, type TourStep } from "./onboarding/OnboardingProductTour";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
@@ -497,10 +495,16 @@ const CompanyOnboarding = () => {
   // the same guide on demand via the persistent "?" button — see
   // openStepGuideOnDemand and the floating button rendered with activeComponent.
   const openStepGuideOnDemand = () => {
-    const stepId = getFocusedStepId();
+    const stepId = getFocusedStepId() ?? phases[displayedPhase - 1]?.steps?.[0]?.id ?? null;
     if (stepId === null) return;
     setStepGuide({ stepId, phaseId: findPhaseIdForStep(stepId), variant: 'inside' });
   };
+
+  useEffect(() => {
+    const onHelp = () => openStepGuideOnDemand();
+    window.addEventListener('harx-open-company-onboarding-help', onHelp);
+    return () => window.removeEventListener('harx-open-company-onboarding-help', onHelp);
+  });
   const stepGuideLayer = stepGuide ? (
     <StepGuideModal
       isOpen
@@ -511,177 +515,7 @@ const CompanyOnboarding = () => {
     />
   ) : null;
 
-  // Per-phase product tour — shown only on the first visit to each phase.
-  const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
-    1: [
-      {
-        target: 'tour-phase-tabs',       // → whole phase-tab grid
-        badge: 'Phase 1 — Étape 1/5',
-        title: 'Les 4 phases de l\'onboarding',
-        description: 'Votre parcours est divisé en 4 phases à compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-phase-title',      // → h2 phase title
-        badge: 'Phase 1 — Étape 2/5',
-        title: 'Configuration du Compte & Identité',
-        description: 'Commencez par configurer votre profil d\'entreprise et valider votre identité légale. Ces étapes débloquent l\'accès aux phases suivantes.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',   // → "Démarrer l'Étape" button
-        badge: 'Phase 1 — Étape 3/5',
-        title: 'Créer le Profil de l\'Entreprise',
-        description: 'Cliquez ici pour remplir vos informations juridiques, contacts clés et accepter les conditions. Environ 5 minutes.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title', // → KYC step title
-        badge: 'Phase 1 — Étape 4/5',
-        title: 'Vérification KYC / KYB',
-        description: 'Cette étape se déverrouille automatiquement après le profil. Il s\'agit d\'une vérification d\'identité légale obligatoire.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',   // → "Phase Suivante" button
-        badge: 'Phase 1 — Étape 5/5',
-        title: 'Passer à la Phase 2',
-        description: 'Une fois les étapes complétées, cliquez ici pour accéder à la Phase 2 : Configuration Opérationnelle.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    2: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 2 — Étape 1/4',
-        title: 'Configuration Opérationnelle',
-        description: 'Configurez vos gigs, lignes téléphoniques et importez vos contacts. Cette phase prépare votre équipe à passer des appels.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 2 — Étape 2/4',
-        title: 'Créer vos Gigs',
-        description: 'Cliquez ici pour définir votre premier gig : équipe, objectifs et prérequis. C\'est la pierre angulaire de vos opérations.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 2 — Étape 3/4',
-        title: 'Configuration Téléphonique',
-        description: 'Achetez des numéros de téléphone et affectez-les à vos gigs. Chaque représentant aura besoin d\'une ligne dédiée.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 2 — Étape 4/4',
-        title: 'Vers la Phase 3',
-        description: 'Après avoir configuré vos opérations, cliquez ici pour passer à la Phase 3 : Engagement des REPS.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    3: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 3 — Étape 1/4',
-        title: 'Engagement des REPS',
-        description: 'Équipez vos représentants avec une base de connaissances, une formation e-learning et des scripts d\'appel optimisés.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 3 — Étape 2/4',
-        title: 'Base de Connaissances',
-        description: 'Cliquez ici pour alimenter la base de connaissances avec des documents et ressources consultables pendant les appels.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 3 — Étape 3/4',
-        title: 'Formation & E-learning',
-        description: 'Créez des parcours de formation. Les agents devront compléter ces modules avant de passer leurs premiers appels.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 3 — Étape 4/4',
-        title: 'Vers l\'Activation',
-        description: 'Vos représentants sont équipés. Cliquez ici pour passer à la Phase 4 et lancer vos opérations.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    4: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 4 — Étape 1/4',
-        title: 'Activation Finale',
-        description: 'Dernière étape ! Choisissez votre plan, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 4 — Étape 2/4',
-        title: 'Plan d\'Abonnement',
-        description: 'Cliquez ici pour sélectionner le plan adapté à votre équipe. Il détermine le nombre de représentants et de gigs actifs.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 4 — Étape 3/4',
-        title: 'Activation du Gig',
-        description: 'Une fois votre abonnement actif, cette étape vous permettra d\'activer vos gigs et de lancer les appels.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 4 — Étape 4/4',
-        title: 'Tableau de Bord',
-        description: 'Félicitations ! Après l\'activation, cliquez ici pour accéder au tableau de bord et suivre les performances en temps réel.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-  };
-
-  const [tourPhase, setTourPhase] = useState<number | null>(null);
-
-  // Phase tour targets (tour-step-*, tour-phase-*) live on the orchestrator
-  // phase cards only — never while a step page (Session Planning, etc.) is open.
-  const isInsideOnboardingStep =
-    activeStep !== null ||
-    showGigDetails ||
-    showGigCreation ||
-    showTelephonySetup ||
-    showKnowledgeBase ||
-    showUploadContacts;
-
-  useEffect(() => {
-    // Do not start/advance the phase tour while a step screen is open.
-    if (isInsideOnboardingStep) return;
-    if (!hasSeenProductTour(displayedPhase)) {
-      // Small delay so the phase content has rendered before we measure elements
-      const timer = setTimeout(() => setTourPhase(displayedPhase), 400);
-      return () => clearTimeout(timer);
-    }
-    setTourPhase(null);
-  }, [displayedPhase, isInsideOnboardingStep]);
-
-  const orchestratorGuideLayer =
-    !isInsideOnboardingStep && tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
-      <OnboardingProductTour
-        key={tourPhase}
-        tourKey={tourPhase}
-        steps={ALL_PHASE_TOURS[tourPhase]}
-        onDone={() => setTourPhase(null)}
-      />
-    ) : null;
+  const orchestratorGuideLayer = null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1975,17 +1809,6 @@ const CompanyOnboarding = () => {
     return (
       <>
         {stepGuideLayer}
-        {/* Persistent, discoverable help — reopens the step's guide on demand at
-            any time, instead of only showing it once automatically. */}
-        <button
-          type="button"
-          onClick={openStepGuideOnDemand}
-          aria-label={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
-          title={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
-          className="fixed bottom-5 left-5 z-[60] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </button>
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {!stepHasOwnBack ? (
             <div className="px-4 pt-4 sm:px-6 mb-2">
