@@ -313,11 +313,11 @@ export function MasterSidebar({
 
       {/* Navigation */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${
           isCollapsed ? 'px-3' : 'px-3'
         }`}
       >
-        <nav className="space-y-1">
+        <nav className="flex min-h-full flex-1 flex-col space-y-1">
           {booting ? (
             <SidebarBootSkeleton collapsed={isCollapsed} />
           ) : activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
@@ -466,7 +466,7 @@ export function MasterSidebar({
           )}
 
           {!isCollapsed && (activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
-            <div className="mt-8 flex flex-col items-center shrink-0">
+            <div className="flex flex-1 flex-col items-center justify-center">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
                 <img
