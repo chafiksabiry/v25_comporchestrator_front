@@ -1178,7 +1178,7 @@
   },
   "telephonySetup": {
     "title": "Telephony Setup",
-    "subtitle": "Manage and configure your global network entry points",
+    "subtitle": "Choose and activate the phone numbers for your gigs",
     "nextStep": "Next step",
     "nextStepRequiresNumber": "Assign or purchase at least one phone number to continue",
     "errors": {
@@ -1187,10 +1187,10 @@
     },
     "selectGigProfile": "Select Gig Profile",
     "required": "Required",
-    "associateGig": "Associate a primary intelligence gig with your global telephony entry points",
+    "associateGig": "Choose the gig to attach your phone numbers to",
     "hydratingProfiles": "Hydrating profiles...",
     "globalZone": "Global Zone",
-    "selectIntelligenceProfile": "Select Intelligence Profile",
+    "selectIntelligenceProfile": "Select the gig",
     "chooseActiveGigProfile": "Choose an active gig profile...",
     "unknownRegion": "Unknown Region",
     "noGlobalProfilesFound": "No Global Profiles found",
@@ -1198,16 +1198,16 @@
     "chooseCarrier": "Choose a carrier-grade partner for stable low-latency routing",
     "pending": "Pending",
     "activePartner": "Active Partner",
-    "networkEntries": "Network Entries",
+    "networkEntries": "Phone numbers",
     "active": "Active",
-    "provisionNodes": "Provision and manage secure access points for your global intelligence nodes",
+    "provisionNodes": "Activate and manage the phone numbers of this gig",
     "static": "STATIC",
     "infrastructure": "INFRASTRUCTURE",
     "operational": "Operational",
     "syncing": "Syncing",
-    "regionalNodesAvailable": "Regional Nodes Available",
+    "regionalNodesAvailable": "Available numbers",
     "regional": "Regional",
-    "globalGateway": "Global Gateway",
+    "globalGateway": "· local number",
     "purchase": "Purchase",
     "owned": {
       "title": "Numbers already on your account",
@@ -1282,13 +1282,108 @@
     }
   },
   "companyOnboarding": {
+    "tour": {
+      "p1": {
+        "s1": {
+          "badge": "Phase 1 — Step 1/5",
+          "title": "The 4 onboarding phases",
+          "description": "Your journey is split into 4 phases to complete in order to unlock all HARX features."
+        },
+        "s2": {
+          "badge": "Phase 1 — Step 2/5",
+          "title": "Account & Identity Setup",
+          "description": "Start by creating your company profile. This step unlocks the next phases."
+        },
+        "s3": {
+          "badge": "Phase 1 — Step 3/5",
+          "title": "Create the Company Profile",
+          "description": "Click here to generate your company profile from your website (or fill it in manually), then check it. About 2 minutes."
+        },
+        "s4": {
+          "badge": "Phase 1 — Step 4/5",
+          "title": "KYC / KYB Verification",
+          "description": "This legal identity check is coming soon. It will unlock automatically once your profile is created."
+        },
+        "s5": {
+          "badge": "Phase 1 — Step 5/5",
+          "title": "Move on to Phase 2",
+          "description": "Once the steps are done, click here to access Phase 2: Operational Setup."
+        }
+      },
+      "p2": {
+        "s1": {
+          "badge": "Phase 2 — Step 1/4",
+          "title": "Operational Setup",
+          "description": "Set up your gigs and phone lines and import your contacts. This phase prepares your team to make calls."
+        },
+        "s2": {
+          "badge": "Phase 2 — Step 2/4",
+          "title": "Create your Gigs",
+          "description": "Click here to define your first gig: team, goals and requirements. It is the cornerstone of your operations."
+        },
+        "s3": {
+          "badge": "Phase 2 — Step 3/4",
+          "title": "Phone Setup",
+          "description": "Buy phone numbers and assign them to your gigs. Each representative will need a dedicated line."
+        },
+        "s4": {
+          "badge": "Phase 2 — Step 4/4",
+          "title": "On to Phase 3",
+          "description": "Once your operations are set up, click here to move on to Phase 3: REP Engagement."
+        }
+      },
+      "p3": {
+        "s1": {
+          "badge": "Phase 3 — Step 1/4",
+          "title": "REP Engagement",
+          "description": "Equip your representatives with a knowledge base, e-learning training and optimized call scripts."
+        },
+        "s2": {
+          "badge": "Phase 3 — Step 2/4",
+          "title": "Knowledge Base",
+          "description": "Click here to feed the knowledge base with documents and resources available during calls."
+        },
+        "s3": {
+          "badge": "Phase 3 — Step 3/4",
+          "title": "Training & E-learning",
+          "description": "Create training paths. Agents must complete these modules before making their first calls."
+        },
+        "s4": {
+          "badge": "Phase 3 — Step 4/4",
+          "title": "On to Activation",
+          "description": "Your representatives are equipped. Click here to move on to Phase 4 and launch your operations."
+        }
+      },
+      "p4": {
+        "s1": {
+          "badge": "Phase 4 — Step 1/4",
+          "title": "Final Activation",
+          "description": "Last step! Choose your plan, activate your gigs and invite your representatives to join the platform."
+        },
+        "s2": {
+          "badge": "Phase 4 — Step 2/4",
+          "title": "Subscription Plan",
+          "description": "Click here to select the plan that fits your team. It sets the number of representatives and active gigs."
+        },
+        "s3": {
+          "badge": "Phase 4 — Step 3/4",
+          "title": "Gig Activation",
+          "description": "Once your subscription is active, this step lets you activate your gigs and start calling."
+        },
+        "s4": {
+          "badge": "Phase 4 — Step 4/4",
+          "title": "Dashboard",
+          "description": "Congratulations! After activation, click here to open the dashboard and track performance in real time."
+        }
+      }
+    },
     "phases": {
       "1": {
         "title": "Company Account Setup & Identity",
         "steps": {
           "1": {
             "title": "Create Company Profile",
-            "description": "Legal and commercial details, key contacts, terms agreement"
+            "description": "Generate your company profile from your website, check it and save it"
           },
           "2": {
             "title": "KYC / KYB Verification",
@@ -1363,6 +1458,7 @@
       "completed": "Completed",
       "progressing": "Progressing",
       "locked": "Locked",
+      "todo": "To do",
       "comingSoon": "Coming Soon",
       "currentStep": "Current Step",
       "reviewStep": "Review Step",
@@ -1573,6 +1669,7 @@
       "placeholder": "Describe your need, or dictate with the mic…",
       "sendTitle": "Send to generate the gig",
       "sendAria": "Send to generate the gig",
+      "briefTooShort": "Your description is too short to build a gig. Add the role, the market, the schedule and the pay (at least one full sentence).",
       "dictatingHint": "Speak clearly — live waves and text confirm capture. Validate to keep, Cancel to discard.",
       "nonDictatingHint": "Write, select a passage then dictate to replace it, or dictate to append. Enter / Send to generate.",
       "audioReplaceLabel": "Audio replacement:",
@@ -2112,7 +2209,7 @@
       "confirm": "Confirm mapping",
       "cancel": "Cancel",
       "applying": "Applying mapping...",
-      "requiredHint": "Map email, phone, address, postal code, city, date of birth, and either a full name or first name + last name.",
+      "requiredHint": "Map the phone number, and either a full name or first name + last name. Other columns (email, address…) are optional.",
       "requiredBadge": "required",
       "missingIdentity": "Phone or email required",
       "missingName": "Full name OR (first + last) required — with first+last, full name is filled automatically",
@@ -2279,7 +2376,7 @@
     "searchBtn": "Search",
     "scrapeBtn": "Generate",
     "backToSearch": "Back to search",
-    "publishHint": "Review the information below, then click Publish to save the company. You can go back without publishing.",
+    "publishHint": "Check the information below, fix anything with “Edit”, then click “Save and continue”. You can go back without saving.",
     "manual": {
       "openBtn": "Create manually",
       "noWebsite": "No website? Create the company manually.",
@@ -2363,6 +2460,7 @@
     "errors": {
       "searchFailed": "Failed to search companies",
       "generateFailed": "Failed to generate profile",
+      "invalidUrl": "This website address is not valid. Example: https://www.example.com",
       "publishFailed": "Failed to publish company. Please try again."
     },
     "profile": {
@@ -2387,7 +2485,7 @@
       "digitalPresence": "Digital Presence",
       "editLogo": "Edit Logo",
       "editProfile": "Edit",
-      "doneEditing": "Done",
+      "doneEditing": "Apply changes",
       "uploadTab": "Upload",
       "urlTab": "URL",
       "logoUrl": "Logo URL",
@@ -2396,8 +2494,12 @@
       "save": "Save",
       "companyOverview": "Company Overview",
       "ourMission": "Our Mission",
-      "publishBtn": "Publish Company",
-      "publishing": "Publishing...",
+      "publishBtn": "Save and continue",
+      "guideTitle": "How to proceed",
+      "guideStep1": "Check the automatically generated information.",
+      "guideStep2": "Click “Edit” to fix a field, or use the + buttons to add a missing contact detail.",
+      "guideStep3": "When you are ready, click “Save and continue” (top right) to save the company and move to the next step.",
+      "publishing": "Saving…",
       "errorTitle": "Error",
       "close": "Close"
     }

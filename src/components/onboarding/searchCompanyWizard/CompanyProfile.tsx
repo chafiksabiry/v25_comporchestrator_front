@@ -21,7 +21,6 @@ import {
   Factory,
   Edit2,
   Check,
-  ArrowRight,
   Upload,
   Trash2,
   Pencil,
@@ -513,7 +512,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
               <Icon size={15} />
             </div>
           )}
-          <span className="min-w-0 flex-1 truncate text-sm text-gray-700">{value}</span>
+          <span title={value} className="min-w-0 flex-1 break-words text-sm text-gray-700">{value}</span>
           {editMode && (
             <div className="flex items-center gap-0.5 opacity-0 transition-all group-hover:opacity-100">
               <button
@@ -664,7 +663,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
             <ul className="space-y-2 text-xs leading-relaxed text-slate-600">
               <li>{t('searchCompanyWizard.profile.guideStep1', 'Vérifiez les informations générées automatiquement ci-contre.')}</li>
               <li>{t('searchCompanyWizard.profile.guideStep2', 'Cliquez sur « Modifier » pour corriger un champ, ou utilisez les + pour compléter une coordonnée manquante.')}</li>
-              <li>{t('searchCompanyWizard.profile.guideStep3', 'Une fois prêt, cliquez sur « Continuer l\'onboarding » (en haut) pour enregistrer la société et passer à l\'étape suivante.')}</li>
+              <li>{t('searchCompanyWizard.profile.guideStep3', 'Une fois prêt, cliquez sur « Enregistrer et continuer » (en haut à droite) pour enregistrer la société et passer à l\'étape suivante.')}</li>
             </ul>
           </div>
           {(
@@ -916,20 +915,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
           {/* Back (no publish) + Edit / Done + Publier — always visible in the hero,
               no scrolling needed to find the way forward (the only other Publier
               button sits far below the fold on a long profile). */}
-          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={publishing}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/90 px-4 py-2 text-sm font-bold text-harx-700 shadow-lg ring-1 ring-harx-300 transition-all duration-200 hover:scale-105 hover:bg-white active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
-            >
-              {publishing ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <ArrowRight size={14} />
-              )}
-              {t("searchCompanyWizard.continueOnboarding", "Continuer l'onboarding")}
-            </button>
+          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <button
                 type="button"

@@ -99,14 +99,28 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
   };
 
   const runScrape = async () => {
-    setLoading(true);
     setError(null);
     setResults([]);
+    // « http://pas un site » was announced as a detected URL and only failed server-side, in English.
+    try {
+      const candidate = /^https?:\/\//i.test(trimmedQuery) ? trimmedQuery : `https://${trimmedQuery}`;
+      const host = new URL(candidate).hostname;
+      if (!host.includes('.') || /\s/.test(trimmedQuery)) throw new Error('invalid');
+    } catch {
+      setError(t('searchCompanyWizard.errors.invalidUrl'));
+      return;
+    }
+    setLoading(true);
     try {
       const generated = await generateCompanyProfileFromUrl(trimmedQuery, undefined, uiLanguage);
       setProfile(generated);
     } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || t('searchCompanyWizard.errors.generateFailed'));
+      const raw: string | undefined = e?.response?.data?.message || e?.message;
+      setError(
+        raw && /invalid url format|valid url is required/i.test(raw)
+          ? t('searchCompanyWizard.errors.invalidUrl')
+          : raw || t('searchCompanyWizard.errors.generateFailed')
+      );
     } finally {
       setLoading(false);
     }

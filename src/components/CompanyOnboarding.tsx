@@ -516,38 +516,38 @@ const CompanyOnboarding = () => {
     1: [
       {
         target: 'tour-phase-tabs',       // → whole phase-tab grid
-        badge: 'Phase 1 — Étape 1/5',
-        title: 'Les 4 phases de l\'onboarding',
-        description: 'Votre parcours est divisé en 4 phases à compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
+        badge: t('companyOnboarding.tour.p1.s1.badge'),
+        title: t('companyOnboarding.tour.p1.s1.title'),
+        description: t('companyOnboarding.tour.p1.s1.description'),
         prefer: 'bottom',
       },
       {
         target: 'tour-phase-title',      // → h2 phase title
-        badge: 'Phase 1 — Étape 2/5',
-        title: 'Configuration du Compte & Identité',
-        description: 'Commencez par configurer votre profil d\'entreprise et valider votre identité légale. Ces étapes débloquent l\'accès aux phases suivantes.',
+        badge: t('companyOnboarding.tour.p1.s2.badge'),
+        title: t('companyOnboarding.tour.p1.s2.title'),
+        description: t('companyOnboarding.tour.p1.s2.description'),
         prefer: 'bottom',
       },
       {
         target: 'tour-step-first-btn',   // → "Démarrer l'Étape" button
-        badge: 'Phase 1 — Étape 3/5',
-        title: 'Créer le Profil de l\'Entreprise',
-        description: 'Cliquez ici pour remplir vos informations juridiques, contacts clés et accepter les conditions. Environ 5 minutes.',
+        badge: t('companyOnboarding.tour.p1.s3.badge'),
+        title: t('companyOnboarding.tour.p1.s3.title'),
+        description: t('companyOnboarding.tour.p1.s3.description'),
         prefer: 'bottom',
         advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title', // → KYC step title
-        badge: 'Phase 1 — Étape 4/5',
-        title: 'Vérification KYC / KYB',
-        description: 'Cette étape se déverrouille automatiquement après le profil. Il s\'agit d\'une vérification d\'identité légale obligatoire.',
+        badge: t('companyOnboarding.tour.p1.s4.badge'),
+        title: t('companyOnboarding.tour.p1.s4.title'),
+        description: t('companyOnboarding.tour.p1.s4.description'),
         prefer: 'top',
       },
       {
         target: 'tour-phase-nav-next',   // → "Phase Suivante" button
-        badge: 'Phase 1 — Étape 5/5',
-        title: 'Passer à la Phase 2',
-        description: 'Une fois les étapes complétées, cliquez ici pour accéder à la Phase 2 : Configuration Opérationnelle.',
+        badge: t('companyOnboarding.tour.p1.s5.badge'),
+        title: t('companyOnboarding.tour.p1.s5.title'),
+        description: t('companyOnboarding.tour.p1.s5.description'),
         prefer: 'top',
         advanceOn: 'click',
       },
@@ -555,31 +555,31 @@ const CompanyOnboarding = () => {
     2: [
       {
         target: 'tour-phase-title',
-        badge: 'Phase 2 — Étape 1/4',
-        title: 'Configuration Opérationnelle',
-        description: 'Configurez vos gigs, lignes téléphoniques et importez vos contacts. Cette phase prépare votre équipe à passer des appels.',
+        badge: t('companyOnboarding.tour.p2.s1.badge'),
+        title: t('companyOnboarding.tour.p2.s1.title'),
+        description: t('companyOnboarding.tour.p2.s1.description'),
         prefer: 'bottom',
       },
       {
         target: 'tour-step-first-btn',
-        badge: 'Phase 2 — Étape 2/4',
-        title: 'Créer vos Gigs',
-        description: 'Cliquez ici pour définir votre premier gig : équipe, objectifs et prérequis. C\'est la pierre angulaire de vos opérations.',
+        badge: t('companyOnboarding.tour.p2.s2.badge'),
+        title: t('companyOnboarding.tour.p2.s2.title'),
+        description: t('companyOnboarding.tour.p2.s2.description'),
         prefer: 'bottom',
         advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
-        badge: 'Phase 2 — Étape 3/4',
-        title: 'Configuration Téléphonique',
-        description: 'Achetez des numéros de téléphone et affectez-les à vos gigs. Chaque représentant aura besoin d\'une ligne dédiée.',
+        badge: t('companyOnboarding.tour.p2.s3.badge'),
+        title: t('companyOnboarding.tour.p2.s3.title'),
+        description: t('companyOnboarding.tour.p2.s3.description'),
         prefer: 'top',
       },
       {
         target: 'tour-phase-nav-next',
-        badge: 'Phase 2 — Étape 4/4',
-        title: 'Vers la Phase 3',
-        description: 'Après avoir configuré vos opérations, cliquez ici pour passer à la Phase 3 : Engagement des REPS.',
+        badge: t('companyOnboarding.tour.p2.s4.badge'),
+        title: t('companyOnboarding.tour.p2.s4.title'),
+        description: t('companyOnboarding.tour.p2.s4.description'),
         prefer: 'top',
         advanceOn: 'click',
       },
@@ -587,31 +587,31 @@ const CompanyOnboarding = () => {
     3: [
       {
         target: 'tour-phase-title',
-        badge: 'Phase 3 — Étape 1/4',
-        title: 'Engagement des REPS',
-        description: 'Équipez vos représentants avec une base de connaissances, une formation e-learning et des scripts d\'appel optimisés.',
+        badge: t('companyOnboarding.tour.p3.s1.badge'),
+        title: t('companyOnboarding.tour.p3.s1.title'),
+        description: t('companyOnboarding.tour.p3.s1.description'),
         prefer: 'bottom',
       },
       {
         target: 'tour-step-first-btn',
-        badge: 'Phase 3 — Étape 2/4',
-        title: 'Base de Connaissances',
-        description: 'Cliquez ici pour alimenter la base de connaissances avec des documents et ressources consultables pendant les appels.',
+        badge: t('companyOnboarding.tour.p3.s2.badge'),
+        title: t('companyOnboarding.tour.p3.s2.title'),
+        description: t('companyOnboarding.tour.p3.s2.description'),
         prefer: 'bottom',
         advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
-        badge: 'Phase 3 — Étape 3/4',
-        title: 'Formation & E-learning',
-        description: 'Créez des parcours de formation. Les agents devront compléter ces modules avant de passer leurs premiers appels.',
+        badge: t('companyOnboarding.tour.p3.s3.badge'),
+        title: t('companyOnboarding.tour.p3.s3.title'),
+        description: t('companyOnboarding.tour.p3.s3.description'),
         prefer: 'top',
       },
       {
         target: 'tour-phase-nav-next',
-        badge: 'Phase 3 — Étape 4/4',
-        title: 'Vers l\'Activation',
-        description: 'Vos représentants sont équipés. Cliquez ici pour passer à la Phase 4 et lancer vos opérations.',
+        badge: t('companyOnboarding.tour.p3.s4.badge'),
+        title: t('companyOnboarding.tour.p3.s4.title'),
+        description: t('companyOnboarding.tour.p3.s4.description'),
         prefer: 'top',
         advanceOn: 'click',
       },
@@ -619,31 +619,31 @@ const CompanyOnboarding = () => {
     4: [
       {
         target: 'tour-phase-title',
-        badge: 'Phase 4 — Étape 1/4',
-        title: 'Activation Finale',
-        description: 'Dernière étape ! Choisissez votre plan, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
+        badge: t('companyOnboarding.tour.p4.s1.badge'),
+        title: t('companyOnboarding.tour.p4.s1.title'),
+        description: t('companyOnboarding.tour.p4.s1.description'),
         prefer: 'bottom',
       },
       {
         target: 'tour-step-first-btn',
-        badge: 'Phase 4 — Étape 2/4',
-        title: 'Plan d\'Abonnement',
-        description: 'Cliquez ici pour sélectionner le plan adapté à votre équipe. Il détermine le nombre de représentants et de gigs actifs.',
+        badge: t('companyOnboarding.tour.p4.s2.badge'),
+        title: t('companyOnboarding.tour.p4.s2.title'),
+        description: t('companyOnboarding.tour.p4.s2.description'),
         prefer: 'bottom',
         advanceOn: 'click',
       },
       {
         target: 'tour-step-second-title',
-        badge: 'Phase 4 — Étape 3/4',
-        title: 'Activation du Gig',
-        description: 'Une fois votre abonnement actif, cette étape vous permettra d\'activer vos gigs et de lancer les appels.',
+        badge: t('companyOnboarding.tour.p4.s3.badge'),
+        title: t('companyOnboarding.tour.p4.s3.title'),
+        description: t('companyOnboarding.tour.p4.s3.description'),
         prefer: 'top',
       },
       {
         target: 'tour-phase-nav-next',
-        badge: 'Phase 4 — Étape 4/4',
-        title: 'Tableau de Bord',
-        description: 'Félicitations ! Après l\'activation, cliquez ici pour accéder au tableau de bord et suivre les performances en temps réel.',
+        badge: t('companyOnboarding.tour.p4.s4.badge'),
+        title: t('companyOnboarding.tour.p4.s4.title'),
+        description: t('companyOnboarding.tour.p4.s4.description'),
         prefer: 'top',
         advanceOn: 'click',
       },
@@ -2226,7 +2226,7 @@ const CompanyOnboarding = () => {
               <div
                 key={step.id}
                 {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled && !isCallCenterWorkspace())
+                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
@@ -2248,7 +2248,7 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase
                       ? "bg-gray-100 text-gray-400"
                       : step.disabled
                         ? "bg-gray-100 text-gray-400"
@@ -2291,7 +2291,7 @@ const CompanyOnboarding = () => {
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          {t('companyOnboarding.ui.locked')}
+                          {t('companyOnboarding.ui.todo')}
                         </span>
                       )}
                     </div>
