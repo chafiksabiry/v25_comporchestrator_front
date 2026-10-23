@@ -514,15 +514,22 @@ export function MasterSidebar({
       </div>
 
       {(activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
-        <div className={`shrink-0 flex justify-center ${isCollapsed ? 'py-3' : 'pb-5 pt-1'}`}>
+        <div className={`shrink-0 flex ${isCollapsed ? 'justify-center py-3' : 'justify-center px-3 pb-5 pt-1'}`}>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event('harx-open-company-onboarding-help'))}
-            aria-label={t('companyOnboarding.ui.viewGuide', 'Aide')}
-            title={t('companyOnboarding.ui.viewGuide', 'Aide')}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+            aria-label={t('companyOnboarding.ui.help', 'Aide')}
+            title={t('companyOnboarding.ui.help', 'Aide')}
+            className={`flex items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95 ${
+              isCollapsed ? 'h-11 w-11' : 'h-11 gap-2 px-4'
+            }`}
           >
-            <HelpCircle className="h-5 w-5" />
+            <HelpCircle className="h-5 w-5 shrink-0" />
+            {!isCollapsed && (
+              <span className="text-sm font-black tracking-wide">
+                {t('companyOnboarding.ui.help', 'Aide')}
+              </span>
+            )}
           </button>
         </div>
       )}

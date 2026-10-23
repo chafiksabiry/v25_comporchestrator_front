@@ -2,25 +2,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Check,
-  ChevronRight,
   ClipboardList,
   FileCheck2,
   Globe,
-  Lightbulb,
+  HelpCircle,
   ListChecks,
   PenLine,
-  PlayCircle,
   Search,
   Sparkles,
   Target,
+  X,
 } from 'lucide-react';
-import {
-  GuideBadge,
-  GuideHero,
-  GuideIconOrb,
-  GuideModalLayout,
-  GuidePrimaryButton,
-} from './GuideModalLayout';
 
 export type StepGuideVariant = 'before' | 'inside';
 
@@ -31,13 +23,6 @@ interface StepGuideModalProps {
   variant: StepGuideVariant;
   onClose: () => void;
 }
-
-const PHASE_GRADIENTS = [
-  'from-[#ff4d4d] via-[#ec4899] to-[#c026d3]',
-  'from-blue-600 via-indigo-600 to-violet-700',
-  'from-emerald-600 via-teal-600 to-cyan-700',
-  'from-amber-500 via-orange-500 to-[#ff4d4d]',
-];
 
 const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) => {
   const { t } = useTranslation();
@@ -98,7 +83,7 @@ const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
         {modes.map(({ icon: Icon, titleKey, defaultTitle, descKey, defaultDesc, gradient }) => (
           <div
             key={titleKey}
-            className="group flex items-start gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:border-white/10 hover:bg-white/[0.06]"
+            className="group flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
           >
             <div
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
@@ -106,24 +91,24 @@ const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
               <Icon className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">{t(titleKey, defaultTitle)}</p>
-              <p className="mt-1 text-xs text-gray-400 leading-relaxed">{t(descKey, defaultDesc)}</p>
+              <p className="text-sm font-bold text-slate-900">{t(titleKey, defaultTitle)}</p>
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">{t(descKey, defaultDesc)}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3">
+      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-amber-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
             {t('companyOnboarding.stepGuide.step1.tipsLabel', 'Pro tips')}
           </span>
         </div>
         <ul className="space-y-1.5">
           {tips.map((tip, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-xs text-amber-100/90 leading-relaxed">
-              <Check className="h-3.5 w-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-relaxed">
+              <Check className="h-3.5 w-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{tip}</span>
             </li>
           ))}
@@ -198,7 +183,7 @@ const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
         {stages.map(({ icon: Icon, titleKey, defaultTitle, descKey, defaultDesc, gradient }) => (
           <div
             key={titleKey}
-            className="group flex items-start gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition-all hover:border-white/10 hover:bg-white/[0.06]"
+            className="group flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
           >
             <div
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
@@ -206,24 +191,24 @@ const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
               <Icon className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">{t(titleKey, defaultTitle)}</p>
-              <p className="mt-1 text-xs text-gray-400 leading-relaxed">{t(descKey, defaultDesc)}</p>
+              <p className="text-sm font-bold text-slate-900">{t(titleKey, defaultTitle)}</p>
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">{t(descKey, defaultDesc)}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.08] px-4 py-3">
+      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-amber-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-300">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
             {t('companyOnboarding.stepGuide.step1.tipsLabel', 'Pro tips')}
           </span>
         </div>
         <ul className="space-y-1.5">
           {tips.map((tip, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-xs text-amber-100/90 leading-relaxed">
-              <Check className="h-3.5 w-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-relaxed">
+              <Check className="h-3.5 w-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{tip}</span>
             </li>
           ))}
@@ -292,7 +277,7 @@ const GenericStepTips: React.FC<{ stepId: number }> = ({ stepId }) => {
       {tips.map((tip, idx) => (
         <li
           key={idx}
-          className="flex items-start gap-2 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-400 leading-relaxed"
+          className="flex items-start gap-2 rounded-2xl border border-harx-100 bg-harx-50/60 px-4 py-3 text-xs text-slate-600 leading-relaxed"
         >
           <Check className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-emerald-400" />
           <span>{tip}</span>
@@ -312,52 +297,50 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
   const { t } = useTranslation();
 
   const isBefore = variant === 'before';
-  const gradient = PHASE_GRADIENTS[(phaseId - 1) % PHASE_GRADIENTS.length];
   const title = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.title`);
   const description = t(`companyOnboarding.phases.${phaseId}.steps.${stepId}.description`);
   const isStep1 = stepId === 1;
   const isStep8 = stepId === 8;
 
-  return (
-    <GuideModalLayout
-      isOpen={isOpen}
-      onBackdropClick={onClose}
-      onClose={onClose}
-      closeLabel={t('orchestratorGuide.close')}
-      maxWidth={isStep1 || isStep8 ? 'lg' : 'md'}
-      footer={
-        <GuidePrimaryButton onClick={onClose}>
-          {isBefore
-            ? t('companyOnboarding.stepGuide.beforeStart')
-            : t('companyOnboarding.stepGuide.start')}
-          <ChevronRight className="h-4 w-4" />
-        </GuidePrimaryButton>
-      }
-    >
-      <GuideHero gradientClass={gradient}>
-        <GuideIconOrb>
-          {isBefore ? (
-            <PlayCircle className="h-9 w-9 text-white drop-shadow-md" />
-          ) : (
-            <Lightbulb className="h-9 w-9 text-white drop-shadow-md" />
-          )}
-        </GuideIconOrb>
-      </GuideHero>
+  if (!isOpen) return null;
 
-      <div className="px-6 sm:px-8 pt-6 pb-2">
-        <div className="mb-4">
-          <GuideBadge>
-            {isBefore
-              ? t('companyOnboarding.stepGuide.beforeBadge', { step: stepId })
-              : t('companyOnboarding.stepGuide.insideBadge', { step: stepId })}
-          </GuideBadge>
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="company-onboarding-help-title"
+        className={`relative w-full ${isStep1 || isStep8 ? 'max-w-lg' : 'max-w-md'} max-h-[min(90vh,720px)] overflow-y-auto rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl`}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          aria-label={t('orchestratorGuide.close', 'Fermer')}
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="mb-4 flex items-center gap-3 pr-8">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-harx text-white shadow-md">
+            <HelpCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-black tracking-wide text-slate-900">
+              {t('companyOnboarding.ui.help', 'Aide')}
+            </p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              {isBefore
+                ? t('companyOnboarding.stepGuide.beforeBadge', { step: stepId })
+                : t('companyOnboarding.stepGuide.insideBadge', { step: stepId })}
+            </p>
+          </div>
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+        <h2 id="company-onboarding-help-title" className="text-lg font-black tracking-tight text-slate-900 leading-snug">
           {isBefore ? t('companyOnboarding.stepGuide.beforeHeading', { title }) : title}
         </h2>
-
-        <p className="mt-3 text-sm sm:text-base text-gray-400 leading-relaxed">
+        <p className="mt-1.5 text-sm font-medium text-slate-500 leading-relaxed">
           {isStep1
             ? t(
                 `companyOnboarding.stepGuide.step1.${isBefore ? 'beforeDescription' : 'insideDescription'}`,
@@ -371,12 +354,20 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
         {!isStep1 && !isStep8 && !isBefore && <GenericStepTips stepId={stepId} />}
 
         {!isBefore && !isStep1 && !isStep8 && !GENERIC_STEP_TIPS_FR[stepId] && (
-          <p className="mt-4 rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gray-500 leading-relaxed">
+          <p className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-500 leading-relaxed">
             {t('companyOnboarding.stepGuide.insideHint')}
           </p>
         )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 w-full rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition hover:opacity-90"
+        >
+          {t('companyOnboarding.stepGuide.start', 'Compris')}
+        </button>
       </div>
-    </GuideModalLayout>
+    </div>
   );
 };
 
