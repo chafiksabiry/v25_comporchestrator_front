@@ -915,7 +915,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
           {/* Back (no publish) + Edit / Done + Publier — always visible in the hero,
               no scrolling needed to find the way forward (the only other Publier
               button sits far below the fold on a long profile). */}
-          <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-end gap-3">
+          <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-end gap-3">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -956,8 +956,8 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
             </div>
           </div>
 
-          <div className="relative z-20 h-full flex flex-col justify-end p-12 space-y-6">
-            <div className="flex items-center gap-6">
+          <div className="relative z-10 h-full flex flex-col justify-end p-12 space-y-6 pointer-events-none">
+            <div className="flex items-center gap-6 pointer-events-auto">
               <div className="relative group">
                 <div className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""}`}>
                   {logoUrl ? (

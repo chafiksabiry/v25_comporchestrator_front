@@ -931,7 +931,7 @@ function CompanyProfile({
                 </style>
               </div>
 
-              <div className="absolute top-4 right-4 z-20">
+              <div className="absolute top-4 right-4 z-30">
                 <button
                   type="button"
                   disabled={saving}
@@ -961,8 +961,8 @@ function CompanyProfile({
                 </button>
               </div>
 
-              <div className="relative z-20 h-full flex flex-col justify-end p-12 space-y-6">
-                <div className="flex items-center gap-6">
+              <div className="relative z-10 h-full flex flex-col justify-end p-12 space-y-6 pointer-events-none">
+                <div className="flex items-center gap-6 pointer-events-auto">
                   <div className="relative z-10">
                     <button
                       type="button"
