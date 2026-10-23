@@ -15,7 +15,6 @@ import {
   Calendar,
   Settings,
   Rocket,
-  HelpCircle,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
@@ -27,7 +26,6 @@ import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
 import SessionPlanning from "./onboarding/SessionPlanning";
-import OnboardingProductTour, { hasSeenProductTour, type TourStep } from "./onboarding/OnboardingProductTour";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
@@ -492,15 +490,46 @@ const CompanyOnboarding = () => {
     setStepGuide(null);
   };
 
+  const handleConfirmStepGuide = () => {
+    if (!stepGuide) return;
+
+    const { stepId, variant } = stepGuide;
+    markStepGuideSeen(stepId, variant);
+
+    const pending = pendingStep;
+    setStepGuide(null);
+    setPendingStep(null);
+
+    if (getFocusedStepId() === stepId) return;
+
+    const targetPhase = findPhaseIdForStep(stepId);
+    if (targetPhase !== displayedPhase) {
+      setDisplayedPhase(targetPhase);
+    }
+
+    const mode = pending?.mode ?? (completedSteps.includes(stepId) ? 'review' : 'start');
+    if (mode === 'start') {
+      void executeStartStep(stepId);
+    } else {
+      void executeReviewStep(stepId);
+    }
+  };
+
   // Step-specific guide modals no longer auto-trigger (shouldShowStepGuide stays
   // false for the automatic before/inside popups), but the user can always open
   // the same guide on demand via the persistent "?" button — see
   // openStepGuideOnDemand and the floating button rendered with activeComponent.
   const openStepGuideOnDemand = () => {
-    const stepId = getFocusedStepId();
+    const stepId = getFocusedStepId() ?? phases[displayedPhase - 1]?.steps?.[0]?.id ?? null;
     if (stepId === null) return;
     setStepGuide({ stepId, phaseId: findPhaseIdForStep(stepId), variant: 'inside' });
   };
+
+  useEffect(() => {
+    const onHelp = () => openStepGuideOnDemand();
+    window.addEventListener('harx-open-company-onboarding-help', onHelp);
+    return () => window.removeEventListener('harx-open-company-onboarding-help', onHelp);
+  });
   const stepGuideLayer = stepGuide ? (
     <StepGuideModal
       isOpen
@@ -508,180 +537,11 @@ const CompanyOnboarding = () => {
       phaseId={stepGuide.phaseId}
       variant={stepGuide.variant}
       onClose={handleCloseStepGuide}
+      onConfirm={handleConfirmStepGuide}
     />
   ) : null;
 
-  // Per-phase product tour — shown only on the first visit to each phase.
-  const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
-    1: [
-      {
-        target: 'tour-phase-tabs',       // → whole phase-tab grid
-        badge: t('companyOnboarding.tour.p1.s1.badge'),
-        title: t('companyOnboarding.tour.p1.s1.title'),
-        description: t('companyOnboarding.tour.p1.s1.description'),
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-phase-title',      // → h2 phase title
-        badge: t('companyOnboarding.tour.p1.s2.badge'),
-        title: t('companyOnboarding.tour.p1.s2.title'),
-        description: t('companyOnboarding.tour.p1.s2.description'),
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',   // → "Démarrer l'Étape" button
-        badge: t('companyOnboarding.tour.p1.s3.badge'),
-        title: t('companyOnboarding.tour.p1.s3.title'),
-        description: t('companyOnboarding.tour.p1.s3.description'),
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title', // → KYC step title
-        badge: t('companyOnboarding.tour.p1.s4.badge'),
-        title: t('companyOnboarding.tour.p1.s4.title'),
-        description: t('companyOnboarding.tour.p1.s4.description'),
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',   // → "Phase Suivante" button
-        badge: t('companyOnboarding.tour.p1.s5.badge'),
-        title: t('companyOnboarding.tour.p1.s5.title'),
-        description: t('companyOnboarding.tour.p1.s5.description'),
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    2: [
-      {
-        target: 'tour-phase-title',
-        badge: t('companyOnboarding.tour.p2.s1.badge'),
-        title: t('companyOnboarding.tour.p2.s1.title'),
-        description: t('companyOnboarding.tour.p2.s1.description'),
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: t('companyOnboarding.tour.p2.s2.badge'),
-        title: t('companyOnboarding.tour.p2.s2.title'),
-        description: t('companyOnboarding.tour.p2.s2.description'),
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: t('companyOnboarding.tour.p2.s3.badge'),
-        title: t('companyOnboarding.tour.p2.s3.title'),
-        description: t('companyOnboarding.tour.p2.s3.description'),
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: t('companyOnboarding.tour.p2.s4.badge'),
-        title: t('companyOnboarding.tour.p2.s4.title'),
-        description: t('companyOnboarding.tour.p2.s4.description'),
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    3: [
-      {
-        target: 'tour-phase-title',
-        badge: t('companyOnboarding.tour.p3.s1.badge'),
-        title: t('companyOnboarding.tour.p3.s1.title'),
-        description: t('companyOnboarding.tour.p3.s1.description'),
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: t('companyOnboarding.tour.p3.s2.badge'),
-        title: t('companyOnboarding.tour.p3.s2.title'),
-        description: t('companyOnboarding.tour.p3.s2.description'),
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: t('companyOnboarding.tour.p3.s3.badge'),
-        title: t('companyOnboarding.tour.p3.s3.title'),
-        description: t('companyOnboarding.tour.p3.s3.description'),
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: t('companyOnboarding.tour.p3.s4.badge'),
-        title: t('companyOnboarding.tour.p3.s4.title'),
-        description: t('companyOnboarding.tour.p3.s4.description'),
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    4: [
-      {
-        target: 'tour-phase-title',
-        badge: t('companyOnboarding.tour.p4.s1.badge'),
-        title: t('companyOnboarding.tour.p4.s1.title'),
-        description: t('companyOnboarding.tour.p4.s1.description'),
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: t('companyOnboarding.tour.p4.s2.badge'),
-        title: t('companyOnboarding.tour.p4.s2.title'),
-        description: t('companyOnboarding.tour.p4.s2.description'),
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: t('companyOnboarding.tour.p4.s3.badge'),
-        title: t('companyOnboarding.tour.p4.s3.title'),
-        description: t('companyOnboarding.tour.p4.s3.description'),
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: t('companyOnboarding.tour.p4.s4.badge'),
-        title: t('companyOnboarding.tour.p4.s4.title'),
-        description: t('companyOnboarding.tour.p4.s4.description'),
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-  };
-
-  const [tourPhase, setTourPhase] = useState<number | null>(null);
-
-  // Phase tour targets (tour-step-*, tour-phase-*) live on the orchestrator
-  // phase cards only — never while a step page (Session Planning, etc.) is open.
-  const isInsideOnboardingStep =
-    activeStep !== null ||
-    showGigDetails ||
-    showGigCreation ||
-    showTelephonySetup ||
-    showKnowledgeBase ||
-    showUploadContacts;
-
-  useEffect(() => {
-    // Do not start/advance the phase tour while a step screen is open.
-    if (isInsideOnboardingStep) return;
-    if (!hasSeenProductTour(displayedPhase)) {
-      // Small delay so the phase content has rendered before we measure elements
-      const timer = setTimeout(() => setTourPhase(displayedPhase), 400);
-      return () => clearTimeout(timer);
-    }
-    setTourPhase(null);
-  }, [displayedPhase, isInsideOnboardingStep]);
-
-  const orchestratorGuideLayer =
-    !isInsideOnboardingStep && tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
-      <OnboardingProductTour
-        key={tourPhase}
-        tourKey={tourPhase}
-        steps={ALL_PHASE_TOURS[tourPhase]}
-        onDone={() => setTourPhase(null)}
-      />
-    ) : null;
+  const orchestratorGuideLayer = null;
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1975,17 +1835,6 @@ const CompanyOnboarding = () => {
     return (
       <>
         {stepGuideLayer}
-        {/* Persistent, discoverable help — reopens the step's guide on demand at
-            any time, instead of only showing it once automatically. */}
-        <button
-          type="button"
-          onClick={openStepGuideOnDemand}
-          aria-label={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
-          title={t('companyOnboarding.ui.viewGuide', 'Voir le guide')}
-          className="fixed bottom-5 left-5 z-[60] flex h-11 w-11 items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </button>
         <div className="animate-fade-in relative min-h-[50vh] pb-24">
           {!stepHasOwnBack ? (
             <div className="px-4 pt-4 sm:px-6 mb-2">
@@ -2177,10 +2026,10 @@ const CompanyOnboarding = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Re-launch the guided tour for this phase */}
+              {/* Open the on-demand help guide (the automatic phase tour no longer exists) */}
               <button
                 type="button"
-                onClick={() => setTourPhase(displayedPhase)}
+                onClick={openStepGuideOnDemand}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-dashed border-harx-300 text-harx-500 hover:bg-harx-50 hover:border-harx-400 transition-all text-xs font-bold"
                 title="Revoir le guide de cette phase"
               >

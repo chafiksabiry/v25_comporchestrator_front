@@ -27,7 +27,8 @@ import {
   Info,
   Wallet,
   BookOpen,
-  Clock
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
@@ -313,11 +314,11 @@ export function MasterSidebar({
 
       {/* Navigation */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${
+        className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pr-1 transition-all duration-300 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent ${
           isCollapsed ? 'px-3' : 'px-3'
         }`}
       >
-        <nav className="space-y-1">
+        <nav className="flex min-h-full flex-1 flex-col space-y-1">
           {booting ? (
             <SidebarBootSkeleton collapsed={isCollapsed} />
           ) : activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
@@ -466,7 +467,7 @@ export function MasterSidebar({
           )}
 
           {!isCollapsed && (activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
-            <div className="mt-8 flex flex-col items-center shrink-0">
+            <div className="flex flex-1 flex-col items-center justify-center">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
                 <img
@@ -511,6 +512,27 @@ export function MasterSidebar({
           )}
         </nav>
       </div>
+
+      {(activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
+        <div className={`shrink-0 flex ${isCollapsed ? 'justify-center py-3' : 'justify-center px-3 pb-5 pt-1'}`}>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('harx-open-company-onboarding-help'))}
+            aria-label={t('companyOnboarding.ui.help', 'Aide')}
+            title={t('companyOnboarding.ui.help', 'Aide')}
+            className={`flex items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95 ${
+              isCollapsed ? 'h-11 w-11' : 'h-11 gap-2 px-4'
+            }`}
+          >
+            <HelpCircle className="h-5 w-5 shrink-0" />
+            {!isCollapsed && (
+              <span className="text-sm font-black tracking-wide">
+                {t('companyOnboarding.ui.help', 'Aide')}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
     </div>
   );
