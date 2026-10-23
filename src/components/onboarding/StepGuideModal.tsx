@@ -74,21 +74,21 @@ const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
   const tips = Array.isArray(rawTips) && rawTips.length > 0 ? (rawTips as string[]) : tipsFallback;
 
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-3 space-y-2.5">
       <p className="text-[11px] font-black uppercase tracking-widest text-gray-500">
         {t('companyOnboarding.stepGuide.step1.modesLabel', 'Three ways to create your profile')}
       </p>
 
-      <div className="grid gap-3">
+      <div className="grid gap-2 sm:grid-cols-3">
         {modes.map(({ icon: Icon, titleKey, defaultTitle, descKey, defaultDesc, gradient }) => (
           <div
             key={titleKey}
-            className="group flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
+            className="group flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5"
           >
             <div
-              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
+              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
             >
-              <Icon className="h-5 w-5 text-white" />
+              <Icon className="h-4 w-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-900">{t(titleKey, defaultTitle)}</p>
@@ -98,16 +98,16 @@ const Step1GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
         ))}
       </div>
 
-      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
+      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
             {t('companyOnboarding.stepGuide.step1.tipsLabel', 'Pro tips')}
           </span>
         </div>
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {tips.map((tip, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-relaxed">
+            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-snug">
               <Check className="h-3.5 w-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{tip}</span>
             </li>
@@ -174,21 +174,21 @@ const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
   const tips = Array.isArray(rawTips) && rawTips.length > 0 ? (rawTips as string[]) : tipsFallback;
 
   return (
-    <div className="mt-6 space-y-4">
+    <div className="mt-3 space-y-2.5">
       <p className="text-[11px] font-black uppercase tracking-widest text-gray-500">
         {t('companyOnboarding.stepGuide.step8.stagesLabel', 'Les 4 étapes de la formation')}
       </p>
 
-      <div className="grid gap-3">
+      <div className="grid gap-2 sm:grid-cols-2">
         {stages.map(({ icon: Icon, titleKey, defaultTitle, descKey, defaultDesc, gradient }) => (
           <div
             key={titleKey}
-            className="group flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
+            className="group flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-2.5"
           >
             <div
-              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
+              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}
             >
-              <Icon className="h-5 w-5 text-white" />
+              <Icon className="h-4 w-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-900">{t(titleKey, defaultTitle)}</p>
@@ -198,16 +198,16 @@ const Step8GuideExtras: React.FC<{ variant: StepGuideVariant }> = ({ variant }) 
         ))}
       </div>
 
-      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="h-4 w-4 text-amber-500" />
+      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
             {t('companyOnboarding.stepGuide.step1.tipsLabel', 'Pro tips')}
           </span>
         </div>
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {tips.map((tip, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-relaxed">
+            <li key={idx} className="flex items-start gap-2 text-xs text-amber-900/80 leading-snug">
               <Check className="h-3.5 w-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>{tip}</span>
             </li>
@@ -273,11 +273,11 @@ const GenericStepTips: React.FC<{ stepId: number }> = ({ stepId }) => {
   const tips = Array.isArray(rawTips) && rawTips.length > 0 ? (rawTips as string[]) : fallback;
 
   return (
-    <ul className="mt-4 space-y-2">
+    <ul className="mt-3 space-y-1.5">
       {tips.map((tip, idx) => (
         <li
           key={idx}
-          className="flex items-start gap-2 rounded-2xl border border-harx-100 bg-harx-50/60 px-4 py-3 text-xs text-slate-600 leading-relaxed"
+          className="flex items-start gap-2 rounded-2xl border border-harx-100 bg-harx-50/60 px-3 py-2 text-xs text-slate-600 leading-snug"
         >
           <Check className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-emerald-400" />
           <span>{tip}</span>
@@ -305,12 +305,12 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-onboarding-help-title"
-        className={`relative w-full ${isStep1 || isStep8 ? 'max-w-lg' : 'max-w-md'} max-h-[min(90vh,720px)] overflow-y-auto rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl`}
+        className={`relative w-full ${isStep1 || isStep8 ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl`}
       >
         <button
           type="button"
@@ -321,8 +321,8 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="mb-4 flex items-center gap-3 pr-8">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-harx text-white shadow-md">
+        <div className="mb-3 flex items-center gap-3 pr-8">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-harx text-white shadow-md">
             <HelpCircle className="h-5 w-5" />
           </div>
           <div>
@@ -362,7 +362,7 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 w-full rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition hover:opacity-90"
+          className="mt-4 w-full rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition hover:opacity-90"
         >
           {t('companyOnboarding.stepGuide.start', 'Compris')}
         </button>
