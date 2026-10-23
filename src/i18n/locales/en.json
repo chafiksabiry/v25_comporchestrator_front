@@ -996,9 +996,9 @@
     "allGigs": "All Gigs",
     "integrateResource": "Integrate Resource",
     "empty": {
-      "title": "Intelligence Stream Empty",
-      "subtitle": "Your enterprise knowledge has not been synchronized yet. Initiate data ingestion to empower your REPS.",
-      "ingestFirst": "Ingest a resource"
+      "title": "No resources yet",
+      "subtitle": "Add documents or call recordings: your REPS will be able to use them during their calls.",
+      "ingestFirst": "Add your first resource"
     },
     "analysis": {
       "languageHub": "Language Hub",
@@ -3718,7 +3718,7 @@
     "deleteRoleFailed": "Could not delete the role.",
     "inviteSent": "Invitation sent to {{email}}.",
     "emailNotSent": "Email not sent to {{email}}. {{detail}}",
-    "checkMail": "Check the Brevo configuration.",
+    "checkMail": "Check the email sending configuration.",
     "tempPassword": "Temporary password: {{password}}",
     "inviteFailed": "Could not send the invitation.",
     "rightsUpdated": "Rights updated.",
