@@ -488,6 +488,31 @@ const CompanyOnboarding = () => {
     setStepGuide(null);
   };
 
+  const handleConfirmStepGuide = () => {
+    if (!stepGuide) return;
+
+    const { stepId, variant } = stepGuide;
+    markStepGuideSeen(stepId, variant);
+
+    const pending = pendingStep;
+    setStepGuide(null);
+    setPendingStep(null);
+
+    if (getFocusedStepId() === stepId) return;
+
+    const targetPhase = findPhaseIdForStep(stepId);
+    if (targetPhase !== displayedPhase) {
+      setDisplayedPhase(targetPhase);
+    }
+
+    const mode = pending?.mode ?? (completedSteps.includes(stepId) ? 'review' : 'start');
+    if (mode === 'start') {
+      void executeStartStep(stepId);
+    } else {
+      void executeReviewStep(stepId);
+    }
+  };
+
   const openStepGuideOnDemand = () => {
     const stepId = getFocusedStepId() ?? phases[displayedPhase - 1]?.steps?.[0]?.id ?? null;
     if (stepId === null) return;
@@ -506,6 +531,7 @@ const CompanyOnboarding = () => {
       phaseId={stepGuide.phaseId}
       variant={stepGuide.variant}
       onClose={handleCloseStepGuide}
+      onConfirm={handleConfirmStepGuide}
     />
   ) : null;
 
