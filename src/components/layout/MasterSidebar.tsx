@@ -28,7 +28,8 @@ import {
   Info,
   Wallet,
   BookOpen,
-  Clock
+  Clock,
+  HelpCircle
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Cookies from 'js-cookie';
@@ -496,6 +497,19 @@ export function MasterSidebar({
         </nav>
       </div>
 
+      {(activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
+        <div className={`shrink-0 flex justify-center ${isCollapsed ? 'py-3' : 'pb-5 pt-1'}`}>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('harx-open-company-onboarding-help'))}
+            aria-label={t('companyOnboarding.ui.viewGuide', 'Aide')}
+            title={t('companyOnboarding.ui.viewGuide', 'Aide')}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-harx text-white shadow-lg shadow-black/20 transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
     </div>
   );
