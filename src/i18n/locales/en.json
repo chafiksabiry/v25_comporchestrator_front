@@ -3614,7 +3614,8 @@
       "finance": "Finance and banking",
       "realEstate": "Real estate",
       "regulated": "Other regulated sectors",
-      "gig": "Specific to your gig"
+      "gig": "Specific to your gig",
+      "recommended": "Recommended for your gig"
     },
     "back": "Back",
     "title": "Choose your training methodology",
@@ -3749,7 +3750,13 @@
       }
     },
     "hideGroup": "Hide",
-    "showGroup": "Show the {{count}} sector cases"
+    "showGroup": "Show the {{count}} sector cases",
+    "compare": {
+      "title": "How is it different from the recommended methodologies?",
+      "adds": "It adds:",
+      "lacks": "The recommended ones go further on:",
+      "advice": "Choose it for a short training centred on your gig sheet. Choose a recommended one for full coverage of the trade."
+    }
   },
   "trainingWizard": {
     "steps": {
