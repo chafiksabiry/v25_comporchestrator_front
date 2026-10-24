@@ -83,6 +83,15 @@
         "Upload your CSV/Excel file",
         "AI analyzes and imports your contacts"
       ]
+    },
+    "promptGuide": {
+      "title": "Create a Gig with AI",
+      "steps": [
+        "Describe your need in plain language",
+        "Specify the sector, profile and objectives",
+        "Mention the duration and desired compensation",
+        "Press Enter or the Send button"
+      ]
     }
   },
   "navbar": {

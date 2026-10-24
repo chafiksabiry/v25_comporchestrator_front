@@ -173,6 +173,21 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     scrollPageToTop();
   }, [currentSection, showReview, confirmedSuggestions, isManualMode]);
 
+  // Show contextual guide in the sidebar while on the prompt screen
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t('sidebar.promptGuide.title', 'Créer un Gig avec l\'IA'),
+          steps: (t('sidebar.promptGuide.steps', { returnObjects: true }) as string[]),
+        },
+      })
+    );
+    return () => {
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+    };
+  }, [t]);
+
   // Check for edit mode parameters on component mount
   // Auto-resize textarea
   useEffect(() => {
@@ -913,7 +928,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 </div>
               )}
 
-              <div className="relative">
+              <div className="bg-[#f4f4f4] rounded-[26px] shadow-sm">
                 <textarea
                   ref={textareaRef}
                   id="description"
@@ -940,34 +955,34 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   }}
                   rows={1}
                   placeholder={t('gigCreation.prompt.placeholder')}
-                  className={`w-full min-h-[120px] max-h-[220px] pl-6 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto ${
-                    isLiveDictating ? 'pr-6' : 'pr-28'
-                  }`}
+                  className="w-full min-h-[88px] max-h-[180px] px-6 pt-5 pb-2 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none overflow-y-auto"
                 />
-                <AudioBriefRecorder
-                  disabled={isAnalyzing}
-                  language="fr"
-                  maxSeconds={120}
-                  replaceSnippet={audioReplaceSnippet}
-                  panelHost={audioPanelHost}
-                  onActiveChange={setIsLiveDictating}
-                  onLiveTranscript={handleLiveTranscript}
-                  onTranscript={handleAudioTranscript}
-                  onCancel={handleAudioCancel}
-                  onError={(message) => toast.error(message)}
-                  onBeforeStart={lockSelectionForAudio}
-                />
-                {!isLiveDictating ? (
-                  <button
-                    type="submit"
-                    disabled={!input.trim() || isAnalyzing}
-                    title={t('gigCreation.prompt.sendTitle')}
-                    aria-label={t('gigCreation.prompt.sendAria')}
-                    className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
-                  >
-                    <ArrowUp className="w-7 h-7 stroke-[3]" />
-                  </button>
-                ) : null}
+                <div className="flex items-center justify-end gap-2 px-3 pb-3">
+                  <AudioBriefRecorder
+                    disabled={isAnalyzing}
+                    language="fr"
+                    maxSeconds={120}
+                    replaceSnippet={audioReplaceSnippet}
+                    panelHost={audioPanelHost}
+                    onActiveChange={setIsLiveDictating}
+                    onLiveTranscript={handleLiveTranscript}
+                    onTranscript={handleAudioTranscript}
+                    onCancel={handleAudioCancel}
+                    onError={(message) => toast.error(message)}
+                    onBeforeStart={lockSelectionForAudio}
+                  />
+                  {!isLiveDictating ? (
+                    <button
+                      type="submit"
+                      disabled={!input.trim() || isAnalyzing}
+                      title={t('gigCreation.prompt.sendTitle')}
+                      aria-label={t('gigCreation.prompt.sendAria')}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-none disabled:bg-gray-200 disabled:text-gray-400 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-harx-500/20 disabled:shadow-none"
+                    >
+                      <ArrowUp className="w-5 h-5 stroke-[3]" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div ref={setAudioPanelHost} />
