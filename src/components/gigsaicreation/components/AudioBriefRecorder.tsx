@@ -739,11 +739,11 @@ export function AudioBriefRecorder({
             onBeforeStart?.();
           }}
           onClick={() => void startRecording()}
-          className="absolute bottom-4 right-20 p-4 bg-white text-harx-600 border border-harx-100 rounded-2xl hover:bg-harx-50 hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+          className="flex h-11 w-11 shrink-0 items-center justify-center bg-white text-harx-600 border border-harx-100 rounded-2xl hover:bg-harx-50 hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-sm"
           title={`Dicter un brief (max ${formatElapsed(maxSeconds)})`}
           aria-label="Dicter un brief audio"
         >
-          <Mic className="w-6 h-6" />
+          <Mic className="w-5 h-5" />
         </button>
       ) : null}
 
