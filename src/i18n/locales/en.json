@@ -72,7 +72,82 @@
     "callCenterOps": "Operations console",
     "agents": "Agents",
     "team": "Team",
-    "activeGuide": "Active Guide",
+    "activeGuide": "Next action",
+      "nextAction": {
+        "profileIncomplete": {
+          "title": "Complete your company profile",
+          "description": "Your profile is empty: add your contact details and a presentation.",
+          "steps": [
+            "Click “Complete the profile”.",
+            "Click “Edit” and fill in your contact details and a presentation.",
+            "Click “Save”."
+          ]
+        },
+        "1": {
+          "title": "Create your company profile",
+          "description": "It only takes a few clicks.",
+          "steps": [
+            "Enter your company name or its website address.",
+            "Check the suggested information and fix anything that is wrong.",
+            "Click “Save and continue”."
+          ]
+        },
+        "3": {
+          "title": "Create your first gig",
+          "description": "Describe the role you want to fill.",
+          "steps": [
+            "Describe your need in a few sentences: role, market, schedule, pay.",
+            "Review the suggested gig and adjust it in each tab.",
+            "Click “Publish gig”."
+          ]
+        },
+        "4": {
+          "title": "Activate a phone number",
+          "description": "Your REPS will call from this number.",
+          "steps": [
+            "Choose the gig it is for.",
+            "Select an available number.",
+            "Confirm the activation in the window that opens."
+          ]
+        },
+        "5": {
+          "title": "Import your contacts",
+          "description": "Add the contacts your REPS will call.",
+          "steps": [
+            "Choose the gig they are for.",
+            "Drop your CSV or Excel file.",
+            "Match the columns (name and phone are required), then confirm."
+          ]
+        },
+        "7": {
+          "title": "Fill the knowledge base",
+          "description": "Add the documents your REPS will use during their calls."
+        },
+        "8": {
+          "title": "Prepare your REPS' training",
+          "description": "Create the training your REPS complete before their first calls."
+        },
+        "9": {
+          "title": "Write the call script",
+          "description": "Define the script and the steps of the conversation."
+        },
+        "10": {
+          "title": "Plan your call sessions",
+          "description": "Pick your call slots and the contacts to call first."
+        },
+        "11": {
+          "title": "Choose your subscription plan",
+          "description": "Select the plan that fits your team: Free, Standard or Premium."
+        },
+        "12": {
+          "title": "Activate your gig",
+          "description": "Start your calling operations."
+        },
+        "13": {
+          "title": "Find your REPS",
+          "description": "Get in touch with qualified REPS for your need."
+        }
+      },
     "interactiveStep": "Interactive Step",
     "logout": "Logout",
     "uploadContactsGuide": {
@@ -1260,10 +1335,10 @@
   "companyOnboarding": {
     "phases": {
       "1": {
-        "title": "Company Account Setup & Identity",
+        "title": "Company account and identity setup",
         "steps": {
           "1": {
-            "title": "Create Company Profile",
+            "title": "Create the company profile",
             "description": "Generate your company profile from your website, check it and save it"
           },
           "2": {
@@ -1276,20 +1351,20 @@
         "title": "Operational Setup",
         "steps": {
           "3": {
-            "title": "Create Gigs",
-            "description": "Define multi-channel gigs and requirements"
+            "title": "Create gigs",
+            "description": "Define your multi-channel gigs and their requirements"
           },
           "4": {
-            "title": "Telephony Setup",
-            "description": "Phone numbers, call tracking, and dialer configuration"
+            "title": "Phone setup",
+            "description": "Phone numbers and call settings"
           },
           "5": {
-            "title": "Upload Contacts",
-            "description": "Import contacts for multi-channel engagement"
+            "title": "Import contacts",
+            "description": "Import the contacts your REPS will call"
           },
           "6": {
-            "title": "Reporting Setup",
-            "description": "Configure KPIs and reporting preferences"
+            "title": "Reporting setup",
+            "description": "Set up your indicators and reports"
           }
         }
       },
@@ -1297,20 +1372,20 @@
         "title": "REPS Engagement",
         "steps": {
           "7": {
-            "title": "Knowledge Base",
-            "description": "Create training materials and FAQs"
+            "title": "Knowledge base",
+            "description": "Create your training materials and FAQ"
           },
           "8": {
             "title": "E-learning",
-            "description": "Training, validation, and contract acceptance"
+            "description": "Training, validation and contract acceptance by your REPS"
           },
           "9": {
-            "title": "Call Script",
-            "description": "Define script and conversation flows"
+            "title": "Call script",
+            "description": "Define the script and the steps of the conversation"
           },
           "10": {
-            "title": "Session Planning",
-            "description": "Schedule call slots and prioritize leads"
+            "title": "Session planning",
+            "description": "Plan your call slots and prioritize your contacts"
           }
         }
       },
@@ -1318,16 +1393,16 @@
         "title": "Activation",
         "steps": {
           "11": {
-            "title": "Subscription Plan",
-            "description": "Select plan: Free, Standard, or Premium"
+            "title": "Subscription plan",
+            "description": "Choose a plan: Free, Standard or Premium"
           },
           "12": {
-            "title": "Gig Activation",
-            "description": "Launch multi-channel operations"
+            "title": "Gig activation",
+            "description": "Start your calling operations"
           },
           "13": {
-            "title": "MATCH HARX REPS",
-            "description": "Connect with qualified REPS based on requirements"
+            "title": "Matching with REPS",
+            "description": "Get in touch with qualified REPS for your need"
           }
         }
       }
@@ -1337,17 +1412,19 @@
       "errorPhaseData": "Error: Phase data not found. Please try refreshing the page.",
       "phaseLabel": "Phase",
       "completed": "Completed",
-      "progressing": "Progressing",
+      "progressing": "In progress",
       "locked": "Locked",
       "todo": "To do",
-      "comingSoon": "Coming Soon",
-      "currentStep": "Current Step",
-      "reviewStep": "Review Step",
-      "startStep": "Start Step",
-      "previousPhase": "Previous Phase",
-      "goToDashboard": "Go to Dashboard",
-      "nextPhase": "Next Phase",
-      "accessibleDesc": "Follow the sequence to complete your company setup and unlock premium features.",
+      "toComplete": "To complete",
+      "completeProfile": "Complete the profile",
+      "comingSoon": "Coming soon",
+      "currentStep": "In progress",
+      "reviewStep": "Review step",
+      "startStep": "Start step",
+      "previousPhase": "Previous phase",
+      "goToDashboard": "Go to the dashboard",
+      "nextPhase": "Next phase",
+      "accessibleDesc": "Follow the steps in order to complete your company setup.",
       "callCenterAccessibleDesc": "Same setup as companies — every step is optional. Skip ahead or open the dashboard anytime.",
       "callCenterProjectTitle": "Create project",
       "callCenterProjectEditTitle": "Edit project",
@@ -1377,9 +1454,9 @@
       "callCenterBackToProjects": "Back to projects",
       "callCenterCreateProjectStep": "Create Project",
       "callCenterCreateProjectStepDesc": "Enter the project title and destination zone",
-      "lockedDesc": "This phase is currently locked. Please complete the previous phase to continue.",
+      "lockedDesc": "This phase is locked. Complete the previous phase first.",
       "viewGuide": "View Guide",
-      "allPhasesCompleted": "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊",
+      "allPhasesCompleted": "Congratulations: every onboarding step is complete.",
       "phaseCompleted": "All steps in this phase are completed. You can proceed to the next phase.",
       "backToOnboarding": "Back to onboarding",
       "nextStep": "Next step",
@@ -2371,6 +2448,7 @@
       "companyOverview": "Company Overview",
       "ourMission": "Our Mission",
       "publishBtn": "Save and continue",
+      "notSet": "Not set",
       "guideStep3": "When you are ready, click “Save and continue” (top right) to save the company and move to the next step.",
       "guideStep2": "Click “Edit” to fix a field, or use the + buttons to add a missing contact detail.",
       "guideStep1": "Check the automatically generated information.",
