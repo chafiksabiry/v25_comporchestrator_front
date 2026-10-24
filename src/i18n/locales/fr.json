@@ -987,9 +987,9 @@
     "allGigs": "Tous les Gigs",
     "integrateResource": "Intégrer une Ressource",
     "empty": {
-      "title": "Flux d'Intelligence Vide",
-      "subtitle": "Vos connaissances d'entreprise n'ont pas encore été synchronisées. Initiez l'ingestion de données pour donner les moyens à vos REPS.",
-      "ingestFirst": "Ingérer une ressource"
+      "title": "Aucune ressource pour le moment",
+      "subtitle": "Ajoutez des documents ou des enregistrements d'appels : vos REPS pourront les consulter pendant leurs appels.",
+      "ingestFirst": "Ajouter la première ressource"
     },
     "analysis": {
       "languageHub": "Centre Linguistique",
@@ -1163,7 +1163,7 @@
   },
   "telephonySetup": {
     "title": "Configuration Téléphonique",
-    "subtitle": "Gérez et configurez vos points d'entrée réseau mondiaux",
+    "subtitle": "Choisissez et activez les numéros de téléphone de vos gigs",
     "nextStep": "Étape suivante",
     "nextStepRequiresNumber": "Achetez au moins un numéro pour passer à l'étape suivante",
     "errors": {
@@ -1172,10 +1172,10 @@
     },
     "selectGigProfile": "Sélectionner un Profil Gig",
     "required": "Requis",
-    "associateGig": "Associez un gig d'intelligence principal à vos points d'entrée téléphoniques mondiaux",
+    "associateGig": "Choisissez le gig auquel rattacher vos numéros de téléphone",
     "hydratingProfiles": "Hydratation des profils...",
     "globalZone": "Zone Mondiale",
-    "selectIntelligenceProfile": "Sélectionner le Profil d'Intelligence",
+    "selectIntelligenceProfile": "Sélectionner le gig",
     "chooseActiveGigProfile": "Choisissez un profil gig actif...",
     "unknownRegion": "Région Inconnue",
     "noGlobalProfilesFound": "Aucun profil mondial trouvé",
@@ -1183,16 +1183,16 @@
     "chooseCarrier": "Choisissez un partenaire de classe opérateur pour un routage stable à faible latence",
     "pending": "En Attente",
     "activePartner": "Partenaire Actif",
-    "networkEntries": "Entrées Réseau",
+    "networkEntries": "Numéros de téléphone",
     "active": "Actif(s)",
-    "provisionNodes": "Provisionnez et gérez des points d'accès sécurisés pour vos nœuds d'intelligence mondiaux",
+    "provisionNodes": "Activez et gérez les numéros de téléphone de ce gig",
     "static": "STATIQUE",
     "infrastructure": "INFRASTRUCTURE",
     "operational": "Opérationnel",
     "syncing": "Synchronisation",
-    "regionalNodesAvailable": "Nœuds Régionaux Disponibles",
+    "regionalNodesAvailable": "Numéros disponibles",
     "regional": "Régional",
-    "globalGateway": "Passerelle Mondiale",
+    "globalGateway": "· numéro local",
     "purchase": "Acheter",
     "empty": {
       "title": "Aucun numéro pour le moment",
@@ -1264,7 +1264,7 @@
         "steps": {
           "1": {
             "title": "Créer le Profil de l'Entreprise",
-            "description": "Détails juridiques et commerciaux, contacts clés, acceptation des conditions"
+            "description": "Générez le profil de votre entreprise à partir de votre site web, vérifiez-le et enregistrez-le"
           },
           "2": {
             "title": "Vérification KYC / KYB",
@@ -1339,6 +1339,7 @@
       "completed": "Complété",
       "progressing": "En cours",
       "locked": "Verrouillé",
+      "todo": "À faire",
       "comingSoon": "Bientôt",
       "currentStep": "Étape Actuelle",
       "reviewStep": "Revoir l'Étape",
@@ -1544,6 +1545,7 @@
       "placeholder": "Décrivez votre besoin, ou dictez avec le micro…",
       "sendTitle": "Envoyer pour générer le gig",
       "sendAria": "Envoyer pour générer le gig",
+      "briefTooShort": "Votre description est trop courte pour créer un gig. Indiquez le poste, le marché, les horaires et la rémunération (au moins une phrase complète).",
       "dictatingHint": "Parlez clairement — les ondes et le texte live confirment la prise. Valider pour garder, Annuler pour jeter.",
       "nonDictatingHint": "Écrivez, sélectionnez un passage puis dictez pour le remplacer, ou dictez à la suite. Entrée / Envoyer pour générer.",
       "audioReplaceLabel": "Remplacement audio :",
@@ -2083,7 +2085,7 @@
       "confirm": "Confirmer le mapping",
       "cancel": "Annuler",
       "applying": "Application du mapping...",
-      "requiredHint": "Mappez email, téléphone, adresse, code postal, ville, date de naissance, et soit un nom complet, soit prénom + nom.",
+      "requiredHint": "Mappez le téléphone, et soit un nom complet, soit prénom + nom. Les autres colonnes (e-mail, adresse…) sont facultatives.",
       "requiredBadge": "requis",
       "missingIdentity": "Téléphone ou email requis",
       "missingName": "Nom complet OU (prénom + nom) requis — avec prénom+nom, le nom complet est généré automatiquement",
@@ -2250,7 +2252,7 @@
     "searchBtn": "Rechercher",
     "scrapeBtn": "Générer",
     "backToSearch": "Retour à la recherche",
-    "publishHint": "Vérifiez les informations ci-dessous puis cliquez sur Publier pour enregistrer la société. Vous pouvez revenir en arrière sans publier.",
+    "publishHint": "Vérifiez les informations ci-dessous, corrigez-les si besoin avec « Modifier », puis cliquez sur « Enregistrer et continuer ». Vous pouvez revenir en arrière sans enregistrer.",
     "manual": {
       "openBtn": "Créer manuellement",
       "noWebsite": "Pas de site web ? Créez l'entreprise manuellement.",
@@ -2334,6 +2336,7 @@
     "errors": {
       "searchFailed": "Échec de la recherche d'entreprises",
       "generateFailed": "Échec de la génération du profil",
+      "invalidUrl": "Cette adresse de site n'est pas valide. Exemple : https://www.exemple.com",
       "publishFailed": "Échec de la publication de l'entreprise. Veuillez réessayer."
     },
     "profile": {
@@ -2358,7 +2361,7 @@
       "digitalPresence": "Présence Numérique",
       "editLogo": "Modifier le Logo",
       "editProfile": "Modifier",
-      "doneEditing": "Terminé",
+      "doneEditing": "Valider les modifications",
       "uploadTab": "Téléverser",
       "urlTab": "URL",
       "logoUrl": "URL du Logo",
@@ -2367,8 +2370,12 @@
       "save": "Sauvegarder",
       "companyOverview": "Aperçu de l'Entreprise",
       "ourMission": "Notre Mission",
-      "publishBtn": "Publier l'Entreprise",
-      "publishing": "Publication...",
+      "publishBtn": "Enregistrer et continuer",
+      "guideStep3": "Une fois prêt, cliquez sur « Enregistrer et continuer » (en haut à droite) pour enregistrer la société et passer à l'étape suivante.",
+      "guideStep2": "Cliquez sur « Modifier » pour corriger un champ, ou utilisez les + pour compléter une coordonnée manquante.",
+      "guideStep1": "Vérifiez les informations générées automatiquement ci-contre.",
+      "guideTitle": "Comment procéder",
+      "publishing": "Enregistrement…",
       "errorTitle": "Erreur",
       "close": "Fermer"
     }

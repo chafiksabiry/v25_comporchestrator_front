@@ -69,6 +69,15 @@ export function GigReview({
   onEditSection,
 }: GigReviewProps) {
   const { t, i18n } = useTranslation();
+  const weekdayKeys: Record<string, string> = {
+    Monday: 'monday', Tuesday: 'tuesday', Wednesday: 'wednesday', Thursday: 'thursday',
+    Friday: 'friday', Saturday: 'saturday', Sunday: 'sunday',
+  };
+  const seniorityKeys: Record<string, string> = {
+    'Entry Level': 'junior', Junior: 'junior', 'Mid-Level': 'mid', Senior: 'senior', Manager: 'lead',
+  };
+  const seniorityLabel = (level: string) =>
+    seniorityKeys[level] ? t(`gigCreation.team.${seniorityKeys[level]}`) : level;
   const narrativeLang = uiLangFrom(i18n.language);
   // Compact pencil button rendered next to each section header. Visible
   // whenever `onEditSection` is provided, even in read-only mode.
@@ -561,7 +570,7 @@ export function GigReview({
             <div className="flex flex-wrap gap-2 mt-4">
               {data.seniority?.level && (
                 <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs font-bold">
-                  {data.seniority.level}
+                  {seniorityLabel(data.seniority.level)}
                 </span>
               )}
               {data.seniority?.yearsExperience && (
@@ -751,7 +760,7 @@ export function GigReview({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 truncate">
-                          {slot.days.join(' · ')}
+                          {slot.days.map((d: string) => (weekdayKeys[d] ? t(`gigCreation.schedule.days.${weekdayKeys[d]}`) : d)).join(' · ')}
                         </div>
                         <div className="text-lg font-black text-gray-900 tabular-nums">
                           {slot.hours.start}

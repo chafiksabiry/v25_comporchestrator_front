@@ -2217,7 +2217,7 @@ const CompanyOnboarding = () => {
               <div
                 key={step.id}
                 {...(tourAttr ? { 'data-tour': tourAttr } : {})}
-                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled && !isCallCenterWorkspace())
+                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
@@ -2239,7 +2239,7 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase
                       ? "bg-gray-100 text-gray-400"
                       : step.disabled
                         ? "bg-gray-100 text-gray-400"
@@ -2282,7 +2282,7 @@ const CompanyOnboarding = () => {
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          {t('companyOnboarding.ui.locked')}
+                          {t('companyOnboarding.ui.todo')}
                         </span>
                       )}
                     </div>

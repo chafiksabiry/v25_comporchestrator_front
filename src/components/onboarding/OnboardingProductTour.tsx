@@ -169,7 +169,7 @@ const OnboardingProductTour: React.FC<Props> = ({ tourKey, steps, onDone }) => {
       <button
         type="button"
         onClick={close}
-        className="fixed top-5 right-5 z-[9993] flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/70 backdrop-blur-md hover:bg-white/20 hover:text-white transition-all"
+        className="fixed top-[76px] right-5 z-[9993] flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/70 backdrop-blur-md hover:bg-white/20 hover:text-white transition-all"
       >
         <X size={12} />
         Passer le tour
