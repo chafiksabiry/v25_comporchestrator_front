@@ -35,7 +35,6 @@ export default function GigsPanel() {
         <PrompAI
           onBackToGigs={handleBackFromCreation}
           onBack={handleBackFromCreation}
-          onBackToOnboarding={handleBackFromCreation}
           onPublishSuccess={handlePublishSuccess}
         />
       </div>

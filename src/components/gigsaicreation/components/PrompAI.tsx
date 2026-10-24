@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 import { assertCompanyHasAiTokens } from '../../../lib/aiTokensUsage';
+import { OnboardingBackButton } from '../../onboarding/searchCompanyWizard/OnboardingBackButton';
 
 interface PrompAIProps {
   onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
@@ -860,7 +861,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       <div className="w-full max-w-5xl mx-auto px-4 pt-6 shrink-0">
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center">
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 items-center flex-wrap">
             {onBackToGigs && (
               <button
                 onClick={onBackToGigs}
@@ -875,7 +876,16 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8 transform -translate-y-12">
+        <div className="w-full max-w-4xl mb-4">
+          {backToOnboarding && (
+            <OnboardingBackButton
+              variant="cta"
+              label={t('gigCreation.prompt.backToOnboarding', "Retour à l'onboarding")}
+              onClick={backToOnboarding}
+            />
+          )}
+        </div>
+        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
