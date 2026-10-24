@@ -32,10 +32,12 @@ import { scrollJourneyMainToTop } from './journeyScroll';
 
 import type { TrainingMethodology } from '../../types/methodology';
 
-import { buildGigSnapshotForAi, detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
+import { contentLanguageLabel, resolveContentLanguage } from '../../utils/contentLanguage';
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
 import { resolveSectionMarkdown } from '../../utils/resolveSectionMarkdown';
+import { methodologyComponentsForAI } from '../../data/methodologyContext';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -611,7 +613,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     repOnboardingLayout = false,
     onForkNewJourneyTraining,
   } = props;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const greetingKey = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'morning';
@@ -2481,9 +2483,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
               methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
-              methodologyComponents: Array.isArray(methodology?.components)
-                ? methodology.components.map((c) => c.title).slice(0, 8)
-                : [],
+              methodologyComponents: methodologyComponentsForAI(methodology),
               trainingTitle: journey?.name,
               trainingDescription: journey?.description,
             }
@@ -2552,9 +2552,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
                 methodologyName: methodology?.name || 'Methodologie 360',
                 methodologyDescription: methodology?.description,
-                methodologyComponents: Array.isArray(methodology?.components)
-                  ? methodology.components.map((c) => c.title).slice(0, 8)
-                  : [],
+                methodologyComponents: methodologyComponentsForAI(methodology),
               },
             }
           : {}),
@@ -3064,9 +3062,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
       methodologyName: methodology?.name || 'Methodologie 360',
       methodologyDescription: methodology?.description,
-      methodologyComponents: Array.isArray(methodology?.components)
-        ? methodology.components.map((c) => String(c?.title || '').trim()).filter(Boolean)
-        : [],
+      methodologyComponents: methodologyComponentsForAI(methodology),
       trainingTitle: journey?.name,
       trainingDescription: journey?.description,
     };
@@ -3930,10 +3926,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const gigDescriptionForLanguage = String(
           (chatGigSnapshot as any)?.description || ''
         ).trim();
-        const outputLanguage = detectOutputLanguageFromGigText(
+        const outputLanguage = resolveContentLanguage(
+          activeChatGigId,
+          i18n?.language,
           gigTitleForLanguage,
           gigDescriptionForLanguage
         );
+        const outputLanguageName = contentLanguageLabel(outputLanguage);
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: isUploadsPrimaryMode ? '' : activeChatGigId || '',
@@ -3948,7 +3947,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           useKnowledgeBase: usesKbForChat,
           useUploadedDocuments: usesUploadsForChat,
           useGigAsSecondaryContext: false,
-          // Language of plan + content follows gig title/description (even in uploads_only)
+          // Language of plan + content: the user's choice (default: interface language)
           outputLanguage,
           contentLanguage: outputLanguage,
           languageFromGig: {
@@ -3969,10 +3968,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 primary: 'uploaded_files',
                 secondary: null,
                 instruction:
-                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan, all training content, and any training title/description in ${outputLanguage === 'fr' ? 'French' : 'English'} — match the language of the gig title and description (languageFromGig / outputLanguage). If information is missing, infer only from the uploaded files.`,
+                  `Generate the training plan AND all training module content ONLY from analyzed uploaded documents (topics, objectives, summaries, file content). Do NOT use the gig snapshot, product offer, or audience from the gig. Do not use knowledge-base documents. Write the entire plan, all training content, and any training title/description in ${outputLanguageName} (outputLanguage chosen by the user; translate gig information if needed). If information is missing, infer only from the uploaded files.`,
               }
             : {
-                instruction: `Write the training title, training description, training plan, and all training content in ${outputLanguage === 'fr' ? 'French' : 'English'}, matching the language of the selected gig title and description (languageFromGig / outputLanguage).`,
+                instruction: `Write the training title, training description, training plan, and all training content in ${outputLanguageName} (language chosen by the user, translate gig information if needed).`,
               },
           knowledgeBaseDocumentsCount: kbDocsSummary.length,
           knowledgeBaseDocuments: kbDocsSummary,

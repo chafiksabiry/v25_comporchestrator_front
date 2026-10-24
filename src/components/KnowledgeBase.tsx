@@ -131,16 +131,20 @@ const KnowledgeBase: React.FC = () => {
     name: string;
     words: number;
     ready: boolean;
+    indexed?: boolean;
+    ocr?: boolean;
+    tables?: number;
     analyzed: boolean;
     summary: string | null;
   }
   interface Readiness {
     companyId: string;
-    summary: { documents: number; ready: number; notReady: number; analyzed: number; totalWords: number };
+    summary: { documents: number; ready: number; notReady: number; analyzed: number; indexed?: number; totalWords: number };
     documents: ReadinessDoc[];
   }
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const readinessRef = useRef<Readiness | null>(null);
+  const reindexRequested = useRef(false);
   const [analyzingAll, setAnalyzingAll] = useState<{ done: number; total: number } | null>(null);
   const [kbQuestion, setKbQuestion] = useState('');
   const [kbAnswer, setKbAnswer] = useState<string | null>(null);
@@ -272,6 +276,14 @@ const KnowledgeBase: React.FC = () => {
       if (!data) return null;
       readinessRef.current = data;
       setReadiness(data);
+      // Documents uploaded before semantic search existed: build their search index once.
+      if ((data.summary.indexed ?? data.summary.ready) < data.summary.ready && !reindexRequested.current) {
+        reindexRequested.current = true;
+        apiClient
+          .post('/rag/reindex', { userId })
+          .then(() => loadReadiness(gigId))
+          .catch((error) => console.error('Error reindexing knowledge base:', error));
+      }
       return data;
     } catch (error) {
       console.error('Error loading knowledge readiness:', error);
@@ -1268,7 +1280,14 @@ const KnowledgeBase: React.FC = () => {
               <div className="min-w-0 sm:w-64 shrink-0">
                 <p className="truncate text-sm font-bold text-gray-900" title={d.name}>{d.name}</p>
                 {d.ready ? (
-                  <span className="text-xs font-semibold text-green-700">{t('knowledgeBase.readiness.statusReady', { words: d.words })}</span>
+                  <>
+                    <span className="text-xs font-semibold text-green-700">{t('knowledgeBase.readiness.statusReady', { words: d.words })}</span>
+                    <span className="mt-0.5 block text-[11px] text-gray-500">
+                      {d.indexed ? t('knowledgeBase.readiness.indexed') : t('knowledgeBase.readiness.indexing')}
+                      {d.ocr ? ` · ${t('knowledgeBase.readiness.ocr')}` : ''}
+                      {d.tables ? ` · ${t('knowledgeBase.readiness.tables', { count: d.tables })}` : ''}
+                    </span>
+                  </>
                 ) : (
                   <span className="text-xs font-semibold text-red-700">{t('knowledgeBase.readiness.statusNoText')}</span>
                 )}
@@ -1833,7 +1852,7 @@ const KnowledgeBase: React.FC = () => {
             </div>
 
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 text-center hover:border-harx-200 transition-colors cursor-pointer group relative bg-gray-50/30">
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,audio/*,video/*" />
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/png,image/jpeg,image/webp,audio/*,video/*" />
               <div className="flex flex-col items-center">
                 <Upload size={24} className="text-gray-300 group-hover:text-harx-500 transition-colors mb-2" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('knowledgeBase.uploadModal.dragDrop')}</p>

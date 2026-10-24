@@ -14,7 +14,7 @@ import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import '../../training-layout.css';
 import { cloudinaryService } from '../../lib/cloudinaryService';
-import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import { contentLanguageLabel, resolveContentLanguage, setChosenContentLanguage } from '../../utils/contentLanguage';
 import {
   assertCompanyHasAiTokens,
   chargeCompanyAiUsage,
@@ -31,7 +31,7 @@ interface SetupWizardProps {
 }
 
 export default function SetupWizard({ onComplete, repOnboardingLayout = false, forceNew = false }: SetupWizardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -46,6 +46,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const [visionSubStep, setVisionSubStep] = useState(0);
   const [visionName, setVisionName] = useState('');
   const [visionDesc, setVisionDesc] = useState('');
+  const [contentLanguage, setContentLanguage] = useState('');
   const [visionDuration, setVisionDuration] = useState('');
   const prevWizardStepRef = useRef(currentStep);
   const [industryOpen, setIndustryOpen] = useState(false);
@@ -387,8 +388,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
       const gigTitle = String(selectedGig.title || '').trim();
       const gigDescription = String(selectedGig.description || '').trim();
-      const outputLanguage = detectOutputLanguageFromGigText(gigTitle, gigDescription);
-      const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
+      // Explicit choice for this gig, else the interface language, else the gig text.
+      const outputLanguage = resolveContentLanguage(String(selectedGig._id || ''), i18n?.language, gigTitle, gigDescription);
+      const languageLabel = contentLanguageLabel(outputLanguage);
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
         currentTitle: visionName,
@@ -404,7 +406,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           descriptionSample: gigDescription.slice(0, 280) || null,
           detected: outputLanguage,
         },
-        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
+        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Translate the gig context if needed. Do not mix languages.`,
       });
       const data = (response?.data as any)?.data || {};
       const backendBilled = applyBackendAiUsage((response?.data as any)?.usage);
@@ -765,6 +767,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onTrainingNameChange={setVisionName}
                 onTrainingDescriptionChange={setVisionDesc}
                 onEstimatedDurationChange={setVisionDuration}
+                contentLanguage={
+                  contentLanguage ||
+                  resolveContentLanguage(String(selectedGig?._id || ''), i18n?.language, selectedGig?.title, selectedGig?.description)
+                }
+                onContentLanguageChange={(code) => {
+                  setContentLanguage(code);
+                  setChosenContentLanguage(String(selectedGig?._id || ''), code);
+                }}
                 gigData={selectedGig}
                 onSuggestTitle={() => void handleSuggestVision('title')}
                 onSuggestDescription={() => void handleSuggestVision('description')}
@@ -815,6 +825,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onBack={() => setCurrentStep(2)}
                 hideBackButton
                 gigCategory={selectedGig?.category}
+                gig={selectedGig}
                 countryLabel={selectedGig?.destination_zone?.name?.common}
               />
             )}
