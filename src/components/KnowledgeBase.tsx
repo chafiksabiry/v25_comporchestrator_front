@@ -124,6 +124,29 @@ const KnowledgeBase: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [analyzingDocument, setAnalyzingDocument] = useState<string | null>(null);
   const [documentAnalysis, setDocumentAnalysis] = useState<{ [key: string]: AnalysisResult }>({});
+
+  // Readiness of the knowledge base: which documents the REPS can really use.
+  interface ReadinessDoc {
+    id: string;
+    name: string;
+    words: number;
+    ready: boolean;
+    analyzed: boolean;
+    summary: string | null;
+  }
+  interface Readiness {
+    companyId: string;
+    summary: { documents: number; ready: number; notReady: number; analyzed: number; totalWords: number };
+    documents: ReadinessDoc[];
+  }
+  const [readiness, setReadiness] = useState<Readiness | null>(null);
+  const readinessRef = useRef<Readiness | null>(null);
+  const [analyzingAll, setAnalyzingAll] = useState<{ done: number; total: number } | null>(null);
+  const [kbQuestion, setKbQuestion] = useState('');
+  const [kbAnswer, setKbAnswer] = useState<string | null>(null);
+  const [kbAsking, setKbAsking] = useState(false);
+  const [kbAskError, setKbAskError] = useState(false);
+
   const [selectedDocumentForAnalysis, setSelectedDocumentForAnalysis] = useState<any>(null);
   const [loadingSummary, setLoadingSummary] = useState<{ [key: string]: boolean }>({});
   const [loadingTranscription, setLoadingTranscription] = useState<{ [key: string]: boolean }>({});
@@ -159,9 +182,11 @@ const KnowledgeBase: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('knowledgeItems', JSON.stringify(knowledgeItems));
     window.dispatchEvent(
-      new CustomEvent('kbContentStatus', { detail: { hasContent: knowledgeItems.length > 0 } })
+      new CustomEvent('kbContentStatus', {
+        detail: { hasContent: knowledgeItems.length > 0 && hasUsableKnowledge(readiness) },
+      })
     );
-  }, [knowledgeItems]);
+  }, [knowledgeItems, readiness]);
 
   const getItemIcon = (type: string) => {
     switch (type) {
@@ -235,9 +260,33 @@ const KnowledgeBase: React.FC = () => {
     return gig ? gig.title : null;
   };
 
+  const loadReadiness = async (gigId?: string): Promise<Readiness | null> => {
+    try {
+      const userId = getUserId();
+      if (!userId) return null;
+      const gig = gigId || selectedGigId;
+      const response = await apiClient.get('/rag/readiness', {
+        params: { userId, ...(gig && gig !== 'all' ? { gigId: gig } : {}) },
+      });
+      const data = (response.data as any)?.data as Readiness | undefined;
+      if (!data) return null;
+      readinessRef.current = data;
+      setReadiness(data);
+      return data;
+    } catch (error) {
+      console.error('Error loading knowledge readiness:', error);
+      return null;
+    }
+  };
+
+  // Documents were uploaded but none has usable text: nothing feeds the base, so the step is not done.
+  const hasUsableKnowledge = (r: Readiness | null) => !r || r.summary.documents === 0 || r.summary.ready > 0;
+
   // Function to update onboarding progress
   const updateOnboardingProgress = async () => {
     try {
+      const latest = await loadReadiness();
+      if (!hasUsableKnowledge(latest)) return null;
       const companyId = Cookies.get('companyId');
       if (!companyId) {
         throw new Error('Company ID not found in cookies');
@@ -307,7 +356,8 @@ const KnowledgeBase: React.FC = () => {
 
       setKnowledgeItems(documents);
 
-      if (documents.length > 0) {
+      const latestReadiness = await loadReadiness(gigId);
+      if (documents.length > 0 && hasUsableKnowledge(latestReadiness)) {
         const gigForStep = String(gigId || selectedGigId || '').trim();
         const companyId = Cookies.get('companyId') || '';
         if (gigForStep) {
@@ -512,10 +562,12 @@ const KnowledgeBase: React.FC = () => {
       // dashboard checklist reflects progress immediately. We only mark
       // it when the user picked a specific gig (not the "all" bucket).
       const companyId = Cookies.get('companyId') || '';
-      if (uploadGigId && uploadGigId !== 'all') {
-        markGigStepDone(uploadGigId, 'knowledgeBase', true);
-      } else if (companyId) {
-        markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
+      if (hasUsableKnowledge(readinessRef.current)) {
+        if (uploadGigId && uploadGigId !== 'all') {
+          markGigStepDone(uploadGigId, 'knowledgeBase', true);
+        } else if (companyId) {
+          markCompanyGigsStepDone(companyId, 'knowledgeBase', true);
+        }
       }
 
       setUploadFiles([]);
@@ -706,6 +758,7 @@ const KnowledgeBase: React.FC = () => {
         ...prev,
         [documentId]: response.data as any
       }));
+      void loadReadiness();
     } catch (error: any) {
       console.error('Error analyzing document:', error);
       alert('Failed to analyze document. Please try again.');
@@ -1140,6 +1193,140 @@ const KnowledgeBase: React.FC = () => {
       );
     }
     return null;
+  };
+
+  const analyzeAllPending = async () => {
+    const pending = (readiness?.documents || []).filter((d) => d.ready && !d.analyzed);
+    if (pending.length === 0) return;
+    setAnalyzingAll({ done: 0, total: pending.length });
+    for (let i = 0; i < pending.length; i += 1) {
+      try {
+        const response = await apiClient.post(`/rag/analyze/${pending[i].id}`);
+        setDocumentAnalysis((prev) => ({ ...prev, [pending[i].id]: response.data as any }));
+      } catch (error) {
+        console.error('Error analyzing document:', error);
+      }
+      setAnalyzingAll({ done: i + 1, total: pending.length });
+    }
+    setAnalyzingAll(null);
+    void loadReadiness();
+  };
+
+  const askKnowledgeBase = async () => {
+    const question = kbQuestion.trim();
+    if (!question || !readiness) return;
+    setKbAsking(true);
+    setKbAskError(false);
+    setKbAnswer(null);
+    try {
+      const response = await apiClient.post('/rag/query', {
+        companyId: readiness.companyId,
+        query: question,
+        ...(selectedGigId && selectedGigId !== 'all' ? { gigId: selectedGigId } : {}),
+      });
+      setKbAnswer(String((response.data as any)?.data?.answer || ''));
+    } catch (error) {
+      console.error('Error querying knowledge base:', error);
+      setKbAskError(true);
+    } finally {
+      setKbAsking(false);
+    }
+  };
+
+  const renderReadinessPanel = () => {
+    if (!readiness || readiness.summary.documents === 0) return null;
+    const { summary, documents } = readiness;
+    const allReady = summary.notReady === 0 && summary.ready > 0;
+    const pendingAnalysis = documents.filter((d) => d.ready && !d.analyzed).length;
+    return (
+      <div className="mb-8 rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm space-y-5">
+        <div>
+          <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">{t('knowledgeBase.readiness.title')}</h3>
+          <p className="mt-1 text-sm text-gray-500">{t('knowledgeBase.readiness.subtitle')}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-3 text-sm font-semibold">
+          <span className={`rounded-full px-3 py-1 ${summary.ready > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {t('knowledgeBase.readiness.documentsReady', { ready: summary.ready, total: summary.documents })}
+          </span>
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-700">
+            {t('knowledgeBase.readiness.analyzedCount', { count: summary.analyzed })}
+          </span>
+        </div>
+
+        <p className={`text-sm font-medium ${allReady ? 'text-green-700' : summary.ready > 0 ? 'text-amber-700' : 'text-red-700'}`}>
+          {allReady
+            ? t('knowledgeBase.readiness.allGood')
+            : summary.ready > 0
+              ? t('knowledgeBase.readiness.someIssues')
+              : t('knowledgeBase.readiness.noneReady')}
+        </p>
+
+        <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-100">
+          {documents.map((d) => (
+            <li key={d.id} className="flex flex-col gap-1 p-3 sm:flex-row sm:items-start sm:gap-4">
+              <div className="min-w-0 sm:w-64 shrink-0">
+                <p className="truncate text-sm font-bold text-gray-900" title={d.name}>{d.name}</p>
+                {d.ready ? (
+                  <span className="text-xs font-semibold text-green-700">{t('knowledgeBase.readiness.statusReady', { words: d.words })}</span>
+                ) : (
+                  <span className="text-xs font-semibold text-red-700">{t('knowledgeBase.readiness.statusNoText')}</span>
+                )}
+              </div>
+              <p className="text-xs leading-relaxed text-gray-600">
+                {!d.ready
+                  ? t('knowledgeBase.readiness.noTextHelp')
+                  : d.summary
+                    ? d.summary
+                    : t('knowledgeBase.readiness.notAnalyzed')}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {pendingAnalysis > 0 && (
+          <button
+            type="button"
+            onClick={() => void analyzeAllPending()}
+            disabled={analyzingAll !== null}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-harx-500/20 disabled:opacity-60"
+          >
+            {analyzingAll ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {analyzingAll
+              ? t('knowledgeBase.readiness.analyzing', { done: analyzingAll.done, total: analyzingAll.total })
+              : t('knowledgeBase.readiness.analyzeAll', { count: pendingAnalysis })}
+          </button>
+        )}
+
+        {summary.ready > 0 && (
+          <div className="space-y-2 border-t border-gray-100 pt-4">
+            <h4 className="text-sm font-black uppercase tracking-wide text-gray-900">{t('knowledgeBase.readiness.testTitle')}</h4>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={kbQuestion}
+                onChange={(e) => setKbQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void askKnowledgeBase();
+                }}
+                placeholder={t('knowledgeBase.readiness.testPlaceholder')}
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              />
+              <button
+                type="button"
+                onClick={() => void askKnowledgeBase()}
+                disabled={kbAsking || !kbQuestion.trim()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-harx-300 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+              >
+                {kbAsking && <Loader2 size={14} className="animate-spin" />}
+                {kbAsking ? t('knowledgeBase.readiness.testing') : t('knowledgeBase.readiness.testButton')}
+              </button>
+            </div>
+            {kbAskError && <p className="text-sm text-red-700">{t('knowledgeBase.readiness.testError')}</p>}
+            {kbAnswer && <p className="whitespace-pre-wrap rounded-2xl bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">{kbAnswer}</p>}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -1783,6 +1970,7 @@ const KnowledgeBase: React.FC = () => {
         </div>
       </div>
 
+      {renderReadinessPanel()}
       {renderContent()}
       {renderUploadModal()}
       {renderPreviewModal()}
