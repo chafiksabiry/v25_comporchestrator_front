@@ -17,7 +17,7 @@ export const COMPANY_ONBOARDING_STEP_TITLES: Record<number, string> = {
   3: 'Orchestrator · Gigs',
   4: 'Orchestrator · Téléphonie',
   5: 'Orchestrator · Import contacts',
-  6: 'Orchestrator · Reporting',
+  6: 'Orchestrator · Tableau de bord',
   7: 'Orchestrator · Base de connaissances',
   8: 'Orchestrator · E-learning',
   9: "Orchestrator · Script d'appel",

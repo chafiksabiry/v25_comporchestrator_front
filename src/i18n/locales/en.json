@@ -92,6 +92,15 @@
             "Replace a rejected document following the stated reason."
           ]
         },
+        "6": {
+          "title": "Personalise your dashboard",
+          "description": "Choose which widgets to show and their order. This step is optional.",
+          "steps": [
+            "Switch each widget on or off.",
+            "Change the order with the arrows.",
+            "Click “Save”."
+          ]
+        },
         "1": {
           "title": "Create your company profile",
           "description": "It only takes a few clicks.",
@@ -1373,8 +1382,8 @@
             "description": "Import the contacts your REPS will call"
           },
           "6": {
-            "title": "Reporting setup",
-            "description": "Set up your indicators and reports"
+            "title": "Custom dashboard (optional)",
+            "description": "Choose the widgets shown on your company dashboard and their order."
           }
         }
       },
@@ -3651,5 +3660,43 @@
     "choose": "Choose a file",
     "formats": "JPG, PNG, WebP or PDF · 8 MB max",
     "badge": "Verified"
+  },
+  "dashboardWidgets": {
+    "title": "Your dashboard",
+    "intro": "Choose the widgets shown on your company dashboard and their order. This setup is specific to your company and can be changed at any time. This step is optional.",
+    "items": {
+    "kpis": {
+      "title": "Key indicators",
+      "description": "Calls, leads, conversion, quality and balance in six cards."
+    },
+    "voiceAssistant": {
+      "title": "Voice assistant",
+      "description": "Status and usage of the voice assistant."
+    },
+    "coverage": {
+      "title": "Lead coverage and call outcomes",
+      "description": "Share of leads contacted and breakdown of call outcomes."
+    },
+    "agents": {
+      "title": "Agents",
+      "description": "Overview of active agents and their performance."
+    },
+    "resources": {
+      "title": "Resources",
+      "description": "Wallet, minutes, AI tokens and phone lines."
+    },
+    "performance7d": {
+      "title": "7-day performance",
+      "description": "Trend of calls and transactions."
+    }
+  },
+    "save": "Save",
+    "reset": "Reset",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "saved": "Configuration saved",
+    "saveError": "Saving failed. Please try again.",
+    "count": "{{count}} widget(s) shown out of {{total}}",
+    "badge": "Configured"
   }
 }
