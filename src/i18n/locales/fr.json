@@ -1085,6 +1085,26 @@
       "subtitle": "Cliquez sur « Intégrer une ressource » pour ajouter des documents ou des enregistrements d'appels : vos REPS pourront les consulter pendant leurs appels.",
       "ingestFirst": "Ajouter la première ressource"
     },
+    "readiness": {
+      "title": "Prêt pour vos REPS",
+      "subtitle": "Voici ce que l'IA a retenu de vos documents. Vos REPS interrogent cette base pendant leurs appels pour répondre aux objections et conclure plus de ventes.",
+      "documentsReady": "{{ready}} / {{total}} document(s) exploitable(s)",
+      "analyzedCount": "{{count}} analysé(s)",
+      "allGood": "Votre base est prête : vos REPS peuvent s'en servir.",
+      "someIssues": "Certains documents ne sont pas exploitables : vos REPS ne pourront pas s'en servir.",
+      "noneReady": "Aucun document exploitable pour l'instant : l'étape n'est pas validée.",
+      "statusReady": "Prêt · {{words}} mots",
+      "statusNoText": "Aucun texte exploitable",
+      "noTextHelp": "Aucun texte n'a pu être extrait (PDF scanné, image ?). Déposez une version texte pour que les REPS puissent l'utiliser.",
+      "notAnalyzed": "Analyse non disponible pour le moment.",
+      "analyzeAll": "Analyser {{count}} document(s)",
+      "analyzing": "Analyse {{done}} / {{total}}…",
+      "testTitle": "Tester la base",
+      "testPlaceholder": "Posez une question comme un REP (ex. Quelles garanties sont incluses ?)",
+      "testButton": "Interroger",
+      "testing": "Recherche…",
+      "testError": "La base n'a pas pu répondre. Réessayez."
+    },
     "analysis": {
       "languageHub": "Centre Linguistique",
       "viewInEnglish": "Voir en Anglais",

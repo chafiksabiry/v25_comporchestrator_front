@@ -1085,6 +1085,26 @@
       "subtitle": "Click “Integrate Resource” to add documents or call recordings: your REPS will be able to use them during their calls.",
       "ingestFirst": "Add your first resource"
     },
+    "readiness": {
+      "title": "Ready for your REPS",
+      "subtitle": "Here is what the AI retained from your documents. Your REPS query this base during their calls to handle objections and close more sales.",
+      "documentsReady": "{{ready}} / {{total}} usable document(s)",
+      "analyzedCount": "{{count}} analysed",
+      "allGood": "Your base is ready: your REPS can use it.",
+      "someIssues": "Some documents are not usable: your REPS will not be able to use them.",
+      "noneReady": "No usable document yet: the step is not validated.",
+      "statusReady": "Ready · {{words}} words",
+      "statusNoText": "No usable text",
+      "noTextHelp": "No text could be extracted (scanned PDF, image?). Upload a text version so the REPS can use it.",
+      "notAnalyzed": "Analysis not available yet.",
+      "analyzeAll": "Analyse {{count}} document(s)",
+      "analyzing": "Analysing {{done}} / {{total}}…",
+      "testTitle": "Test the base",
+      "testPlaceholder": "Ask a question like a REP (e.g. Which guarantees are included?)",
+      "testButton": "Ask",
+      "testing": "Searching…",
+      "testError": "The base could not answer. Please try again."
+    },
     "analysis": {
       "languageHub": "Language Hub",
       "viewInEnglish": "View in English",
