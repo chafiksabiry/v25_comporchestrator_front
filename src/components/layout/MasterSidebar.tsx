@@ -440,33 +440,29 @@ export function MasterSidebar({
               </div>
 
               {currentStepGuide && (
-                <div className="px-2 animate-fade-in-up shrink-0 mt-6 w-full">
+                <div className="px-2 animate-fade-in-up shrink-0 mt-6 w-full" role="region" aria-label={t('sidebar.activeGuide')}>
                   <div className="rounded-2xl p-4 shadow-inner bg-white/5 backdrop-blur-sm border border-white/10">
                     <div className="flex items-center gap-2 mb-2 text-rose-400">
                       <Sparkles className="h-4 w-4" />
                       <span className="text-[10px] font-black uppercase tracking-widest">{t('sidebar.activeGuide')}</span>
                     </div>
-                    <h4 className="text-xs font-bold mb-1 text-white">{currentStepGuide.title}</h4>
+                    <h4 className="text-sm font-bold mb-1 text-white leading-snug">{currentStepGuide.title}</h4>
                     {currentStepGuide.steps && currentStepGuide.steps.length > 0 ? (
-                      <ol className="mt-2 space-y-1.5">
+                      <ol className="mt-2 space-y-2">
                         {currentStepGuide.steps.map((step, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <span className="shrink-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center mt-px bg-rose-500/30 text-rose-300">
                               {idx + 1}
                             </span>
-                            <span className="text-[10px] leading-relaxed text-gray-300">{step}</span>
+                            <span className="text-xs leading-relaxed text-gray-200">{step}</span>
                           </li>
                         ))}
                       </ol>
                     ) : (
-                      <p className="text-[10px] leading-relaxed italic line-clamp-3 text-gray-400">
+                      <p className="text-xs leading-relaxed text-gray-300">
                         {currentStepGuide.description}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-tighter text-rose-500/80">
-                      <Info className="h-3 w-3" />
-                      <span>{t('sidebar.interactiveStep')}</span>
-                    </div>
                   </div>
                 </div>
               )}

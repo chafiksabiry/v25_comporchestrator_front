@@ -123,6 +123,7 @@ const EditableField = ({
   icon?: React.ElementType;
   className?: string;
 }) => {
+  const { t } = useTranslation();
   const {
     editMode,
     tempValues,
@@ -142,7 +143,7 @@ const EditableField = ({
     <div className={`relative group ${className}`}>
       {Icon && <Icon size={18} className="flex-shrink-0" />}
 
-      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>}
+      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || t('searchCompanyWizard.profile.notSet')}</span>}
 
       {editMode && (
         <div className={`w-full ${isHeroField ? "mt-1" : "mt-1"}`}>
@@ -783,11 +784,45 @@ function CompanyProfile({
     <CompanyContext.Provider value={contextValue}>
       <ErrorBoundary>
         <div className="min-h-screen bg-gray-50">
-          {onBack ? (
-            <div className="px-4 pt-4 sm:px-6">
-              <OnboardingBackButton variant="cta" onClick={onBack} />
+          <div className="flex items-center justify-between gap-3 px-4 pt-4 sm:px-6">
+            {onBack ? <OnboardingBackButton variant="cta" onClick={onBack} /> : <span />}
+            <div className="flex items-center gap-2">
+              {editMode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCancel();
+                      setEditMode(false);
+                    }}
+                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+                  >
+                    {t('searchCompanyWizard.profile.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await handleSaveAll();
+                      setEditMode(false);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-4 py-2 text-sm font-bold text-white shadow-lg hover:brightness-110"
+                  >
+                    <Save size={14} />
+                    {t('searchCompanyWizard.profile.save')}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditMode(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-harx-300 bg-white px-4 py-2 text-sm font-bold text-harx-700 shadow-sm hover:bg-harx-50"
+                >
+                  <Pencil size={14} />
+                  {t('searchCompanyWizard.profile.editProfile')}
+                </button>
+              )}
             </div>
-          ) : null}
+          </div>
           <div className="bg-white shadow-xl">
             {/* Hero Section */}
             <div className="relative h-80">
@@ -949,40 +984,40 @@ function CompanyProfile({
             <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200">
               <div className="p-6 space-y-8">
                 {/* Contact Information */}
-                {hasContactInfo && (
+                {(hasContactInfo || editMode) && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <Mail className="text-blue-600" size={20} />
                       {t('searchCompanyWizard.profile.contactInfo')}
                     </h3>
                     <div className="space-y-3">
-                      {profile.contact?.email && (
+                      {(editMode || profile.contact?.email) && (
                         <EditableField
-                          value={profile.contact.email}
+                          value={profile.contact?.email}
                           field="contact.email"
                           icon={Mail}
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.phone && (
+                      {(editMode || profile.contact?.phone) && (
                         <EditableField
-                          value={profile.contact.phone}
+                          value={profile.contact?.phone}
                           field="contact.phone"
                           icon={Phone}
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.website && (
+                      {(editMode || profile.contact?.website) && (
                         <EditableField
-                          value={profile.contact.website}
+                          value={profile.contact?.website}
                           field="contact.website"
                           icon={Globe}
                           className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                         />
                       )}
-                      {profile.contact?.address && (
+                      {(editMode || profile.contact?.address) && (
                         <EditableField
-                          value={profile.contact.address}
+                          value={profile.contact?.address}
                           field="contact.address"
                           icon={MapPin}
                           className="flex items-start gap-3 text-gray-600 text-sm"

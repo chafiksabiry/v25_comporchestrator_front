@@ -72,7 +72,82 @@
     "callCenterOps": "Console opérations",
     "agents": "Agents",
     "team": "Équipe",
-    "activeGuide": "Guide Actif",
+    "activeGuide": "Prochaine action",
+      "nextAction": {
+        "profileIncomplete": {
+          "title": "Complétez le profil de votre entreprise",
+          "description": "Votre profil est vide : ajoutez vos coordonnées et une présentation.",
+          "steps": [
+            "Cliquez sur « Compléter le profil ».",
+            "Cliquez sur « Modifier » et renseignez vos coordonnées et votre présentation.",
+            "Cliquez sur « Enregistrer »."
+          ]
+        },
+        "1": {
+          "title": "Créez le profil de votre entreprise",
+          "description": "Quelques clics suffisent.",
+          "steps": [
+            "Saisissez le nom de votre entreprise ou l'adresse de son site web.",
+            "Vérifiez les informations proposées et corrigez-les si besoin.",
+            "Cliquez sur « Enregistrer et continuer »."
+          ]
+        },
+        "3": {
+          "title": "Créez votre premier gig",
+          "description": "Décrivez le poste que vous voulez pourvoir.",
+          "steps": [
+            "Décrivez votre besoin en quelques phrases : poste, marché, horaires, rémunération.",
+            "Relisez le gig proposé et ajustez-le dans chaque onglet.",
+            "Cliquez sur « Publier le gig »."
+          ]
+        },
+        "4": {
+          "title": "Activez un numéro de téléphone",
+          "description": "Vos REPS appelleront depuis ce numéro.",
+          "steps": [
+            "Choisissez le gig concerné.",
+            "Sélectionnez un numéro disponible.",
+            "Confirmez l'activation dans la fenêtre qui s'ouvre."
+          ]
+        },
+        "5": {
+          "title": "Importez vos contacts",
+          "description": "Ajoutez les contacts que vos REPS devront appeler.",
+          "steps": [
+            "Choisissez le gig concerné.",
+            "Déposez votre fichier CSV ou Excel.",
+            "Associez les colonnes (nom et téléphone obligatoires), puis confirmez."
+          ]
+        },
+        "7": {
+          "title": "Alimentez la base de connaissances",
+          "description": "Ajoutez les documents que vos REPS consulteront pendant leurs appels."
+        },
+        "8": {
+          "title": "Préparez la formation de vos REPS",
+          "description": "Créez la formation que vos REPS valident avant leurs premiers appels."
+        },
+        "9": {
+          "title": "Rédigez le script d'appel",
+          "description": "Définissez le script et les étapes de la conversation."
+        },
+        "10": {
+          "title": "Planifiez vos sessions d'appel",
+          "description": "Choisissez vos créneaux d'appel et les contacts à appeler en priorité."
+        },
+        "11": {
+          "title": "Choisissez votre plan d'abonnement",
+          "description": "Sélectionnez le plan adapté à votre équipe : Gratuit, Standard ou Premium."
+        },
+        "12": {
+          "title": "Activez votre gig",
+          "description": "Lancez vos opérations d'appel."
+        },
+        "13": {
+          "title": "Trouvez vos REPS",
+          "description": "Entrez en relation avec des REPS qualifiés pour votre besoin."
+        }
+      },
     "interactiveStep": "Étape Interactive",
     "logout": "Déconnexion",
     "uploadContactsGuide": {
@@ -1260,10 +1335,10 @@
   "companyOnboarding": {
     "phases": {
       "1": {
-        "title": "Configuration du Compte & Identité",
+        "title": "Configuration du compte et identité",
         "steps": {
           "1": {
-            "title": "Créer le Profil de l'Entreprise",
+            "title": "Créer le profil de l'entreprise",
             "description": "Générez le profil de votre entreprise à partir de votre site web, vérifiez-le et enregistrez-le"
           },
           "2": {
@@ -1273,23 +1348,23 @@
         }
       },
       "2": {
-        "title": "Configuration Opérationnelle",
+        "title": "Configuration opérationnelle",
         "steps": {
           "3": {
-            "title": "Créer des Gigs",
-            "description": "Définir des gigs multicanaux et leurs prérequis"
+            "title": "Créer des gigs",
+            "description": "Définissez vos gigs multicanaux et leurs prérequis"
           },
           "4": {
-            "title": "Configuration Téléphonique",
-            "description": "Numéros de téléphone, suivi des appels et configuration du composeur"
+            "title": "Configuration téléphonique",
+            "description": "Numéros de téléphone et configuration des appels"
           },
           "5": {
-            "title": "Importer des Contacts",
-            "description": "Importer des contacts pour un engagement multicanal"
+            "title": "Importer des contacts",
+            "description": "Importez les contacts que vos REPS appelleront"
           },
           "6": {
-            "title": "Configuration des Rapports",
-            "description": "Configurer les KPI et les préférences de reporting"
+            "title": "Configuration des rapports",
+            "description": "Configurez vos indicateurs et vos rapports"
           }
         }
       },
@@ -1297,20 +1372,20 @@
         "title": "Engagement des REPS",
         "steps": {
           "7": {
-            "title": "Base de Connaissances",
-            "description": "Créer des supports de formation et une FAQ"
+            "title": "Base de connaissances",
+            "description": "Créez vos supports de formation et votre FAQ"
           },
           "8": {
             "title": "E-learning",
-            "description": "Formation, validation et acceptation du contrat"
+            "description": "Formation, validation et acceptation du contrat par vos REPS"
           },
           "9": {
-            "title": "Script d'Appel",
-            "description": "Définir le script et les flux de conversation"
+            "title": "Script d'appel",
+            "description": "Définissez le script et les étapes de la conversation"
           },
           "10": {
-            "title": "Planification des Sessions",
-            "description": "Planifier les créneaux d'appel et prioriser les prospects"
+            "title": "Planification des sessions",
+            "description": "Planifiez les créneaux d'appel et priorisez vos contacts"
           }
         }
       },
@@ -1318,16 +1393,16 @@
         "title": "Activation",
         "steps": {
           "11": {
-            "title": "Plan d'Abonnement",
-            "description": "Sélectionner un plan : Gratuit, Standard ou Premium"
+            "title": "Plan d'abonnement",
+            "description": "Choisissez un plan : Gratuit, Standard ou Premium"
           },
           "12": {
-            "title": "Activation du Gig",
-            "description": "Lancer les opérations multicanales"
+            "title": "Activation du gig",
+            "description": "Lancez vos opérations d'appel"
           },
           "13": {
-            "title": "MATCH HARX REPS",
-            "description": "Se connecter avec des REPS qualifiés selon les besoins"
+            "title": "Matching avec des REPS",
+            "description": "Entrez en relation avec des REPS qualifiés pour votre besoin"
           }
         }
       }
@@ -1340,14 +1415,16 @@
       "progressing": "En cours",
       "locked": "Verrouillé",
       "todo": "À faire",
+      "toComplete": "À compléter",
+      "completeProfile": "Compléter le profil",
       "comingSoon": "Bientôt",
-      "currentStep": "Étape Actuelle",
-      "reviewStep": "Revoir l'Étape",
-      "startStep": "Démarrer l'Étape",
-      "previousPhase": "Phase Précédente",
-      "goToDashboard": "Aller au Tableau de Bord",
-      "nextPhase": "Phase Suivante",
-      "accessibleDesc": "Suivez la séquence pour terminer la configuration de votre entreprise et débloquer les fonctionnalités premium.",
+      "currentStep": "Étape en cours",
+      "reviewStep": "Revoir l'étape",
+      "startStep": "Démarrer l'étape",
+      "previousPhase": "Phase précédente",
+      "goToDashboard": "Aller au tableau de bord",
+      "nextPhase": "Phase suivante",
+      "accessibleDesc": "Suivez les étapes dans l'ordre pour terminer la configuration de votre entreprise.",
       "callCenterAccessibleDesc": "Même parcours que les entreprises — chaque étape est optionnelle. Passez à la suite ou ouvrez le tableau de bord à tout moment.",
       "callCenterProjectTitle": "Créer le projet",
       "callCenterProjectEditTitle": "Modifier le projet",
@@ -1377,9 +1454,9 @@
       "callCenterBackToProjects": "Retour aux projets",
       "callCenterCreateProjectStep": "Créer le projet",
       "callCenterCreateProjectStepDesc": "Saisir le titre du projet et la zone de destination",
-      "lockedDesc": "Cette phase est actuellement verrouillée. Veuillez terminer la phase précédente pour continuer.",
+      "lockedDesc": "Cette phase est verrouillée. Terminez d'abord la phase précédente.",
       "viewGuide": "Voir le guide",
-      "allPhasesCompleted": "Toutes les étapes de cette phase sont terminées. Félicitations, toutes les phases d'onboarding sont maintenant complétées ! 👏🎺🎊",
+      "allPhasesCompleted": "Félicitations : toutes les étapes de l'onboarding sont terminées.",
       "phaseCompleted": "Toutes les étapes de cette phase sont terminées. Vous pouvez passer à la phase suivante.",
       "backToOnboarding": "Retour à l'onboarding",
       "nextStep": "Étape suivante",
@@ -2371,6 +2448,7 @@
       "companyOverview": "Aperçu de l'Entreprise",
       "ourMission": "Notre Mission",
       "publishBtn": "Enregistrer et continuer",
+      "notSet": "Non renseigné",
       "guideStep3": "Une fois prêt, cliquez sur « Enregistrer et continuer » (en haut à droite) pour enregistrer la société et passer à l'étape suivante.",
       "guideStep2": "Cliquez sur « Modifier » pour corriger un champ, ou utilisez les + pour compléter une coordonnée manquante.",
       "guideStep1": "Vérifiez les informations générées automatiquement ci-contre.",

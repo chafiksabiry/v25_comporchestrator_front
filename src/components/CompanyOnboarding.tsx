@@ -27,7 +27,6 @@ import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
 import SessionPlanning from "./onboarding/SessionPlanning";
-import OnboardingProductTour, { hasSeenProductTour, type TourStep } from "./onboarding/OnboardingProductTour";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
@@ -511,178 +510,6 @@ const CompanyOnboarding = () => {
     />
   ) : null;
 
-  // Per-phase product tour — shown only on the first visit to each phase.
-  const ALL_PHASE_TOURS: Record<number, TourStep[]> = {
-    1: [
-      {
-        target: 'tour-phase-tabs',       // → whole phase-tab grid
-        badge: 'Phase 1 — Étape 1/5',
-        title: 'Les 4 phases de l\'onboarding',
-        description: 'Votre parcours est divisé en 4 phases à compléter dans l\'ordre pour débloquer toutes les fonctionnalités HARX.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-phase-title',      // → h2 phase title
-        badge: 'Phase 1 — Étape 2/5',
-        title: 'Configuration du Compte & Identité',
-        description: 'Commencez par configurer votre profil d\'entreprise et valider votre identité légale. Ces étapes débloquent l\'accès aux phases suivantes.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',   // → "Démarrer l'Étape" button
-        badge: 'Phase 1 — Étape 3/5',
-        title: 'Créer le Profil de l\'Entreprise',
-        description: 'Cliquez ici pour remplir vos informations juridiques, contacts clés et accepter les conditions. Environ 5 minutes.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title', // → KYC step title
-        badge: 'Phase 1 — Étape 4/5',
-        title: 'Vérification KYC / KYB',
-        description: 'Cette étape se déverrouille automatiquement après le profil. Il s\'agit d\'une vérification d\'identité légale obligatoire.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',   // → "Phase Suivante" button
-        badge: 'Phase 1 — Étape 5/5',
-        title: 'Passer à la Phase 2',
-        description: 'Une fois les étapes complétées, cliquez ici pour accéder à la Phase 2 : Configuration Opérationnelle.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    2: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 2 — Étape 1/4',
-        title: 'Configuration Opérationnelle',
-        description: 'Configurez vos gigs, lignes téléphoniques et importez vos contacts. Cette phase prépare votre équipe à passer des appels.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 2 — Étape 2/4',
-        title: 'Créer vos Gigs',
-        description: 'Cliquez ici pour définir votre premier gig : équipe, objectifs et prérequis. C\'est la pierre angulaire de vos opérations.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 2 — Étape 3/4',
-        title: 'Configuration Téléphonique',
-        description: 'Achetez des numéros de téléphone et affectez-les à vos gigs. Chaque représentant aura besoin d\'une ligne dédiée.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 2 — Étape 4/4',
-        title: 'Vers la Phase 3',
-        description: 'Après avoir configuré vos opérations, cliquez ici pour passer à la Phase 3 : Engagement des REPS.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    3: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 3 — Étape 1/4',
-        title: 'Engagement des REPS',
-        description: 'Équipez vos représentants avec une base de connaissances, une formation e-learning et des scripts d\'appel optimisés.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 3 — Étape 2/4',
-        title: 'Base de Connaissances',
-        description: 'Cliquez ici pour alimenter la base de connaissances avec des documents et ressources consultables pendant les appels.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 3 — Étape 3/4',
-        title: 'Formation & E-learning',
-        description: 'Créez des parcours de formation. Les agents devront compléter ces modules avant de passer leurs premiers appels.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 3 — Étape 4/4',
-        title: 'Vers l\'Activation',
-        description: 'Vos représentants sont équipés. Cliquez ici pour passer à la Phase 4 et lancer vos opérations.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-    4: [
-      {
-        target: 'tour-phase-title',
-        badge: 'Phase 4 — Étape 1/4',
-        title: 'Activation Finale',
-        description: 'Dernière étape ! Choisissez votre plan, activez vos gigs et invitez vos représentants à rejoindre la plateforme.',
-        prefer: 'bottom',
-      },
-      {
-        target: 'tour-step-first-btn',
-        badge: 'Phase 4 — Étape 2/4',
-        title: 'Plan d\'Abonnement',
-        description: 'Cliquez ici pour sélectionner le plan adapté à votre équipe. Il détermine le nombre de représentants et de gigs actifs.',
-        prefer: 'bottom',
-        advanceOn: 'click',
-      },
-      {
-        target: 'tour-step-second-title',
-        badge: 'Phase 4 — Étape 3/4',
-        title: 'Activation du Gig',
-        description: 'Une fois votre abonnement actif, cette étape vous permettra d\'activer vos gigs et de lancer les appels.',
-        prefer: 'top',
-      },
-      {
-        target: 'tour-phase-nav-next',
-        badge: 'Phase 4 — Étape 4/4',
-        title: 'Tableau de Bord',
-        description: 'Félicitations ! Après l\'activation, cliquez ici pour accéder au tableau de bord et suivre les performances en temps réel.',
-        prefer: 'top',
-        advanceOn: 'click',
-      },
-    ],
-  };
-
-  const [tourPhase, setTourPhase] = useState<number | null>(null);
-
-  // Phase tour targets (tour-step-*, tour-phase-*) live on the orchestrator
-  // phase cards only — never while a step page (Session Planning, etc.) is open.
-  const isInsideOnboardingStep =
-    activeStep !== null ||
-    showGigDetails ||
-    showGigCreation ||
-    showTelephonySetup ||
-    showKnowledgeBase ||
-    showUploadContacts;
-
-  useEffect(() => {
-    // Do not start/advance the phase tour while a step screen is open.
-    if (isInsideOnboardingStep) return;
-    if (!hasSeenProductTour(displayedPhase)) {
-      // Small delay so the phase content has rendered before we measure elements
-      const timer = setTimeout(() => setTourPhase(displayedPhase), 400);
-      return () => clearTimeout(timer);
-    }
-    setTourPhase(null);
-  }, [displayedPhase, isInsideOnboardingStep]);
-
-  const orchestratorGuideLayer =
-    !isInsideOnboardingStep && tourPhase !== null && ALL_PHASE_TOURS[tourPhase] ? (
-      <OnboardingProductTour
-        key={tourPhase}
-        tourKey={tourPhase}
-        steps={ALL_PHASE_TOURS[tourPhase]}
-        onDone={() => setTourPhase(null)}
-      />
-    ) : null;
-
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
     if (!showUploadContacts) {
@@ -747,6 +574,33 @@ const CompanyOnboarding = () => {
 
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
+
+  // Step 1 can be marked "completed" (call-center accounts: every step is optional)
+  // while the company profile is still an empty shell. Tell the user instead of
+  // showing a green "Completed" on a page with nothing in it.
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  useEffect(() => {
+    if (!companyId || !completedSteps.includes(1)) {
+      setProfileIncomplete(false);
+      return;
+    }
+    let cancelled = false;
+    axios
+      .get<{ data?: any }>(`${API_BASE_URL}/companies/${companyId}/details`)
+      .then((res) => {
+        const c: any = res.data?.data;
+        if (cancelled || !c) return;
+        const hasContact = !!(c.contact && (c.contact.email || c.contact.phone || c.contact.website || c.contact.address));
+        const hasPresentation = !!(c.overview || c.companyIntro || c.mission);
+        setProfileIncomplete(!hasContact && !hasPresentation);
+      })
+      .catch(() => {
+        if (!cancelled) setProfileIncomplete(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, completedSteps, API_BASE_URL]);
 
   // Resolve company ID (optional — new users have none yet → Step 1).
   useEffect(() => {
@@ -1304,20 +1158,43 @@ const CompanyOnboarding = () => {
   }, [companyId, loadCompanyProgress]);
 
 
-  // Dispatch step guide to sidebar
+  // Sidebar guidance: only the action the user is about to do. It replaces the
+  // pop-up tours, which covered the first step of the onboarding.
   useEffect(() => {
     if (phases.length === 0 || isInitialLoad) return;
+    // The contacts screen publishes its own step-by-step guide.
+    if (showUploadContacts) return;
 
     const currentPhaseSteps = phases[displayedPhase - 1]?.steps || [];
     const currentStep = currentPhaseSteps.find(step =>
       !completedSteps.includes(step.id) && !step.disabled
     );
 
+    if (profileIncomplete && displayedPhase === 1) {
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t('sidebar.nextAction.profileIncomplete.title'),
+          description: t('sidebar.nextAction.profileIncomplete.description'),
+          steps: t('sidebar.nextAction.profileIncomplete.steps', { returnObjects: true, defaultValue: [] }) as string[],
+        }
+      }));
+      return;
+    }
+
     if (currentStep) {
-      // Hide the guide while a step is still in progress
-      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+      const key = `sidebar.nextAction.${currentStep.id}`;
+      const stepTitle = t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.title`, currentStep.title);
+      const stepDescription = t(`companyOnboarding.phases.${displayedPhase}.steps.${currentStep.id}.description`, currentStep.description);
+      const actions = t(`${key}.steps`, { returnObjects: true, defaultValue: [] }) as unknown;
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t(`${key}.title`, { defaultValue: stepTitle }),
+          description: t(`${key}.description`, { defaultValue: stepDescription }),
+          ...(Array.isArray(actions) && actions.length > 0 ? { steps: actions as string[] } : {}),
+        }
+      }));
     } else {
-      // If all steps in phase are completed, show phase summary or next instruction
+      // Every step of the phase is done: tell the user what comes next.
       const isLastPhase = displayedPhase === 4;
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
@@ -1328,7 +1205,14 @@ const CompanyOnboarding = () => {
         }
       }));
     }
-  }, [completedSteps, displayedPhase, phases]);
+  }, [completedSteps, displayedPhase, phases, showUploadContacts, isInitialLoad, profileIncomplete, t]);
+
+  // Remove the sidebar guidance when the onboarding screen is left.
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+    };
+  }, []);
 
   // Fonction pour vérifier si l'utilisateur vient de se connecter à Zoho
   const checkZohoConnection = async () => {
@@ -2087,7 +1971,6 @@ const CompanyOnboarding = () => {
 
   return (
     <>
-      {orchestratorGuideLayer}
       {stepGuideLayer}
       <div className="space-y-6">
       {/* Progress Overview */}
@@ -2168,10 +2051,10 @@ const CompanyOnboarding = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Re-launch the guided tour for this phase */}
+              {/* Open the on-demand help guide */}
               <button
                 type="button"
-                onClick={() => setTourPhase(displayedPhase)}
+                onClick={openStepGuideOnDemand}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-dashed border-harx-300 text-harx-500 hover:bg-harx-50 hover:border-harx-400 transition-all text-xs font-bold"
                 title="Revoir le guide de cette phase"
               >
@@ -2270,6 +2153,11 @@ const CompanyOnboarding = () => {
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           {t('companyOnboarding.ui.comingSoon')}
                         </span>
+                      ) : isCompleted && step.id === 1 && profileIncomplete ? (
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                          <AlertCircle className="mr-1 h-3 w-3" />
+                          {t('companyOnboarding.ui.toComplete')}
+                        </span>
                       ) : isCompleted ? (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
@@ -2306,7 +2194,7 @@ const CompanyOnboarding = () => {
                           isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
                         }}
                       >
-                        {isCompleted ? t('companyOnboarding.ui.reviewStep') : t('companyOnboarding.ui.startStep')}
+                        {isCompleted ? (step.id === 1 && profileIncomplete ? t('companyOnboarding.ui.completeProfile') : t('companyOnboarding.ui.reviewStep')) : t('companyOnboarding.ui.startStep')}
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
