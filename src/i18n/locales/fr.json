@@ -250,6 +250,21 @@
       "loadFailed": "Impossible de charger les tokens AI.",
       "invalidQty": "Veuillez entrer un volume valide.",
       "buySuccess": "Achat de {{count}} tokens réussi !"
+    },
+    "journal": {
+      "title": "Journal des tokens",
+      "subtitle": "Tous les mouvements : crédits (achats, tokens inclus) et consommations, du plus récent au plus ancien.",
+      "empty": "Aucun mouvement pour l’instant.",
+      "colDate": "Date",
+      "colType": "Type",
+      "colDetail": "Détail",
+      "colMovement": "Mouvement",
+      "colBalance": "Solde après",
+      "welcome": "Crédit initial",
+      "welcomeDetail": "Tokens inclus avec votre compte",
+      "purchase": "Achat",
+      "usage": "Consommation",
+      "freeNote": "Les générations AI du premier gig sont incluses dans votre abonnement : elles ne sont ni débitées ni listées ici."
     }
   },
   "phoneNumberPanel": {
@@ -301,7 +316,8 @@
       "testCallFailed": "Erreur lors du test d'appel.",
       "testSelectFrom": "Choisissez un numéro acheté dans la liste.",
       "testEnterDestination": "Saisissez le numéro à appeler.",
-      "micDenied": "Accès au microphone refusé. Autorisez le micro dans votre navigateur puis réessayez."
+      "micDenied": "Accès au microphone refusé. Autorisez le micro dans votre navigateur puis réessayez.",
+      "testCallTimeout": "Le serveur n'a pas répondu à temps. Réessayez dans un instant."
     },
     "tabs": {
       "myNumbersWithCount": "Mes Lignes ({{count}})",
@@ -1078,7 +1094,7 @@
     "subtitle": "Propulsez votre IA avec l'intelligence d'entreprise. Synchronisez vos documents et enregistrements d'appels pour construire un graphe de connaissances haute fidélité pour vos REPS HARX.",
     "selectGig": "Sélectionner un Gig",
     "gigPrefix": "Gig :",
-    "allGigs": "Tous les Gigs",
+    "allGigs": "Tous les gigs",
     "integrateResource": "Intégrer une Ressource",
     "empty": {
       "title": "Aucune ressource pour le moment",
@@ -3874,6 +3890,8 @@
     "saved": "Configuration enregistrée",
     "saveError": "L'enregistrement a échoué. Réessayez.",
     "count": "{{count}} widget(s) affiché(s) sur {{total}}",
-    "badge": "Configuré"
+    "badge": "Configuré",
+    "customize": "Personnaliser les widgets",
+    "close": "Fermer"
   }
 }

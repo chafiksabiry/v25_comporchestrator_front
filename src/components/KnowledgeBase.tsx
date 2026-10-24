@@ -974,9 +974,10 @@ const KnowledgeBase: React.FC = () => {
     const allItems = [...filteredDocumentItems, ...callItems, ...videoItems];
     
     // Filter by selected Gig if not 'all'
-    const filteredByGig = !selectedGigId
+    // The selected gig's items plus the company-wide ones (no gig attached, e.g. added during onboarding).
+    const filteredByGig = !selectedGigId || selectedGigId === 'all'
       ? allItems
-      : allItems.filter(item => item.gigId === selectedGigId);
+      : allItems.filter(item => !item.gigId || item.gigId === selectedGigId);
 
     return filteredByGig.sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -1516,10 +1517,14 @@ const KnowledgeBase: React.FC = () => {
                             </>
                           )}
                         </div>
-                        {item.gigId && (
+                        {item.gigId ? (
                           <span className="px-2 py-0.5 bg-harx-50 text-harx-600 text-[10px] font-black uppercase rounded-full border border-harx-100 flex items-center gap-1">
                             <Sparkles size={8} />
                             {getGigTitle(item.gigId)}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-gray-50 text-gray-600 text-[10px] font-black uppercase rounded-full border border-gray-200">
+                            {t('knowledgeBase.allGigs')}
                           </span>
                         )}
                       </div>

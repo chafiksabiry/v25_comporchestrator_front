@@ -312,6 +312,56 @@ export function TokensCompanyPanel() {
   const usagePct =
     purchased > 0 ? Math.min(100, Math.round((consumed / purchased) * 100)) : balance > 0 ? 0 : 100;
 
+  // Unified journal: welcome credit, purchases (+) and consumption (−), newest first, with the balance after
+  // each movement. Balances are computed backwards from the current balance, so they stay right even when
+  // the older rows are not loaded.
+  const journal = (() => {
+    type Movement = {
+      key: string;
+      at: string | null;
+      kind: 'welcome' | 'purchase' | 'usage';
+      delta: number;
+      detail: string;
+      balanceAfter: number;
+    };
+    const movements: Movement[] = [
+      ...purchases.map((row) => ({
+        key: `p-${row.id}`,
+        at: row.purchasedAt,
+        kind: 'purchase' as const,
+        delta: row.tokens,
+        detail: `${formatEuroFromCents(row.amountCents)}${row.provider ? ` · ${row.provider}` : ''}`,
+        balanceAfter: 0,
+      })),
+      ...gigUsageEvents.map((row) => ({
+        key: `u-${row.id}`,
+        at: row.createdAt,
+        kind: 'usage' as const,
+        delta: -row.tokensUsed,
+        detail: `${row.gigTitle}${row.tool ? ` · ${row.tool}` : ''}`,
+        balanceAfter: 0,
+      })),
+    ].sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime());
+
+    const welcomeCredit = Math.max(0, balance - purchased + consumed);
+    if (welcomeCredit > 0) {
+      movements.push({
+        key: 'welcome',
+        at: null,
+        kind: 'welcome',
+        delta: welcomeCredit,
+        detail: t('tokensPanel.journal.welcomeDetail', 'Tokens inclus avec votre compte'),
+        balanceAfter: 0,
+      });
+    }
+    let running = balance;
+    for (const m of movements) {
+      m.balanceAfter = running;
+      running -= m.delta;
+    }
+    return movements;
+  })();
+
   return (
     <div className="mx-auto max-w-7xl space-y-8 p-8 animate-fade-in">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -455,6 +505,68 @@ export function TokensCompanyPanel() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+            {t('tokensPanel.journal.title', 'Journal des tokens')}
+          </h2>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+            {journal.length}
+          </span>
+        </div>
+        <p className="mb-4 text-xs text-slate-500">
+          {t(
+            'tokensPanel.journal.subtitle',
+            'Tous les mouvements : crédits (achats, tokens inclus) et consommations, du plus récent au plus ancien.'
+          )}
+        </p>
+        {journal.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+            {t('tokensPanel.journal.empty', 'Aucun mouvement pour l’instant.')}
+          </p>
+        ) : (
+          <div className="max-h-96 overflow-auto rounded-2xl border border-slate-100">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">{t('tokensPanel.journal.colDate', 'Date')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.journal.colType', 'Type')}</th>
+                  <th className="px-4 py-3">{t('tokensPanel.journal.colDetail', 'Détail')}</th>
+                  <th className="px-4 py-3 text-right">{t('tokensPanel.journal.colMovement', 'Mouvement')}</th>
+                  <th className="px-4 py-3 text-right">{t('tokensPanel.journal.colBalance', 'Solde après')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {journal.map((m) => (
+                  <tr key={m.key}>
+                    <td className="px-4 py-3 text-slate-600">{m.at ? `${formatUsageDate(m.at)} ${formatUsageTime(m.at)}` : '—'}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">
+                      {m.kind === 'welcome'
+                        ? t('tokensPanel.journal.welcome', 'Crédit initial')
+                        : m.kind === 'purchase'
+                          ? t('tokensPanel.journal.purchase', 'Achat')
+                          : t('tokensPanel.journal.usage', 'Consommation')}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{m.detail}</td>
+                    <td className={`px-4 py-3 text-right font-semibold ${m.delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {m.delta >= 0 ? '+' : '−'}
+                      {Math.abs(m.delta).toLocaleString(dateLocale)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-700">{m.balanceAfter.toLocaleString(dateLocale)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-3 text-[11px] text-slate-400">
+          {t(
+            'tokensPanel.journal.freeNote',
+            'Les générations AI du premier gig sont incluses dans votre abonnement : elles ne sont ni débitées ni listées ici.'
+          )}
+        </p>
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
