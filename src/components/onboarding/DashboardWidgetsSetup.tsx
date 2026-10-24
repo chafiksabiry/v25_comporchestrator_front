@@ -10,7 +10,7 @@ import {
   saveDashboardConfig,
 } from '../dashboard/widgets/catalog';
 
-const DashboardWidgetsSetup: React.FC<{ companyId?: string | null }> = ({ companyId: propCompanyId }) => {
+const DashboardWidgetsSetup: React.FC<{ companyId?: string | null; embedded?: boolean }> = ({ companyId: propCompanyId, embedded = false }) => {
   const { t } = useTranslation();
   const companyId = propCompanyId || Cookies.get('companyId') || '';
   const [widgets, setWidgets] = useState<DashboardWidgetConfig[]>(defaultWidgetConfig());
@@ -38,6 +38,8 @@ const DashboardWidgetsSetup: React.FC<{ companyId?: string | null }> = ({ compan
   }, [companyId]);
 
   useEffect(() => {
+    // Embedded in the dashboard (not in the onboarding), there is no step guide to show.
+    if (embedded) return;
     window.dispatchEvent(
       new CustomEvent('stepGuideUpdate', {
         detail: {
@@ -50,7 +52,7 @@ const DashboardWidgetsSetup: React.FC<{ companyId?: string | null }> = ({ compan
         },
       })
     );
-  }, [t]);
+  }, [t, embedded]);
 
   const change = (next: DashboardWidgetConfig[]) => {
     setWidgets(next);

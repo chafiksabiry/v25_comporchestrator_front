@@ -65,11 +65,14 @@ import { getDashCallsApiBase } from '../lib/callsApiBase';
 import { authFetch } from '../../../lib/authFetch';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
 import {
+  DASHBOARD_CONFIG_EVENT,
   DashboardWidgetConfig,
   DashboardWidgetId,
   defaultWidgetConfig,
   fetchDashboardConfig,
 } from '../widgets/catalog';
+import DashboardWidgetsSetup from '../../onboarding/DashboardWidgetsSetup';
+import { LayoutDashboard as WidgetsIcon, X as CloseIcon } from 'lucide-react';
 import {
   extractGigAgentList,
   getActiveAgentsForCompany,
@@ -3119,13 +3122,19 @@ function OverviewView({
     const cid = Cookies.get('companyId');
     if (!cid) return;
     let cancelled = false;
-    void fetchDashboardConfig(cid).then((cfg) => {
-      if (!cancelled) setWidgetConfig(cfg.widgets);
-    });
+    const load = () =>
+      void fetchDashboardConfig(cid).then((cfg) => {
+        if (!cancelled) setWidgetConfig(cfg.widgets);
+      });
+    load();
+    // Saving from the customize dialog (or the onboarding) refreshes the layout right away.
+    window.addEventListener(DASHBOARD_CONFIG_EVENT, load);
     return () => {
       cancelled = true;
+      window.removeEventListener(DASHBOARD_CONFIG_EVENT, load);
     };
   }, []);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
 
@@ -3647,6 +3656,34 @@ function OverviewView({
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setCustomizeOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          <WidgetsIcon className="h-3.5 w-3.5" />
+          {t('dashboardWidgets.customize', 'Personnaliser les widgets')}
+        </button>
+      </div>
+      {customizeOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm"
+          onClick={() => setCustomizeOpen(false)}
+        >
+          <div className="relative my-8 w-full max-w-3xl rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setCustomizeOpen(false)}
+              aria-label={t('dashboardWidgets.close', 'Fermer')}
+              className="absolute right-4 top-4 rounded-full p-2 text-slate-500 hover:bg-slate-100"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+            <DashboardWidgetsSetup embedded />
+          </div>
+        </div>
+      )}
       {widgetConfig
         .filter((w) => w.enabled)
         .map((w) => (

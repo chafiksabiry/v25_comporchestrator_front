@@ -250,6 +250,21 @@
       "loadFailed": "Unable to load AI tokens.",
       "invalidQty": "Please enter a valid quantity.",
       "buySuccess": "Purchase of {{count}} tokens successful!"
+    },
+    "journal": {
+      "title": "Token journal",
+      "subtitle": "Every movement: credits (purchases, included tokens) and consumption, newest first.",
+      "empty": "No movement yet.",
+      "colDate": "Date",
+      "colType": "Type",
+      "colDetail": "Detail",
+      "colMovement": "Movement",
+      "colBalance": "Balance after",
+      "welcome": "Initial credit",
+      "welcomeDetail": "Tokens included with your account",
+      "purchase": "Purchase",
+      "usage": "Consumption",
+      "freeNote": "AI generations for your first gig are included in your subscription: they are neither debited nor listed here."
     }
   },
   "phoneNumberPanel": {
@@ -301,7 +316,8 @@
       "testCallFailed": "Test call failed.",
       "testSelectFrom": "Choose a purchased number from the list.",
       "testEnterDestination": "Enter the destination number to call.",
-      "micDenied": "Microphone access denied. Allow the microphone in your browser and try again."
+      "micDenied": "Microphone access denied. Allow the microphone in your browser and try again.",
+      "testCallTimeout": "The server did not answer in time. Please try again shortly."
     },
     "tabs": {
       "myNumbersWithCount": "My Lines ({{count}})",
@@ -1078,7 +1094,7 @@
     "subtitle": "Power your AI with enterprise intelligence. Synchronize documents and call recordings to build a high-fidelity knowledge graph for your HARX REPS.",
     "selectGig": "Select a Gig",
     "gigPrefix": "Gig:",
-    "allGigs": "All Gigs",
+    "allGigs": "All gigs",
     "integrateResource": "Integrate Resource",
     "empty": {
       "title": "No resources yet",
@@ -3874,6 +3890,8 @@
     "saved": "Configuration saved",
     "saveError": "Saving failed. Please try again.",
     "count": "{{count}} widget(s) shown out of {{total}}",
-    "badge": "Configured"
+    "badge": "Configured",
+    "customize": "Customize widgets",
+    "close": "Close"
   }
 }

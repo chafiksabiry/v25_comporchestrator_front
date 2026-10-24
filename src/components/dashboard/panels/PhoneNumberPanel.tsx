@@ -228,6 +228,7 @@ export function PhoneNumberPanel() {
 
   const [testNumber, setTestNumber] = useState('');
   const [testFromNumber, setTestFromNumber] = useState('');
+  const [testCallError, setTestCallError] = useState<string | null>(null);
   const [testingCall, setTestingCall] = useState(false);
 
   // Local microphone test (browser-only: no provider, no outbound call).
@@ -549,7 +550,9 @@ export function PhoneNumberPanel() {
   };
 
   const handleTestCall = async () => {
-    if (!testFromNumber) {
+    // The select shows the first line even before the state is set: fall back to it.
+    const fromNumber = testFromNumber || phoneNumbers[0]?.phoneNumber || '';
+    if (!fromNumber) {
       toast.error(t('phoneNumberPanel.toasts.testSelectFrom'));
       return;
     }
@@ -566,12 +569,17 @@ export function PhoneNumberPanel() {
     setCallMonitorOpen(true);
     setApiCallId(null);
     setApiCallProvider(null);
+    setTestCallError(null);
+    // Never leave the button spinning forever if the server does not answer.
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 30000);
     try {
       const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
-          fromNumber: testFromNumber,
+          fromNumber,
           toNumber: testNumber.trim(),
           companyId,
         }),
@@ -591,8 +599,14 @@ export function PhoneNumberPanel() {
       console.error(err);
       setCallMonitorStatus('failed');
       setCallMonitorOutcome('failed');
-      toast.error(err.message || t('phoneNumberPanel.toasts.testCallFailed'));
+      const message =
+        err?.name === 'AbortError'
+          ? t('phoneNumberPanel.toasts.testCallTimeout')
+          : err.message || t('phoneNumberPanel.toasts.testCallFailed');
+      setTestCallError(message);
+      toast.error(message);
     } finally {
+      clearTimeout(abortTimer);
       setTestingCall(false);
     }
   };
@@ -2011,7 +2025,7 @@ export function PhoneNumberPanel() {
                 <button
                   type="button"
                   onClick={handleTestCall}
-                  disabled={testingCall || !testFromNumber}
+                  disabled={testingCall || (!testFromNumber && phoneNumbers.length === 0)}
                   className="px-5 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider transition-colors disabled:opacity-50"
                   title={t('phoneNumberPanel.myNumbers.testCall.apiTitle')}
                 >
@@ -2028,6 +2042,11 @@ export function PhoneNumberPanel() {
                   <span>{t('phoneNumberPanel.myNumbers.testCall.mic')}</span>
                 </button>
               </div>
+              {testCallError && (
+                <p className="mt-2 max-w-3xl rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700" role="alert">
+                  {testCallError}
+                </p>
+              )}
             </div>
 
             {/* Local microphone test popup — browser-only, no call, no provider */}
