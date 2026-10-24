@@ -16,10 +16,11 @@ import {
   Settings,
   Rocket,
   HelpCircle,
+  BadgeCheck,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
-import KYCVerification from "./onboarding/KYCVerification";
+import CompanyVerification, { fetchKybVerified, KYB_STATUS_EVENT } from "./onboarding/CompanyVerification";
 import SubscriptionPlan from "./onboarding/SubscriptionPlan";
 import ScriptGenerator from "./ScriptGenerator";
 import ReportingSetup from "./onboarding/ReportingSetup";
@@ -69,6 +70,8 @@ interface BaseStep {
   description: string;
   status: string;
   disabled?: boolean;
+  /** Not required to progress, but openable (kept `disabled` so it never gates the funnel). */
+  optional?: boolean;
 }
 
 interface ComponentStep extends BaseStep {
@@ -106,12 +109,13 @@ const BASE_ONBOARDING_PHASES: Phase[] = [
       },
       {
         id: 2,
-        title: "KYC / KYB Verification",
+        title: "Company verification (optional)",
         description:
-          "Identity verification through Stripe Identity or Sumsub",
+          "Upload your registration extract, proof of address and the manager's ID to earn the Verified badge.",
         status: "current",
-        component: KYCVerification,
+        component: CompanyVerification,
         disabled: true,
+        optional: true,
       },
     ],
   },
@@ -344,6 +348,7 @@ const CompanyOnboarding = () => {
   const [displayedPhase, setDisplayedPhase] = useState(initialPhase);
   const [completedSteps, setCompletedSteps] = useState<number[]>(initialSnapshot.completedSteps);
   const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [kybVerified, setKybVerified] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
@@ -574,6 +579,21 @@ const CompanyOnboarding = () => {
 
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
+
+  // « Vérifié » badge of the optional company-verification step (refreshed when leaving the step).
+  useEffect(() => {
+    if (!companyId || activeStep === 2) return;
+    let cancelled = false;
+    void fetchKybVerified(companyId).then((v) => {
+      if (!cancelled) setKybVerified(v);
+    });
+    const onChange = (e: Event) => setKybVerified(Boolean((e as CustomEvent<{ verified?: boolean }>).detail?.verified));
+    window.addEventListener(KYB_STATUS_EVENT, onChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(KYB_STATUS_EVENT, onChange);
+    };
+  }, [companyId, activeStep]);
 
   // Step 1 can be marked "completed" (call-center accounts: every step is optional)
   // while the company profile is still an empty shell. Tell the user instead of
@@ -1264,8 +1284,9 @@ const CompanyOnboarding = () => {
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
         
-      } else if (companyId) {
+      } else if (companyId && stepId !== 2) {
         // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
+        // (l'étape 2, facultative, n'a pas de progression côté serveur)
         const phaseId =
           phases.findIndex((phase) =>
             phase.steps.some((step) => step.id === stepId)
@@ -1750,7 +1771,7 @@ const CompanyOnboarding = () => {
     }
 
     // Pour les autres steps, vérifier la complétion des étapes précédentes
-    if (step?.component && allPreviousCompleted && !step.disabled) {
+    if (step?.component && allPreviousCompleted && (!step.disabled || step.optional)) {
       setActiveStep(stepId);
     }
   };
@@ -2096,7 +2117,8 @@ const CompanyOnboarding = () => {
                     .every((s) => s.disabled || completedSteps.includes(s.id));
 
             // Optional steps: any non-disabled step in an accessible phase can be opened.
-            const canAccessStep = canAccessPhase && !step.disabled;
+            const isOpenable = !step.disabled || !!step.optional;
+            const canAccessStep = canAccessPhase && isOpenable;
             const tourAttr = stepIndex === 0 ? 'tour-step-first' : stepIndex === 1 ? 'tour-step-second' : undefined;
 
             return (
@@ -2105,20 +2127,20 @@ const CompanyOnboarding = () => {
                 {...(tourAttr ? { 'data-tour': tourAttr } : {})}
                 className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
-                  : step.disabled
+                  : step.disabled && !step.optional
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
                     : isCompleted
                       ? "border-green-100 bg-green-50/30"
                       : isCurrentStep
                         ? "border-harx-200 bg-white shadow-xl shadow-harx-500/5 ring-1 ring-harx-500/20"
                         : "border-gray-100 bg-white"
-                  } ${isClickable && !step.disabled && canAccessStep
+                  } ${isClickable && isOpenable && canAccessStep
                     ? "cursor-pointer hover:border-harx-300 hover:scale-[1.01]"
                     : ""
                   }`}
                 onClick={() =>
                   isClickable &&
-                  !step.disabled &&
+                  isOpenable &&
                   canAccessStep &&
                   handleStepClick(step.id)
                 }
@@ -2127,7 +2149,7 @@ const CompanyOnboarding = () => {
                   <div
                     className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase
                       ? "bg-gray-100 text-gray-400"
-                      : step.disabled
+                      : step.disabled && !step.optional
                         ? "bg-gray-100 text-gray-400"
                         : isCompleted
                           ? "bg-green-100 text-green-600"
@@ -2152,6 +2174,17 @@ const CompanyOnboarding = () => {
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           {t('companyOnboarding.ui.locked')}
                         </span>
+                      ) : step.disabled && step.optional ? (
+                        kybVerified ? (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            <BadgeCheck className="mr-1 h-3 w-3" />
+                            {t('companyVerification.badge', 'Vérifié')}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                            {t('companyOnboarding.ui.optional', 'Facultatif')}
+                          </span>
+                        )
                       ) : step.disabled ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           {t('companyOnboarding.ui.comingSoon')}
@@ -2188,7 +2221,7 @@ const CompanyOnboarding = () => {
                             step.description
                           )}
                     </p>
-                    {isClickable && !step.disabled && canAccessStep && (
+                    {isClickable && isOpenable && canAccessStep && (
                       <button
                         {...(stepIndex === 0 ? { 'data-tour': 'tour-step-first-btn' } : {})}
                         className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black text-sm shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 transition-all hover:-translate-y-0.5"
@@ -2197,7 +2230,7 @@ const CompanyOnboarding = () => {
                           isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
                         }}
                       >
-                        {isCompleted ? (step.id === 1 && profileIncomplete ? t('companyOnboarding.ui.completeProfile') : t('companyOnboarding.ui.reviewStep')) : t('companyOnboarding.ui.startStep')}
+                        {isCompleted || (step.optional && kybVerified) ? (step.id === 1 && profileIncomplete ? t('companyOnboarding.ui.completeProfile') : t('companyOnboarding.ui.reviewStep')) : t('companyOnboarding.ui.startStep')}
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     )}

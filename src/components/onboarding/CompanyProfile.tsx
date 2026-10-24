@@ -31,6 +31,7 @@ import {
   Facebook,
   Instagram,
   ArrowRight,
+  BadgeCheck,
 } from "lucide-react";
 
 import Cookies from 'js-cookie';
@@ -953,6 +954,15 @@ function CompanyProfile({
                         field="name"
                         className="text-5xl font-bold text-white tracking-tight"
                       />
+                      {company.kybVerified && (
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full bg-green-500/90 px-3 py-1 text-sm font-semibold text-white shadow"
+                          title={t('companyVerification.verifiedText', 'Le badge « Vérifié » est affiché sur votre profil.')}
+                        >
+                          <BadgeCheck size={16} />
+                          {t('companyVerification.badge', 'Vérifié')}
+                        </span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-6 text-white/90">
                       {localizedIndustry ? (
