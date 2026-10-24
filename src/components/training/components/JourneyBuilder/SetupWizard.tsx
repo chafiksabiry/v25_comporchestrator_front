@@ -31,7 +31,7 @@ interface SetupWizardProps {
 }
 
 export default function SetupWizard({ onComplete, repOnboardingLayout = false, forceNew = false }: SetupWizardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -387,7 +387,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
       const gigTitle = String(selectedGig.title || '').trim();
       const gigDescription = String(selectedGig.description || '').trim();
-      const outputLanguage = detectOutputLanguageFromGigText(gigTitle, gigDescription);
+      // The interface language chosen by the user wins; gig text is only a fallback.
+      const uiLanguage = String(i18n?.language || '').toLowerCase().slice(0, 2);
+      const outputLanguage: 'fr' | 'en' =
+        uiLanguage === 'fr' || uiLanguage === 'en' ? uiLanguage : detectOutputLanguageFromGigText(gigTitle, gigDescription);
       const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
@@ -404,7 +407,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
           descriptionSample: gigDescription.slice(0, 280) || null,
           detected: outputLanguage,
         },
-        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Match the language of the gig title and description. Do not mix languages.`,
+        languageInstruction: `Write the training ${isTitle ? 'title' : 'description'} in ${languageLabel} only. Translate the gig context if needed. Do not mix languages.`,
       });
       const data = (response?.data as any)?.data || {};
       const backendBilled = applyBackendAiUsage((response?.data as any)?.usage);

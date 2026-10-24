@@ -36,6 +36,7 @@ import { buildGigSnapshotForAi, detectOutputLanguageFromGigText } from '../../ut
 import type { TrainingViewerTheme } from '../../utils/trainingViewerTheme';
 import {getModuleColorStyles, getViewerThemeTokens, resolveRepViewerTheme} from '../../utils/trainingViewerTheme';
 import { resolveSectionMarkdown } from '../../utils/resolveSectionMarkdown';
+import { methodologyComponentsForAI } from '../../data/methodologyContext';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -2481,9 +2482,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
               methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
-              methodologyComponents: Array.isArray(methodology?.components)
-                ? methodology.components.map((c) => c.title).slice(0, 8)
-                : [],
+              methodologyComponents: methodologyComponentsForAI(methodology),
               trainingTitle: journey?.name,
               trainingDescription: journey?.description,
             }
@@ -2552,9 +2551,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
                 methodologyName: methodology?.name || 'Methodologie 360',
                 methodologyDescription: methodology?.description,
-                methodologyComponents: Array.isArray(methodology?.components)
-                  ? methodology.components.map((c) => c.title).slice(0, 8)
-                  : [],
+                methodologyComponents: methodologyComponentsForAI(methodology),
               },
             }
           : {}),
@@ -3064,9 +3061,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
       methodologyName: methodology?.name || 'Methodologie 360',
       methodologyDescription: methodology?.description,
-      methodologyComponents: Array.isArray(methodology?.components)
-        ? methodology.components.map((c) => String(c?.title || '').trim()).filter(Boolean)
-        : [],
+      methodologyComponents: methodologyComponentsForAI(methodology),
       trainingTitle: journey?.name,
       trainingDescription: journey?.description,
     };

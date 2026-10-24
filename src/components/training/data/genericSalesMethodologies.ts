@@ -6,11 +6,11 @@ import { healthInsuranceMethodology } from './healthInsuranceMethodology';
 
 export type MethodologyLang = 'fr' | 'en';
 
-type Copy = { fr: string; en: string };
+export type Copy = { fr: string; en: string };
 
-const text = (lang: MethodologyLang, copy: Copy) => copy[lang];
+export const text = (lang: MethodologyLang, copy: Copy) => copy[lang];
 
-function component(
+export function component(
   lang: MethodologyLang,
   input: {
     id: string;
@@ -39,7 +39,7 @@ function component(
   };
 }
 
-function withFramework(
+export function withFramework(
   lang: MethodologyLang,
   base: Pick<TrainingMethodology, 'id' | 'name' | 'description' | 'industry' | 'components'>
 ): TrainingMethodology {
@@ -191,7 +191,7 @@ function withFramework(
  * that depends on the destination country, the industry and local regulation
  * and must be confirmed with compliance/legal, not hard-coded here.
  */
-function buildRegulatoryComponent(
+export function buildRegulatoryComponent(
   lang: MethodologyLang,
   idPrefix: string,
   countryLabel?: string
@@ -736,10 +736,10 @@ export function buildWelcomeCallMethodology(lang: MethodologyLang, countryLabel?
 const GIG_CATEGORY_TO_METHODOLOGY_ID: Record<string, string> = {
   'Outbound Sales': 'generic-prospecting',
   'Lead Generation': 'generic-prospecting',
-  'Appointment Setting': 'generic-prospecting',
-  'Inbound Sales': 'generic-b2b-services',
-  'Order Processing': 'generic-b2b-services',
-  'Customer Retention': 'generic-b2b-services',
+  'Appointment Setting': 'generic-appointment-setting',
+  'Inbound Sales': 'generic-inbound-sales',
+  'Order Processing': 'generic-distance-selling',
+  'Customer Retention': 'generic-retention',
   'Account Management': 'generic-b2b-services',
   Collections: 'generic-collections',
   'Survey Calls': 'generic-survey',

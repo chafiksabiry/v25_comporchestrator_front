@@ -73,100 +73,100 @@
     "agents": "Agents",
     "team": "Team",
     "activeGuide": "Next action",
-      "nextAction": {
-        "profileIncomplete": {
-          "title": "Complete your company profile",
-          "description": "Your profile is empty: add your contact details and a presentation.",
-          "steps": [
-            "Click “Complete the profile”.",
-            "Click “Edit” and fill in your contact details and a presentation.",
-            "Click “Save”."
-          ]
-        },
-        "2": {
-          "title": "Verify your company",
-          "description": "Upload the three requested documents to get the “Verified” badge. This step is optional.",
-          "steps": [
-            "Pick a document in each card.",
-            "Wait for the automatic analysis (a few seconds).",
-            "Replace a rejected document following the stated reason."
-          ]
-        },
-        "6": {
-          "title": "Personalise your dashboard",
-          "description": "Choose which widgets to show and their order. This step is optional.",
-          "steps": [
-            "Switch each widget on or off.",
-            "Change the order with the arrows.",
-            "Click “Save”."
-          ]
-        },
-        "1": {
-          "title": "Create your company profile",
-          "description": "It only takes a few clicks.",
-          "steps": [
-            "Enter your company name or its website address.",
-            "Check the suggested information and fix anything that is wrong.",
-            "Click “Save and continue”."
-          ]
-        },
-        "3": {
-          "title": "Create your first gig",
-          "description": "Describe the role you want to fill.",
-          "steps": [
-            "Describe your need in a few sentences: role, market, schedule, pay.",
-            "Review the suggested gig and adjust it in each tab.",
-            "Click “Publish gig”."
-          ]
-        },
-        "4": {
-          "title": "Activate a phone number",
-          "description": "Your REPS will call from this number.",
-          "steps": [
-            "Choose the gig it is for.",
-            "Select an available number.",
-            "Confirm the activation in the window that opens."
-          ]
-        },
-        "5": {
-          "title": "Import your contacts",
-          "description": "Add the contacts your REPS will call.",
-          "steps": [
-            "Choose the gig they are for.",
-            "Drop your CSV or Excel file.",
-            "Match the columns (name and phone are required), then confirm.",
-            "Click “Save … contacts” to finish the import."
-          ]
-        },
-        "7": {
-          "title": "Fill the knowledge base",
-          "description": "Add the documents your REPS will use during their calls."
-        },
-        "8": {
-          "title": "Prepare your REPS' training",
-          "description": "Create the training your REPS complete before their first calls."
-        },
-        "9": {
-          "title": "Write the call script",
-          "description": "Define the script and the steps of the conversation."
-        },
-        "10": {
-          "title": "Plan your call sessions",
-          "description": "Pick your call slots and the contacts to call first."
-        },
-        "11": {
-          "title": "Choose your subscription plan",
-          "description": "Select the plan that fits your team: Free, Standard or Premium."
-        },
-        "12": {
-          "title": "Activate your gig",
-          "description": "Start your calling operations."
-        },
-        "13": {
-          "title": "Find your REPS",
-          "description": "Get in touch with qualified REPS for your need."
-        }
+    "nextAction": {
+      "profileIncomplete": {
+        "title": "Complete your company profile",
+        "description": "Your profile is empty: add your contact details and a presentation.",
+        "steps": [
+          "Click “Complete the profile”.",
+          "Click “Edit” and fill in your contact details and a presentation.",
+          "Click “Save”."
+        ]
       },
+      "2": {
+        "title": "Verify your company",
+        "description": "Upload the three requested documents to get the “Verified” badge. This step is optional.",
+        "steps": [
+          "Pick a document in each card.",
+          "Wait for the automatic analysis (a few seconds).",
+          "Replace a rejected document following the stated reason."
+        ]
+      },
+      "6": {
+        "title": "Personalise your dashboard",
+        "description": "Choose which widgets to show and their order. This step is optional.",
+        "steps": [
+          "Switch each widget on or off.",
+          "Change the order with the arrows.",
+          "Click “Save”."
+        ]
+      },
+      "1": {
+        "title": "Create your company profile",
+        "description": "It only takes a few clicks.",
+        "steps": [
+          "Enter your company name or its website address.",
+          "Check the suggested information and fix anything that is wrong.",
+          "Click “Save and continue”."
+        ]
+      },
+      "3": {
+        "title": "Create your first gig",
+        "description": "Describe the role you want to fill.",
+        "steps": [
+          "Describe your need in a few sentences: role, market, schedule, pay.",
+          "Review the suggested gig and adjust it in each tab.",
+          "Click “Publish gig”."
+        ]
+      },
+      "4": {
+        "title": "Activate a phone number",
+        "description": "Your REPS will call from this number.",
+        "steps": [
+          "Choose the gig it is for.",
+          "Select an available number.",
+          "Confirm the activation in the window that opens."
+        ]
+      },
+      "5": {
+        "title": "Import your contacts",
+        "description": "Add the contacts your REPS will call.",
+        "steps": [
+          "Choose the gig they are for.",
+          "Drop your CSV or Excel file.",
+          "Match the columns (name and phone are required), then confirm.",
+          "Click “Save … contacts” to finish the import."
+        ]
+      },
+      "7": {
+        "title": "Fill the knowledge base",
+        "description": "Add the documents your REPS will use during their calls."
+      },
+      "8": {
+        "title": "Prepare your REPS' training",
+        "description": "Create the training your REPS complete before their first calls."
+      },
+      "9": {
+        "title": "Write the call script",
+        "description": "Define the script and the steps of the conversation."
+      },
+      "10": {
+        "title": "Plan your call sessions",
+        "description": "Pick your call slots and the contacts to call first."
+      },
+      "11": {
+        "title": "Choose your subscription plan",
+        "description": "Select the plan that fits your team: Free, Standard or Premium."
+      },
+      "12": {
+        "title": "Activate your gig",
+        "description": "Start your calling operations."
+      },
+      "13": {
+        "title": "Find your REPS",
+        "description": "Get in touch with qualified REPS for your need."
+      }
+    },
     "interactiveStep": "Interactive Step",
     "logout": "Logout",
     "uploadContactsGuide": {
@@ -1273,6 +1273,22 @@
         "statusUploading": "Uploading…",
         "statusAnalyzing": "Analyzing…"
       }
+    },
+    "vision": {
+      "name": "Training Program Name",
+      "desc": "Program Description",
+      "optional": "(optional)",
+      "namePh": "e.g., {{title}}",
+      "namePhDefault": "e.g., Customer Success Mastery Program",
+      "descPh": "Describe the goals, outcomes, and key benefits of this training program...",
+      "ai": "Generate title and description from gig",
+      "duration": "Expected Program Duration",
+      "d120": "Quick Start",
+      "d120d": "1-2 hours",
+      "d240": "Half Day",
+      "d240d": "3-4 hours",
+      "d480": "Full Day",
+      "d480d": "6-8 hours"
     }
   },
   "telephonySetup": {
@@ -3524,6 +3540,13 @@
     "yearsCount_other": "{{count}} years"
   },
   "trainingMethodology": {
+    "groups": {
+      "generic": "Generic transaction types",
+      "insurance": "Insurance",
+      "finance": "Finance and banking",
+      "realEstate": "Real estate",
+      "regulated": "Other regulated sectors"
+    },
     "back": "Back",
     "title": "Choose your training methodology",
     "subtitle": "Prospecting and B2B services sales are available for every profession. Health insurance stays the specialist track.",
@@ -3555,49 +3578,105 @@
         "name": "Auto insurance sales",
         "description": "Auto insurance sales training with regulations and product expertise.",
         "duration": "80+ hours",
-        "features": ["Insurance regulations", "Auto insurance products", "Claims and customer service", "Sales techniques and objections", "Systems training", "Contact centre quality"]
+        "features": [
+          "Insurance regulations",
+          "Auto insurance products",
+          "Claims and customer service",
+          "Sales techniques and objections",
+          "Systems training",
+          "Contact centre quality"
+        ]
       },
       "property": {
         "name": "Property insurance",
         "description": "Property and casualty training: risk assessment, underwriting and claims.",
         "duration": "90+ hours",
-        "features": ["Property risk assessment", "Underwriting guidelines", "Claims management", "Customer consultation", "Regulatory compliance", "Contact centre operations"]
+        "features": [
+          "Property risk assessment",
+          "Underwriting guidelines",
+          "Claims management",
+          "Customer consultation",
+          "Regulatory compliance",
+          "Contact centre operations"
+        ]
       },
       "life": {
         "name": "Life insurance sales",
         "description": "Life insurance and the basics of financial planning.",
         "duration": "100+ hours",
-        "features": ["Life insurance products", "Financial planning basics", "Estate planning concepts", "Investment products", "Ethical sales practices", "Contact centre excellence"]
+        "features": [
+          "Life insurance products",
+          "Financial planning basics",
+          "Estate planning concepts",
+          "Investment products",
+          "Ethical sales practices",
+          "Contact centre excellence"
+        ]
       },
       "financial": {
         "name": "Financial services",
         "description": "Financial services training: investments, banking and advice.",
         "duration": "150+ hours",
-        "features": ["Investment products and strategies", "Banking services and regulations", "Financial advisory skills", "Risk management", "Compliance and ethics", "Multi-channel customer service"]
+        "features": [
+          "Investment products and strategies",
+          "Banking services and regulations",
+          "Financial advisory skills",
+          "Risk management",
+          "Compliance and ethics",
+          "Multi-channel customer service"
+        ]
       },
       "healthcare": {
         "name": "Healthcare services",
         "description": "Healthcare training: patient care, regulations and service quality.",
         "duration": "110+ hours",
-        "features": ["Patient care standards", "Healthcare regulations", "Medical terminology", "Service excellence", "Technology systems", "Patient communication"]
+        "features": [
+          "Patient care standards",
+          "Healthcare regulations",
+          "Medical terminology",
+          "Service excellence",
+          "Technology systems",
+          "Patient communication"
+        ]
       },
       "collections": {
         "name": "Debt collection",
         "description": "Collections training: legal framework, scripts and negotiation for amicable recovery.",
         "duration": "70+ hours",
-        "features": ["Legal framework and compliance", "Negotiation techniques", "Objection handling", "Call scripts and process", "Case follow-up", "Ethics and contact-centre quality"]
+        "features": [
+          "Legal framework and compliance",
+          "Negotiation techniques",
+          "Objection handling",
+          "Call scripts and process",
+          "Case follow-up",
+          "Ethics and contact-centre quality"
+        ]
       },
       "satisfaction": {
         "name": "Satisfaction survey / Poll",
         "description": "Survey and poll training: active listening, questionnaires and feedback delivery.",
         "duration": "50+ hours",
-        "features": ["Survey and poll methods", "Active listening and reframing", "Questionnaire administration", "Refusal and objection handling", "Reporting and feedback", "Call quality and compliance"]
+        "features": [
+          "Survey and poll methods",
+          "Active listening and reframing",
+          "Questionnaire administration",
+          "Refusal and objection handling",
+          "Reporting and feedback",
+          "Call quality and compliance"
+        ]
       },
       "welcomeCall": {
         "name": "Information / Welcome Call",
         "description": "Welcome and information call training: client onboarding, clarity and relationship.",
         "duration": "40+ hours",
-        "features": ["Greeting and first contact", "Information scripts", "Client onboarding", "Needs clarification", "Routing and transfer", "Relationship excellence"]
+        "features": [
+          "Greeting and first contact",
+          "Information scripts",
+          "Client onboarding",
+          "Needs clarification",
+          "Routing and transfer",
+          "Relationship excellence"
+        ]
       }
     }
   },
@@ -3611,7 +3690,7 @@
     "welcomeTitle": "Welcome to your training journey",
     "welcomeSubtitle": "Smart defaults · Compliance",
     "visionTitle": "Define your training vision",
-    "visionSubtitle": "Name & description — same language as gig title/description",
+    "visionSubtitle": "Name & description — written in the interface language",
     "teamTitle": "Identify your learners",
     "teamSubtitle": "Role-based paths · Skill assessments · Personalization",
     "back": "Back",
@@ -3685,31 +3764,31 @@
     "title": "Your dashboard",
     "intro": "Choose the widgets shown on your company dashboard and their order. This setup is specific to your company and can be changed at any time. This step is optional.",
     "items": {
-    "kpis": {
-      "title": "Key indicators",
-      "description": "Calls, leads, conversion, quality and balance in six cards."
+      "kpis": {
+        "title": "Key indicators",
+        "description": "Calls, leads, conversion, quality and balance in six cards."
+      },
+      "voiceAssistant": {
+        "title": "Voice assistant",
+        "description": "Status and usage of the voice assistant."
+      },
+      "coverage": {
+        "title": "Lead coverage and call outcomes",
+        "description": "Share of leads contacted and breakdown of call outcomes."
+      },
+      "agents": {
+        "title": "Agents",
+        "description": "Overview of active agents and their performance."
+      },
+      "resources": {
+        "title": "Resources",
+        "description": "Wallet, minutes, AI tokens and phone lines."
+      },
+      "performance7d": {
+        "title": "7-day performance",
+        "description": "Trend of calls and transactions."
+      }
     },
-    "voiceAssistant": {
-      "title": "Voice assistant",
-      "description": "Status and usage of the voice assistant."
-    },
-    "coverage": {
-      "title": "Lead coverage and call outcomes",
-      "description": "Share of leads contacted and breakdown of call outcomes."
-    },
-    "agents": {
-      "title": "Agents",
-      "description": "Overview of active agents and their performance."
-    },
-    "resources": {
-      "title": "Resources",
-      "description": "Wallet, minutes, AI tokens and phone lines."
-    },
-    "performance7d": {
-      "title": "7-day performance",
-      "description": "Trend of calls and transactions."
-    }
-  },
     "save": "Save",
     "reset": "Reset",
     "moveUp": "Move up",
