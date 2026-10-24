@@ -174,6 +174,21 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     scrollPageToTop();
   }, [currentSection, showReview, confirmedSuggestions, isManualMode]);
 
+  // Show contextual guide in the sidebar while on the prompt screen
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t('sidebar.promptGuide.title', 'Créer un Gig avec l\'IA'),
+          steps: (t('sidebar.promptGuide.steps', { returnObjects: true }) as string[]),
+        },
+      })
+    );
+    return () => {
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+    };
+  }, [t]);
+
   // Check for edit mode parameters on component mount
   // Auto-resize textarea
   useEffect(() => {

@@ -84,6 +84,15 @@
         "Uploadez votre fichier CSV/Excel",
         "L'IA analyse et importe vos contacts"
       ]
+    },
+    "promptGuide": {
+      "title": "Créer un Gig avec l'IA",
+      "steps": [
+        "Décrivez votre besoin en langage naturel",
+        "Précisez le secteur, le profil et les objectifs",
+        "Mentionnez la durée et la rémunération souhaitées",
+        "Appuyez sur Entrée ou le bouton Envoyer"
+      ]
     }
   },
   "navbar": {
