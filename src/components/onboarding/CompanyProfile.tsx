@@ -133,6 +133,7 @@ const EditableField = ({
 
   const isHeroField = className.includes('text-white') || className.includes('text-5xl');
   const isLongTextField = field.includes("overview") || field.includes("mission") || field.includes("address");
+  const textareaRows = field.includes("address") ? 2 : field.includes("overview") ? 8 : 5;
 
   const handleFieldSave = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -140,17 +141,17 @@ const EditableField = ({
   };
 
   return (
-    <div className={`relative group ${className}`}>
+    <div className={`relative group min-w-0 ${className}`}>
       {Icon && <Icon size={18} className="flex-shrink-0" />}
 
-      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || t('searchCompanyWizard.profile.notSet')}</span>}
+      {!editMode && <span className={`min-w-0 break-words ${isHeroField ? "" : "text-gray-800"}`}>{value || t('searchCompanyWizard.profile.notSet')}</span>}
 
       {editMode && (
-        <div className={`w-full ${isHeroField ? "mt-1" : "mt-1"}`}>
+        <div className="w-full min-w-0 flex-1 mt-1">
           {isLongTextField ? (
             <textarea
               value={(tempValues[field] ?? value ?? "") as string}
-              rows={4}
+              rows={textareaRows}
               onChange={(e) =>
                 setTempValues((prev: any) => ({
                   ...prev,
@@ -428,6 +429,9 @@ function CompanyProfile({
         setLogoUrl(normalizedCompany.logo);
       } else if (normalizedCompany.logoUrl) {
         setLogoUrl(normalizedCompany.logoUrl);
+      } else {
+        const domain = getDomainFromWebsite(normalizedCompany.contact?.website);
+        if (domain) setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
       }
     } catch (err) {
       setError("Erreur lors du chargement des détails de l'entreprise.");
@@ -443,6 +447,12 @@ function CompanyProfile({
   };
 
   const handleApplyChanges = (field: string) => {
+    // A blur/Enter on a field the user did not change (or one already applied) must not
+    // write `undefined` over the stored value.
+    if (!(field in tempValues)) {
+      setEditingField(null);
+      return;
+    }
     setCompany((prev) => {
       const newCompany = JSON.parse(JSON.stringify(prev));
       const nextValue = tempValues[field];
@@ -480,7 +490,10 @@ function CompanyProfile({
     });
 
     setEditingField(null);
-    setTempValues({});
+    setTempValues((prev) => {
+      const { [field]: _applied, ...rest } = prev;
+      return rest;
+    });
     setHasChanges(true);
   };
 
@@ -860,13 +873,9 @@ function CompanyProfile({
                           onError={() => {
                             const domain = getDomainFromWebsite(profile.contact?.website);
                             if (domain) {
-                              // Try stable favicon first, then Clearbit fallback.
+                              // Clearbit's logo API is discontinued: fall back to the site favicon only.
                               if (!logoUrl.includes("google.com/s2/favicons")) {
-                                setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
-                                return;
-                              }
-                              if (!logoUrl.includes("logo.clearbit.com")) {
-                                setLogoUrl(`https://logo.clearbit.com/${domain}`);
+                                setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
                                 return;
                               }
                             }
@@ -981,7 +990,7 @@ function CompanyProfile({
           {/* Main Content */}
           <div className="flex">
             {/* Sidebar - Contact & Digital Presence */}
-            <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200">
+            <div className="w-96 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 min-w-0">
               <div className="p-6 space-y-8">
                 {/* Contact Information */}
                 {(hasContactInfo || editMode) && (
@@ -1148,7 +1157,7 @@ function CompanyProfile({
                           <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center">
                             <Target className="text-white" size={24} />
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <h3 className="text-xl font-bold text-indigo-700 mb-3">
                               {t('searchCompanyWizard.profile.ourMission')}
                             </h3>
