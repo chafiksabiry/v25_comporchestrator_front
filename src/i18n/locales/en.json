@@ -93,6 +93,107 @@
         "Mention the duration and desired compensation",
         "Press Enter or the Send button"
       ]
+    },
+    "stepGuide": {
+      "1": {
+        "title": "Company Profile",
+        "steps": [
+          "Fill in your legal and commercial name",
+          "Add your key contacts",
+          "Accept the terms of service",
+          "Save your profile"
+        ]
+      },
+      "3": {
+        "title": "Create Gigs",
+        "steps": [
+          "Describe your need in plain language",
+          "AI generates a structured proposal",
+          "Adjust sections as needed",
+          "Publish your first Gig"
+        ]
+      },
+      "4": {
+        "title": "Telephony Setup",
+        "steps": [
+          "Buy or port a phone number",
+          "Configure the auto-dialer",
+          "Set your calling hours",
+          "Test the line before activation"
+        ]
+      },
+      "5": {
+        "title": "Upload Contacts",
+        "steps": [
+          "Select your target Gig",
+          "Choose Zoho CRM or CSV import",
+          "Upload your contact file",
+          "AI validates and imports leads"
+        ]
+      },
+      "7": {
+        "title": "Knowledge Base",
+        "steps": [
+          "Add your products and services",
+          "Write FAQs and common objections",
+          "Import internal documents",
+          "Validate the content with AI"
+        ]
+      },
+      "8": {
+        "title": "REPs E-learning",
+        "steps": [
+          "Create training modules",
+          "Add validation quizzes",
+          "Set the minimum required score",
+          "Activate the journey for REPs"
+        ]
+      },
+      "9": {
+        "title": "Call Script",
+        "steps": [
+          "Define the call objective",
+          "Write the opener and key questions",
+          "Add objection handling responses",
+          "Test the script with AI"
+        ]
+      },
+      "10": {
+        "title": "Session Planning",
+        "steps": [
+          "Define available time slots",
+          "Prioritize your leads by score",
+          "Assign REPs to slots",
+          "Activate automatic scheduling"
+        ]
+      },
+      "11": {
+        "title": "Subscription Plan",
+        "steps": [
+          "Compare available plans",
+          "Select the right plan",
+          "Add a payment method",
+          "Confirm your subscription"
+        ]
+      },
+      "12": {
+        "title": "Gig Activation",
+        "steps": [
+          "Verify the complete configuration",
+          "Launch multi-channel operations",
+          "Track early performance",
+          "Optimize based on results"
+        ]
+      },
+      "13": {
+        "title": "Match HARX REPs",
+        "steps": [
+          "AI analyzes your published Gigs",
+          "Browse the proposed profiles",
+          "Invite selected REPs",
+          "Confirm the assignments"
+        ]
+      }
     }
   },
   "navbar": {
