@@ -1306,7 +1306,57 @@
       "d480": "Journée complète",
       "d480d": "6-8 heures",
       "language": "Langue de la formation",
-      "languageHint": "Titre, description, plan et contenus seront rédigés dans cette langue, même si le gig est décrit dans une autre. Après changement, relancez « AI » pour régénérer."
+      "languageHint": "Titre, description, plan et contenus sont rédigés dans cette langue, même si le gig est décrit dans une autre. Changer la langue régénère automatiquement le titre et la description.",
+      "aiButton": "Générer avec l’IA",
+      "editHint": "Le titre et la description sont proposés par l’IA : modifiez-les librement, ou cliquez sur « Générer avec l’IA » pour une nouvelle proposition.",
+      "generating": "Génération du titre et de la description…",
+      "continue": "Continuer"
+    },
+    "guide": {
+      "1": {
+        "title": "Choisissez le gig à former",
+        "description": "La formation est construite à partir de la fiche du gig : offre, activités, compétences.",
+        "steps": [
+          "Cliquez sur le gig concerné.",
+          "Vérifiez son titre et sa description.",
+          "Cliquez sur « Continuer »."
+        ]
+      },
+      "2": {
+        "title": "Définissez la vision de la formation",
+        "description": "Le titre et la description sont proposés automatiquement par l’IA, dans la langue choisie.",
+        "steps": [
+          "Choisissez la langue de la formation (le texte se régénère tout seul).",
+          "Relisez le titre et la description, modifiez-les si besoin.",
+          "Cliquez sur « Générer avec l’IA » pour une nouvelle proposition.",
+          "Cliquez sur « Continuer »."
+        ]
+      },
+      "2b": {
+        "title": "Choisissez la durée",
+        "description": "La durée cadre le nombre de modules et le niveau de détail du plan.",
+        "steps": [
+          "Cliquez sur la durée souhaitée.",
+          "Cliquez sur « Continuer »."
+        ]
+      },
+      "3": {
+        "title": "Choisissez les équipes concernées",
+        "description": "Indiquez à qui s’adresse la formation pour adapter le vocabulaire et les exemples.",
+        "steps": [
+          "Sélectionnez un ou plusieurs profils.",
+          "Cliquez sur « Continuer »."
+        ]
+      },
+      "4": {
+        "title": "Choisissez la méthodologie",
+        "description": "La carte « Spécifique à votre gig » est construite à partir du gig ; les génériques conviennent à tout métier ; les cas sectoriels détaillent les règles d’un métier réglementé.",
+        "steps": [
+          "Repérez la carte marquée « recommandé ».",
+          "Ouvrez un cas sectoriel seulement si votre gig en relève.",
+          "Cliquez sur « Sélectionner »."
+        ]
+      }
     }
   },
   "telephonySetup": {

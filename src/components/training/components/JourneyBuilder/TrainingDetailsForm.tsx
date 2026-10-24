@@ -89,7 +89,7 @@ export default function TrainingDetailsForm({
                 ) : (
                   <Brain style={{ width: 13, height: 13 }} />
                 )}
-                AI
+                {t('training.vision.aiButton')}
               </button>
             </div>
             <div>
@@ -117,6 +117,9 @@ export default function TrainingDetailsForm({
                 ))}
               </select>
               <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{t('training.vision.languageHint')}</div>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                {generatingTitle || generatingDescription ? t('training.vision.generating') : t('training.vision.editHint')}
+              </div>
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>

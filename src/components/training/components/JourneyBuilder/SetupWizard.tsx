@@ -308,7 +308,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     visionSubStep === 0
       ? !visionName.trim() || visionTitleGenerating || visionDescriptionGenerating
       : !visionDuration;
-  const visionContinueLabel = 'Continue';
+  const visionContinueLabel = t('training.vision.continue');
 
   const handleVisionFooterBack = () => {
     if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
@@ -464,6 +464,25 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per gig when entering Vision
   }, [currentStep, visionSubStep, selectedGig?._id, selectedGig?.title]);
+
+  // Step guidance in the left banner (what to do here, in plain words).
+  useEffect(() => {
+    const key = currentStep === 2 && visionSubStep === 1 ? '2b' : String(currentStep);
+    if (!['1', '2', '2b', '3', '4'].includes(key)) return;
+    window.dispatchEvent(
+      new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t(`training.guide.${key}.title`),
+          description: t(`training.guide.${key}.description`),
+          steps: t(`training.guide.${key}.steps`, { returnObjects: true }),
+        },
+      })
+    );
+  }, [currentStep, visionSubStep, t]);
+
+  useEffect(() => () => {
+    window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+  }, []);
 
   const roleOptions = [
     { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
@@ -774,6 +793,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onContentLanguageChange={(code) => {
                   setContentLanguage(code);
                   setChosenContentLanguage(String(selectedGig?._id || ''), code);
+                  // The title and description follow the new language right away (no hidden button to press).
+                  void handleSuggestVision('title');
+                  void handleSuggestVision('description');
                 }}
                 gigData={selectedGig}
                 onSuggestTitle={() => void handleSuggestVision('title')}

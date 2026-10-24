@@ -1306,7 +1306,57 @@
       "d480": "Full Day",
       "d480d": "6-8 hours",
       "language": "Training language",
-      "languageHint": "Title, description, plan and content are written in this language, even if the gig is described in another. After changing it, click “AI” to regenerate."
+      "languageHint": "Title, description, plan and content are written in this language, even if the gig is described in another. Changing the language automatically regenerates the title and description.",
+      "aiButton": "Generate with AI",
+      "editHint": "The title and description are proposed by the AI: edit them freely, or click “Generate with AI” for a new proposal.",
+      "generating": "Generating title and description…",
+      "continue": "Continue"
+    },
+    "guide": {
+      "1": {
+        "title": "Choose the gig to train for",
+        "description": "The training is built from the gig sheet: offer, activities, skills.",
+        "steps": [
+          "Click the relevant gig.",
+          "Check its title and description.",
+          "Click “Continue”."
+        ]
+      },
+      "2": {
+        "title": "Define the training vision",
+        "description": "The title and description are proposed automatically by the AI, in the chosen language.",
+        "steps": [
+          "Choose the training language (the text regenerates by itself).",
+          "Read the title and description and edit them if needed.",
+          "Click “Generate with AI” for a new proposal.",
+          "Click “Continue”."
+        ]
+      },
+      "2b": {
+        "title": "Choose the duration",
+        "description": "The duration sets the number of modules and the level of detail of the plan.",
+        "steps": [
+          "Click the duration you want.",
+          "Click “Continue”."
+        ]
+      },
+      "3": {
+        "title": "Choose the teams concerned",
+        "description": "Say who the training is for so vocabulary and examples fit.",
+        "steps": [
+          "Select one or more profiles.",
+          "Click “Continue”."
+        ]
+      },
+      "4": {
+        "title": "Choose the methodology",
+        "description": "The “Specific to your gig” card is built from the gig; generic ones fit any job; sector cases detail the rules of a regulated trade.",
+        "steps": [
+          "Look for the card marked “recommended”.",
+          "Open a sector case only if your gig belongs to it.",
+          "Click “Select”."
+        ]
+      }
     }
   },
   "telephonySetup": {
