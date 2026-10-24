@@ -57,6 +57,7 @@ import { getMyCompanyAccess } from './services/companyMembersApi';
 import { connectTeamPresenceSocket } from './lib/teamPresenceSocket';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 import { LanguageSwitcher } from './components/ui/LanguageSwitcher';
+import { CompanyNotificationBell } from './components/notifications/CompanyNotificationBell';
 import Subscription from './components/Subscription';
 import OrchestratorGuideModal from './components/onboarding/OrchestratorGuideModal';
 import WalletTopUpModal from './components/wallet/WalletTopUpModal';
@@ -977,6 +978,13 @@ function AppContent() {
                     </button>
                   )}
                 </div>
+
+                <CompanyNotificationBell
+                  onNavigate={(path) => {
+                    setActiveProject('dashboard');
+                    navigate(path);
+                  }}
+                />
 
                 <LanguageSwitcher />
 
