@@ -579,6 +579,9 @@ const CompanyOnboarding = () => {
   // while the company profile is still an empty shell. Tell the user instead of
   // showing a green "Completed" on a page with nothing in it.
   const [profileIncomplete, setProfileIncomplete] = useState(false);
+  // A phase 1 whose only step is an empty profile must not read "Completed".
+  const phaseShownCompleted = (phaseId: number) =>
+    isPhaseCompleted(phaseId) && !(phaseId === 1 && profileIncomplete);
   useEffect(() => {
     if (!companyId || !completedSteps.includes(1)) {
       setProfileIncomplete(false);
@@ -2037,7 +2040,7 @@ const CompanyOnboarding = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 data-tour="tour-phase-title" className="text-3xl font-black text-gray-900 tracking-tight">
-                {t('companyOnboarding.ui.phaseLabel')} {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title)}</span>
+                {t('companyOnboarding.ui.phaseLabel')} {displayedPhase}: <span className={`text-transparent bg-clip-text ${phaseShownCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title)}</span>
               </h2>
               <p className="text-gray-500 mt-2 font-medium max-w-2xl">
                 {isCallCenterWorkspace()
@@ -2062,13 +2065,13 @@ const CompanyOnboarding = () => {
                 Guide
               </button>
               <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
-                isPhaseCompleted(displayedPhase)
+                phaseShownCompleted(displayedPhase)
                   ? "bg-green-100 text-green-600"
                   : isPhaseAccessible(displayedPhaseData.id)
                     ? "bg-harx-50 text-harx-600"
                     : "bg-gray-100 text-gray-400"
                 }`}>
-                {isPhaseCompleted(displayedPhase) ? t('companyOnboarding.ui.completed') : isPhaseAccessible(displayedPhaseData.id) ? t('companyOnboarding.ui.progressing') : t('companyOnboarding.ui.locked')}
+                {phaseShownCompleted(displayedPhase) ? t('companyOnboarding.ui.completed') : isPhaseAccessible(displayedPhaseData.id) ? t('companyOnboarding.ui.progressing') : t('companyOnboarding.ui.locked')}
               </div>
             </div>
           </div>
