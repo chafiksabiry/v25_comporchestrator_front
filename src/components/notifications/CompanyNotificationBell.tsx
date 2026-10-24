@@ -2,8 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useTranslation } from 'react-i18next';
 import {
+  AlertTriangle,
   Bell,
   Ban,
+  ClipboardCheck,
+  Receipt,
+  ShieldAlert,
+  Target,
   CheckCheck,
   Coins,
   Cpu,
@@ -56,6 +61,16 @@ function KindIcon({ kind }: { kind: string }) {
       return wrap('bg-emerald-500/40', <CheckCheck className="h-4 w-4" />);
     case 'enrollment_rejected':
       return wrap('bg-slate-500/45', <Ban className="h-4 w-4" />);
+    case 'matching':
+      return wrap('bg-cyan-500/40', <Target className="h-4 w-4" />);
+    case 'transaction':
+      return wrap('bg-lime-500/40', <Receipt className="h-4 w-4" />);
+    case 'validation':
+      return wrap('bg-orange-500/45', <ClipboardCheck className="h-4 w-4" />);
+    case 'fraud':
+      return wrap('bg-red-600/60', <ShieldAlert className="h-4 w-4" />);
+    case 'resource':
+      return wrap('bg-yellow-500/45', <AlertTriangle className="h-4 w-4" />);
     case 'wallet':
       return wrap('bg-amber-500/40', <Coins className="h-4 w-4" />);
     case 'tokens':
