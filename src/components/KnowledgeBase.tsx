@@ -1220,16 +1220,9 @@ const KnowledgeBase: React.FC = () => {
         <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
           <Brain size={48} className="mx-auto text-gray-300 mb-6" />
           <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">{t('knowledgeBase.empty.title')}</h3>
-          <p className="text-gray-500 max-w-sm mx-auto font-medium italic mb-10 leading-relaxed">
+          <p className="text-gray-500 max-w-sm mx-auto font-medium italic leading-relaxed">
             {t('knowledgeBase.empty.subtitle')}
           </p>
-          <button
-            className="mt-4 bg-gradient-harx text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
-            onClick={() => { setUploadGigId(selectedGigId); setShowUploadModal(true); }}
-          >
-            <Plus size={18} className="mr-3 inline-block" />
-            {t('knowledgeBase.empty.ingestFirst')}
-          </button>
         </div>
       );
     }

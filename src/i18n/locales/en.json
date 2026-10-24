@@ -1082,7 +1082,7 @@
     "integrateResource": "Integrate Resource",
     "empty": {
       "title": "No resources yet",
-      "subtitle": "Add documents or call recordings: your REPS will be able to use them during their calls.",
+      "subtitle": "Click “Integrate Resource” to add documents or call recordings: your REPS will be able to use them during their calls.",
       "ingestFirst": "Add your first resource"
     },
     "analysis": {
