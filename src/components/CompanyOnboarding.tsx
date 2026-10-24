@@ -2168,10 +2168,10 @@ const CompanyOnboarding = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Open the on-demand help guide (the automatic phase tour no longer exists) */}
+              {/* Re-launch the guided tour for this phase */}
               <button
                 type="button"
-                onClick={openStepGuideOnDemand}
+                onClick={() => setTourPhase(displayedPhase)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl border border-dashed border-harx-300 text-harx-500 hover:bg-harx-50 hover:border-harx-400 transition-all text-xs font-bold"
                 title="Revoir le guide de cette phase"
               >
