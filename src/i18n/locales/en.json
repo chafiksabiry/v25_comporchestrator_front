@@ -1288,7 +1288,9 @@
       "d240": "Half Day",
       "d240d": "3-4 hours",
       "d480": "Full Day",
-      "d480d": "6-8 hours"
+      "d480d": "6-8 hours",
+      "language": "Training language",
+      "languageHint": "Title, description, plan and content are written in this language, even if the gig is described in another. After changing it, click “AI” to regenerate."
     }
   },
   "telephonySetup": {
@@ -3541,11 +3543,12 @@
   },
   "trainingMethodology": {
     "groups": {
-      "generic": "Generic transaction types",
+      "generic": "Generic",
       "insurance": "Insurance",
       "finance": "Finance and banking",
       "realEstate": "Real estate",
-      "regulated": "Other regulated sectors"
+      "regulated": "Other regulated sectors",
+      "gig": "Specific to your gig"
     },
     "back": "Back",
     "title": "Choose your training methodology",

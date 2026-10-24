@@ -1288,7 +1288,9 @@
       "d240": "Demi-journée",
       "d240d": "3-4 heures",
       "d480": "Journée complète",
-      "d480d": "6-8 heures"
+      "d480d": "6-8 heures",
+      "language": "Langue de la formation",
+      "languageHint": "Titre, description, plan et contenus seront rédigés dans cette langue, même si le gig est décrit dans une autre. Après changement, relancez « AI » pour régénérer."
     }
   },
   "telephonySetup": {
@@ -3541,11 +3543,12 @@
   },
   "trainingMethodology": {
     "groups": {
-      "generic": "Types de transactions génériques",
+      "generic": "Génériques",
       "insurance": "Assurance",
       "finance": "Finance et banque",
       "realEstate": "Immobilier",
-      "regulated": "Autres secteurs réglementés"
+      "regulated": "Autres secteurs réglementés",
+      "gig": "Spécifique à votre gig"
     },
     "back": "Retour",
     "title": "Choisir la méthodologie de formation",

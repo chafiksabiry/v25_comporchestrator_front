@@ -40,16 +40,14 @@ import {
   buildProspectingMethodology,
   buildSurveyMethodology,
   buildWelcomeCallMethodology,
-  healthInsuranceMethodologyForLanguage,
   matchMethodologyIdForGigCategory,
   type MethodologyLang,
 } from '../../data/genericSalesMethodologies';
 import {
-  METHODOLOGY_GROUP_ORDER,
   TRANSACTION_SPECS,
   buildTransactionMethodology,
-  type MethodologyGroup,
 } from '../../data/transactionMethodologies';
+import { buildGigSpecificMethodology } from '../../data/gigMethodology';
 import { scrollJourneyMainToTop } from './journeyScroll';
 
 const SPEC_ICONS: Record<string, LucideIcon> = {
@@ -87,11 +85,15 @@ interface MethodologySelectorProps {
   /** Destination country name of the GIG (selectedGig.destination_zone?.name?.common) —
    * threaded into the regulatory module so it names the country to verify compliance for. */
   countryLabel?: string | null;
+  /** The selected GIG: source of the gig-specific methodology. */
+  gig?: unknown;
 }
+
+type IndustryGroup = 'gig' | 'generic';
 
 type IndustryCard = {
   id: string;
-  group: MethodologyGroup;
+  group: IndustryGroup;
   name: string;
   icon: LucideIcon;
   description: string;
@@ -105,7 +107,7 @@ function featureList(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item)) : [];
 }
 
-export default function MethodologySelector({ onMethodologySelect, onBack, hideBackButton, gigCategory, countryLabel }: MethodologySelectorProps) {
+export default function MethodologySelector({ onMethodologySelect, onBack, hideBackButton, gigCategory, countryLabel, gig }: MethodologySelectorProps) {
   const { t, i18n } = useTranslation();
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const lang: MethodologyLang = (i18n.resolvedLanguage || i18n.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr';
@@ -115,7 +117,6 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
     const country = countryLabel || undefined;
     const prospecting = buildProspectingMethodology(lang, country);
     const b2b = buildB2bServicesMethodology(lang, country);
-    const health = healthInsuranceMethodologyForLanguage(lang);
     const collections = buildCollectionsMethodology(lang, country);
     const survey = buildSurveyMethodology(lang, country);
     const welcomeCall = buildWelcomeCallMethodology(lang, country);
@@ -123,7 +124,24 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
       t('trainingMethodology.hours', {
         count: methodology.components.reduce((sum, item) => sum + (item.estimatedDuration || 0), 0),
       });
+    const gigMethodology = buildGigSpecificMethodology(lang, gig, country);
+    const gigCard: IndustryCard[] = gigMethodology
+      ? [
+          {
+            id: 'gig-specific',
+            group: 'gig',
+            name: gigMethodology.name,
+            icon: Target,
+            description: gigMethodology.description,
+            methodology: gigMethodology,
+            features: gigMethodology.components.map((item) => item.title),
+            duration: hours(gigMethodology),
+            certificationLevels: gigMethodology.certificationPath.levels.length,
+          },
+        ]
+      : [];
     return [
+      ...gigCard,
       {
         id: 'prospecting',
         group: 'generic',
@@ -145,17 +163,6 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         features: b2b.components.map((item) => item.title),
         duration: hours(b2b),
         certificationLevels: b2b.certificationPath.levels.length,
-      },
-      {
-        id: 'health-insurance',
-        group: 'insurance',
-        name: health.name,
-        icon: Heart,
-        description: health.description,
-        methodology: health,
-        features: health.components.map((item) => item.title).slice(0, 8),
-        duration: t('trainingMethodology.industries.health.duration'),
-        certificationLevels: health.certificationPath.levels.length,
       },
       {
         id: 'collections',
@@ -190,7 +197,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         duration: hours(welcomeCall),
         certificationLevels: welcomeCall.certificationPath.levels.length,
       },
-      ...TRANSACTION_SPECS.map((spec): IndustryCard => {
+      ...TRANSACTION_SPECS.filter((spec) => spec.group === 'generic').map((spec): IndustryCard => {
         const methodology = buildTransactionMethodology(lang, spec, country);
         return {
           id: spec.id,
@@ -205,7 +212,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         };
       }),
     ];
-  }, [lang, t, countryLabel]);
+  }, [lang, t, countryLabel, gig]);
 
   const handleIndustrySelect = (industry: IndustryCard) => {
     if (industry.methodology) {
@@ -280,7 +287,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
 
         <div>
           <h2 className="mb-2 text-center text-sm font-extrabold text-gray-900">{t('trainingMethodology.selectIndustry')}</h2>
-          {METHODOLOGY_GROUP_ORDER.map((group) => {
+          {(['gig', 'generic'] as IndustryGroup[]).map((group) => {
             const groupItems = industries.filter((industry) => industry.group === group);
             if (groupItems.length === 0) return null;
             return (

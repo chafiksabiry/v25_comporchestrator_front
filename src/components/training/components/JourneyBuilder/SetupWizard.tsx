@@ -14,7 +14,7 @@ import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import '../../training-layout.css';
 import { cloudinaryService } from '../../lib/cloudinaryService';
-import { detectOutputLanguageFromGigText } from '../../utils/gigSnapshotForAi';
+import { contentLanguageLabel, resolveContentLanguage, setChosenContentLanguage } from '../../utils/contentLanguage';
 import {
   assertCompanyHasAiTokens,
   chargeCompanyAiUsage,
@@ -46,6 +46,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const [visionSubStep, setVisionSubStep] = useState(0);
   const [visionName, setVisionName] = useState('');
   const [visionDesc, setVisionDesc] = useState('');
+  const [contentLanguage, setContentLanguage] = useState('');
   const [visionDuration, setVisionDuration] = useState('');
   const prevWizardStepRef = useRef(currentStep);
   const [industryOpen, setIndustryOpen] = useState(false);
@@ -387,11 +388,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
       const gigTitle = String(selectedGig.title || '').trim();
       const gigDescription = String(selectedGig.description || '').trim();
-      // The interface language chosen by the user wins; gig text is only a fallback.
-      const uiLanguage = String(i18n?.language || '').toLowerCase().slice(0, 2);
-      const outputLanguage: 'fr' | 'en' =
-        uiLanguage === 'fr' || uiLanguage === 'en' ? uiLanguage : detectOutputLanguageFromGigText(gigTitle, gigDescription);
-      const languageLabel = outputLanguage === 'fr' ? 'French' : 'English';
+      // Explicit choice for this gig, else the interface language, else the gig text.
+      const outputLanguage = resolveContentLanguage(String(selectedGig._id || ''), i18n?.language, gigTitle, gigDescription);
+      const languageLabel = contentLanguageLabel(outputLanguage);
       const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
         target,
         currentTitle: visionName,
@@ -768,6 +767,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onTrainingNameChange={setVisionName}
                 onTrainingDescriptionChange={setVisionDesc}
                 onEstimatedDurationChange={setVisionDuration}
+                contentLanguage={
+                  contentLanguage ||
+                  resolveContentLanguage(String(selectedGig?._id || ''), i18n?.language, selectedGig?.title, selectedGig?.description)
+                }
+                onContentLanguageChange={(code) => {
+                  setContentLanguage(code);
+                  setChosenContentLanguage(String(selectedGig?._id || ''), code);
+                }}
                 gigData={selectedGig}
                 onSuggestTitle={() => void handleSuggestVision('title')}
                 onSuggestDescription={() => void handleSuggestVision('description')}
@@ -818,6 +825,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
                 onBack={() => setCurrentStep(2)}
                 hideBackButton
                 gigCategory={selectedGig?.category}
+                gig={selectedGig}
                 countryLabel={selectedGig?.destination_zone?.name?.common}
               />
             )}

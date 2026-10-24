@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CONTENT_LANGUAGES } from '../../utils/contentLanguage';
 import { Target, Brain, Loader2 } from 'lucide-react';
 
 const HARX = '#ff4d4d';
@@ -18,6 +19,8 @@ interface TrainingDetailsFormProps {
   onTrainingNameChange: (v: string) => void;
   onTrainingDescriptionChange: (v: string) => void;
   onEstimatedDurationChange: (v: string) => void;
+  contentLanguage: string;
+  onContentLanguageChange: (code: string) => void;
   gigData?: { title?: string } | null;
   onSuggestTitle?: () => void;
   onSuggestDescription?: () => void;
@@ -33,6 +36,8 @@ export default function TrainingDetailsForm({
   onTrainingNameChange,
   onTrainingDescriptionChange,
   onEstimatedDurationChange,
+  contentLanguage,
+  onContentLanguageChange,
   gigData,
   onSuggestTitle,
   onSuggestDescription,
@@ -86,6 +91,32 @@ export default function TrainingDetailsForm({
                 )}
                 AI
               </button>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                {t('training.vision.language')}
+              </label>
+              <select
+                value={contentLanguage}
+                onChange={(e) => onContentLanguageChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  color: '#111827',
+                  background: '#fff',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {CONTENT_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{t('training.vision.languageHint')}</div>
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
