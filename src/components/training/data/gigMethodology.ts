@@ -130,3 +130,48 @@ export function buildGigSpecificMethodology(
     components,
   };
 }
+
+const SECTOR_KEYWORDS: Array<{ id: string; pattern: RegExp }> = [
+  { id: 'health-insurance', pattern: /assurance[s]?\s+sant[ée]|mutuelle|health\s+insurance|complementary health/i },
+  { id: 'insurance-auto', pattern: /assurance[s]?\s+auto|auto(mobile)?\s+insurance|car\s+insurance|motor\s+insurance/i },
+  { id: 'insurance-property', pattern: /assurance[s]?\s+(habitation|logement|multirisque)|home\s+insurance|property\s+insurance/i },
+  { id: 'insurance-life', pattern: /assurance[s]?[\s-]+vie|life\s+insurance|[ée]pargne\s+retraite/i },
+  { id: 'insurance-protection', pattern: /pr[ée]voyance|protection\s+(sociale|famille)|income\s+protection/i },
+  { id: 'insurance-professional', pattern: /assurance[s]?\s+(pro|professionnelle|entreprise)|business\s+insurance|commercial\s+insurance/i },
+  { id: 'finance-consumer-credit', pattern: /cr[ée]dit\s+(conso|à la consommation)|consumer\s+(credit|loan)|pr[êe]t\s+personnel/i },
+  { id: 'finance-mortgage', pattern: /cr[ée]dit\s+immobilier|pr[êe]t\s+immobilier|mortgage|courtage\s+en\s+pr[êe]t/i },
+  { id: 'finance-investment', pattern: /placement|investissement\s+financier|investment\s+(product|advice)|gestion\s+de\s+patrimoine|wealth/i },
+  { id: 'finance-banking', pattern: /banque|bancaire|banking|compte\s+courant/i },
+  { id: 'realestate-sales', pattern: /vente\s+immobili|real\s+estate\s+sales|agent\s+immobilier/i },
+  { id: 'realestate-rental', pattern: /location\s+immobili|gestion\s+locative|rental|letting/i },
+  { id: 'realestate-investment', pattern: /investissement\s+immobilier|real\s+estate\s+investment|defiscalisation|pinel/i },
+  { id: 'regulated-energy', pattern: /[ée]nergie|[ée]lectricit[ée]|gaz\b|energy\s+supplier|utilities/i },
+  { id: 'regulated-telecom', pattern: /t[ée]l[ée]com|op[ée]rateur|fibre|mobile\s+plan|telecom/i },
+  { id: 'regulated-healthcare', pattern: /sant[ée]\s+(r[ée]glement|professionnel)|healthcare|pharma|m[ée]dical/i },
+];
+
+/** Sector cases that match the gig's own text (title, description, category, sectors, industries, activities). */
+export function detectSectorIds(gig: unknown): string[] {
+  const snap = buildGigSnapshotForAi(gig) as Record<string, any> | null;
+  if (!snap) return [];
+  const text = [snap.title, snap.description, snap.category, ...(snap.sectors || []), ...(snap.industries || []), ...(snap.activities || [])].join(' \n ');
+  return SECTOR_KEYWORDS.filter((s) => s.pattern.test(text)).map((s) => s.id);
+}
+
+const EU_COUNTRIES =
+  /france|germany|allemagne|spain|espagne|italy|italie|portugal|belgium|belgique|netherlands|pays-bas|luxembourg|ireland|irlande|austria|autriche|poland|pologne|sweden|su[èe]de|denmark|danemark|finland|finlande|greece|gr[èe]ce|czech|tch[èe]que|romania|roumanie|bulgaria|bulgarie|hungary|hongrie|croatia|croatie|slovak|slov[ée]nie|slovenia|estonia|estonie|latvia|lettonie|lithuania|lituanie|malta|malte|cyprus|chypre/i;
+const US_COUNTRIES = /united states|[ée]tats-unis|\busa\b|\bus\b/i;
+
+/**
+ * Drops the regional compliance blocks that do not concern the gig's destination country
+ * (e.g. US federal rules for a gig in France), so the generated training is not polluted.
+ */
+export function withoutForeignCompliance(methodology: TrainingMethodology, countryLabel?: string | null): TrainingMethodology {
+  const country = String(countryLabel || '').trim();
+  const components = methodology.components.filter((c) => {
+    if (c.id === 'regional-compliance-us') return country ? US_COUNTRIES.test(country) : false;
+    if (c.id === 'regional-compliance-eu') return country ? EU_COUNTRIES.test(country) : true;
+    return true;
+  });
+  return { ...methodology, components };
+}

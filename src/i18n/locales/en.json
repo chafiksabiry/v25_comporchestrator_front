@@ -1167,6 +1167,18 @@
       "videos": "Videos",
       "audio": "Audio",
       "noResults": "No resources match this filter."
+    },
+    "sectorKb": {
+      "title": "Sector knowledge base (AI)",
+      "help": "Pick a sector case (auto, health, life insurance, credit, real estate…): the AI writes that case’s knowledge base and attaches it to this gig only. Have your compliance officer validate the content.",
+      "needGig": "Select a specific gig to create its sector base.",
+      "choose": "Choose a sector case…",
+      "suggested": "fits this gig",
+      "generate": "Generate with AI",
+      "generating": "Generating… (up to 2 min)",
+      "created": "“{{name}}” base created in {{language}} and attached to this gig.",
+      "exists": "A “{{name}}” base already exists for this gig.",
+      "error": "Generation failed. Please try again shortly."
     }
   },
   "training": {
@@ -3685,7 +3697,9 @@
           "Relationship excellence"
         ]
       }
-    }
+    },
+    "hideGroup": "Hide",
+    "showGroup": "Show the {{count}} sector cases"
   },
   "trainingWizard": {
     "steps": {

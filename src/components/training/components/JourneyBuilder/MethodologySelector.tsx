@@ -40,14 +40,17 @@ import {
   buildProspectingMethodology,
   buildSurveyMethodology,
   buildWelcomeCallMethodology,
+  healthInsuranceMethodologyForLanguage,
   matchMethodologyIdForGigCategory,
   type MethodologyLang,
 } from '../../data/genericSalesMethodologies';
 import {
+  METHODOLOGY_GROUP_ORDER,
   TRANSACTION_SPECS,
   buildTransactionMethodology,
+  type MethodologyGroup,
 } from '../../data/transactionMethodologies';
-import { buildGigSpecificMethodology } from '../../data/gigMethodology';
+import { buildGigSpecificMethodology, detectSectorIds, withoutForeignCompliance } from '../../data/gigMethodology';
 import { scrollJourneyMainToTop } from './journeyScroll';
 
 const SPEC_ICONS: Record<string, LucideIcon> = {
@@ -89,7 +92,7 @@ interface MethodologySelectorProps {
   gig?: unknown;
 }
 
-type IndustryGroup = 'gig' | 'generic';
+type IndustryGroup = 'gig' | MethodologyGroup;
 
 type IndustryCard = {
   id: string;
@@ -112,6 +115,9 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
   const lang: MethodologyLang = (i18n.resolvedLanguage || i18n.language || 'fr').toLowerCase().startsWith('en') ? 'en' : 'fr';
   const recommendedId = useMemo(() => matchMethodologyIdForGigCategory(gigCategory), [gigCategory]);
+  // Sector cases matching the gig are highlighted and opened; the others stay folded away.
+  const gigSectorIds = useMemo(() => detectSectorIds(gig), [gig]);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const industries = useMemo<IndustryCard[]>(() => {
     const country = countryLabel || undefined;
@@ -120,6 +126,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
     const collections = buildCollectionsMethodology(lang, country);
     const survey = buildSurveyMethodology(lang, country);
     const welcomeCall = buildWelcomeCallMethodology(lang, country);
+    const health = withoutForeignCompliance(healthInsuranceMethodologyForLanguage(lang), country);
     const hours = (methodology: TrainingMethodology) =>
       t('trainingMethodology.hours', {
         count: methodology.components.reduce((sum, item) => sum + (item.estimatedDuration || 0), 0),
@@ -165,6 +172,17 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         certificationLevels: b2b.certificationPath.levels.length,
       },
       {
+        id: 'health-insurance',
+        group: 'insurance',
+        name: health.name,
+        icon: Heart,
+        description: health.description,
+        methodology: health,
+        features: health.components.map((item) => item.title).slice(0, 8),
+        duration: t('trainingMethodology.industries.health.duration'),
+        certificationLevels: health.certificationPath.levels.length,
+      },
+      {
         id: 'collections',
         group: 'generic',
         name: collections.name,
@@ -197,8 +215,8 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
         duration: hours(welcomeCall),
         certificationLevels: welcomeCall.certificationPath.levels.length,
       },
-      ...TRANSACTION_SPECS.filter((spec) => spec.group === 'generic').map((spec): IndustryCard => {
-        const methodology = buildTransactionMethodology(lang, spec, country);
+      ...TRANSACTION_SPECS.map((spec): IndustryCard => {
+        const methodology = withoutForeignCompliance(buildTransactionMethodology(lang, spec, country), country);
         return {
           id: spec.id,
           group: spec.group,
@@ -287,20 +305,34 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
 
         <div>
           <h2 className="mb-2 text-center text-sm font-extrabold text-gray-900">{t('trainingMethodology.selectIndustry')}</h2>
-          {(['gig', 'generic'] as IndustryGroup[]).map((group) => {
+          {(['gig', ...METHODOLOGY_GROUP_ORDER] as IndustryGroup[]).map((group) => {
             const groupItems = industries.filter((industry) => industry.group === group);
             if (groupItems.length === 0) return null;
+            const isSector = group !== 'gig' && group !== 'generic';
+            const hasGigMatch = groupItems.some((industry) => gigSectorIds.includes(industry.id));
+            const isOpen = !isSector || hasGigMatch || Boolean(openGroups[group]);
             return (
               <section key={group} className="mb-5">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                <h3 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
                   {t(`trainingMethodology.groups.${group}`)}
+                  {isSector && !hasGigMatch && (
+                    <button
+                      type="button"
+                      onClick={() => setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }))}
+                      className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-semibold normal-case text-gray-600 hover:border-harx-300"
+                    >
+                      {openGroups[group] ? t('trainingMethodology.hideGroup') : t('trainingMethodology.showGroup', { count: groupItems.length })}
+                    </button>
+                  )}
                 </h3>
+                {isOpen && (
           <div className="harx-method-grid">
             {groupItems.map((industry) => {
               const Icon = industry.icon;
               const isAvailable = industry.methodology !== null;
               const isSelectedSoon = selectedIndustry === industry.id;
-              const isRecommended = !!recommendedId && industry.methodology?.id === recommendedId;
+              const isRecommended =
+                (!!recommendedId && industry.methodology?.id === recommendedId) || gigSectorIds.includes(industry.id);
 
               return (
                 <div
@@ -379,6 +411,7 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
               );
             })}
           </div>
+                )}
               </section>
             );
           })}
