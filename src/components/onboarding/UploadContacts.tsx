@@ -2,6 +2,7 @@
 import {
   FileText,
   RefreshCw,
+  Search,
   Trash2,
   Edit,
   Eye,
@@ -2650,7 +2651,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       if (searchQuery.trim()) {
         setTotalPages(1);
         setCurrentPage(1);
-        setTotalCount(leadResults.length);
+        // The server caps the results shown; `total` is the real number of matches.
+        setTotalCount(typeof responseData.total === 'number' ? responseData.total : leadResults.length);
       } else {
         setTotalPages(responseData.totalPages);
         setCurrentPage(responseData.currentPage);
@@ -4603,6 +4605,28 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              <div className="relative w-full sm:w-72">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => void handleSearch(e.target.value)}
+                  disabled={!selectedGigId}
+                  placeholder={t('uploadContacts.list.search')}
+                  aria-label={t('uploadContacts.list.search')}
+                  className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm font-medium text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-harx-300 focus:outline-none focus:ring-2 focus:ring-harx-500/20 disabled:opacity-50"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => void handleSearch('')}
+                    aria-label={t('uploadContacts.list.clearSearch')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => archiveLeads({ ids: Array.from(selectedLeadIds) })}

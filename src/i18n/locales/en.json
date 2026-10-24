@@ -2441,7 +2441,8 @@
         "additionalInfo": "Additional Information",
         "lastUpdated": "Last Updated",
         "close": "Close"
-      }
+      },
+      "clearSearch": "Clear search"
     },
     "realtime": {
       "title": "Real-time Leads",

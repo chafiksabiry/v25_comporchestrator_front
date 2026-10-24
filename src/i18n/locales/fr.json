@@ -2441,7 +2441,8 @@
         "additionalInfo": "Informations complémentaires",
         "lastUpdated": "Dernière mise à jour",
         "close": "Fermer"
-      }
+      },
+      "clearSearch": "Effacer la recherche"
     },
     "realtime": {
       "title": "Leads en temps réel",
