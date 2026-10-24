@@ -1082,7 +1082,7 @@
     "integrateResource": "Intégrer une Ressource",
     "empty": {
       "title": "Aucune ressource pour le moment",
-      "subtitle": "Ajoutez des documents ou des enregistrements d'appels : vos REPS pourront les consulter pendant leurs appels.",
+      "subtitle": "Cliquez sur « Intégrer une ressource » pour ajouter des documents ou des enregistrements d'appels : vos REPS pourront les consulter pendant leurs appels.",
       "ingestFirst": "Ajouter la première ressource"
     },
     "analysis": {
