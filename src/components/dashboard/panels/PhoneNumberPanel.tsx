@@ -561,7 +561,6 @@ export function PhoneNumberPanel() {
       return;
     }
     setTestingCall(true);
-    setCallMonitorMode('api');
     setCallMonitorStatus('connecting');
     setCallMonitorOutcome(null);
     setCallReachedRinging(false);
