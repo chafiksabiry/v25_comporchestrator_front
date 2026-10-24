@@ -169,7 +169,7 @@ const DashboardWidgetsSetup: React.FC<{ companyId?: string | null }> = ({ compan
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={saving || !dirty}
+          disabled={saving || (saved && !dirty)}
           className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-6 py-3 text-sm font-bold text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
