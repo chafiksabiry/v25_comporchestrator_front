@@ -1177,8 +1177,16 @@ const CompanyOnboarding = () => {
     );
 
     if (currentStep) {
-      // Hide the guide while a step is still in progress
-      window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+      // Show contextual guide for the current step
+      const stepGuideKey = `sidebar.stepGuide.${currentStep.id}`;
+      const stepTitle = t(`${stepGuideKey}.title`, currentStep.title);
+      const stepSteps = t(`${stepGuideKey}.steps`, { returnObjects: true });
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: stepTitle,
+          steps: Array.isArray(stepSteps) ? stepSteps : undefined,
+        },
+      }));
     } else {
       // If all steps in phase are completed, show phase summary or next instruction
       const isLastPhase = displayedPhase === 4;

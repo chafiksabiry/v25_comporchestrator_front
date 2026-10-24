@@ -92,6 +92,107 @@
         "Mentionnez la durée et la rémunération souhaitées",
         "Appuyez sur Entrée ou le bouton Envoyer"
       ]
+    },
+    "stepGuide": {
+      "1": {
+        "title": "Profil Entreprise",
+        "steps": [
+          "Renseignez le nom légal et commercial",
+          "Ajoutez vos contacts clés",
+          "Acceptez les conditions d'utilisation",
+          "Enregistrez votre profil"
+        ]
+      },
+      "3": {
+        "title": "Créer des Gigs",
+        "steps": [
+          "Décrivez votre besoin en langage naturel",
+          "L'IA génère une proposition structurée",
+          "Ajustez les sections si nécessaire",
+          "Publiez votre premier Gig"
+        ]
+      },
+      "4": {
+        "title": "Configuration Téléphonique",
+        "steps": [
+          "Achetez ou portez un numéro de téléphone",
+          "Configurez le composeur automatique",
+          "Définissez les horaires d'appel",
+          "Testez la ligne avant activation"
+        ]
+      },
+      "5": {
+        "title": "Importer des Contacts",
+        "steps": [
+          "Sélectionnez votre Gig cible",
+          "Choisissez l'import Zoho CRM ou CSV",
+          "Uploadez votre fichier de contacts",
+          "L'IA valide et importe les leads"
+        ]
+      },
+      "7": {
+        "title": "Base de Connaissances",
+        "steps": [
+          "Ajoutez vos produits et services",
+          "Rédigez les FAQs et objections courantes",
+          "Importez vos documents internes",
+          "Validez le contenu avec l'IA"
+        ]
+      },
+      "8": {
+        "title": "E-learning REPs",
+        "steps": [
+          "Créez les modules de formation",
+          "Ajoutez des quiz de validation",
+          "Définissez le score minimum requis",
+          "Activez le parcours pour les REPs"
+        ]
+      },
+      "9": {
+        "title": "Script d'Appel",
+        "steps": [
+          "Définissez l'objectif de l'appel",
+          "Rédigez l'accroche et les questions clés",
+          "Ajoutez les réponses aux objections",
+          "Testez le script avec l'IA"
+        ]
+      },
+      "10": {
+        "title": "Planification des Sessions",
+        "steps": [
+          "Définissez les créneaux disponibles",
+          "Priorisez vos leads par score",
+          "Assignez les REPs aux créneaux",
+          "Activez le planning automatique"
+        ]
+      },
+      "11": {
+        "title": "Plan d'Abonnement",
+        "steps": [
+          "Comparez les plans disponibles",
+          "Sélectionnez le plan adapté",
+          "Ajoutez un moyen de paiement",
+          "Confirmez votre abonnement"
+        ]
+      },
+      "12": {
+        "title": "Activation du Gig",
+        "steps": [
+          "Vérifiez la configuration complète",
+          "Lancez les opérations multicanal",
+          "Suivez les premières performances",
+          "Optimisez selon les résultats"
+        ]
+      },
+      "13": {
+        "title": "Matcher des REPs HARX",
+        "steps": [
+          "L'IA analyse vos Gigs publiés",
+          "Consultez les profils proposés",
+          "Invitez les REPs sélectionnés",
+          "Confirmez les affectations"
+        ]
+      }
     }
   },
   "navbar": {
