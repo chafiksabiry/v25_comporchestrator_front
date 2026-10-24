@@ -83,6 +83,15 @@
             "Cliquez sur « Enregistrer »."
           ]
         },
+        "2": {
+          "title": "Vérifier votre entreprise",
+          "description": "Déposez les trois documents demandés pour obtenir le badge « Vérifié ». Cette étape est facultative.",
+          "steps": [
+            "Choisissez un document dans chaque carte.",
+            "Attendez l'analyse automatique (quelques secondes).",
+            "Remplacez un document refusé en suivant le motif indiqué."
+          ]
+        },
         "1": {
           "title": "Créez le profil de votre entreprise",
           "description": "Quelques clics suffisent.",
@@ -1342,8 +1351,8 @@
             "description": "Générez le profil de votre entreprise à partir de votre site web, vérifiez-le et enregistrez-le"
           },
           "2": {
-            "title": "Vérification KYC / KYB",
-            "description": "Vérification d'identité sécurisée"
+            "title": "Vérification de l'entreprise (facultatif)",
+            "description": "Déposez votre Kbis, un justificatif d'adresse et la pièce d'identité du gérant pour obtenir le badge « Vérifié »."
           }
         }
       },
@@ -1415,6 +1424,7 @@
       "progressing": "En cours",
       "locked": "Verrouillé",
       "todo": "À faire",
+      "optional": "Facultatif",
       "toComplete": "À compléter",
       "completeProfile": "Compléter le profil",
       "comingSoon": "Bientôt",
@@ -3589,5 +3599,56 @@
   },
   "trainingViewer": {
     "validateFormation": "Valider la formation"
+  },
+  "companyVerification": {
+    "title": "Vérification de l'entreprise",
+    "docs": {
+      "kbis": {
+        "title": "Extrait Kbis ou document d'immatriculation",
+        "help": "Extrait Kbis de moins de 3 mois, ou équivalent hors de France (registre du commerce, licence commerciale, certificat d'incorporation). Le nom doit correspondre à celui de votre profil."
+      },
+      "address_proof": {
+        "title": "Justificatif d'adresse d'exploitation",
+        "help": "Facture, bail ou avis d'imposition de moins de 3 mois à l'adresse d'exploitation indiquée dans votre profil."
+      },
+      "manager_id": {
+        "title": "Pièce d'identité du gérant",
+        "help": "Passeport, carte d'identité ou titre de séjour en cours de validité, au nom du dirigeant de l'entreprise."
+      }
+    },
+    "reasons": {
+      "default": "Le document n'a pas pu être validé. Déposez-en une version plus nette.",
+      "illegible": "Le document est illisible ou coupé. Déposez un scan ou une photo nette, page entière.",
+      "wrong_type": "Ce n'est pas le document attendu dans cette carte. Vérifiez le type de document demandé.",
+      "suspected_tampering": "Le document semble modifié ou n'est pas un original. Déposez l'original.",
+      "name_mismatch": "Le nom de la société sur le document ne correspond pas à celui de votre profil.",
+      "date_missing": "La date d'émission n'est pas visible. Déposez un document daté.",
+      "too_old": "Le document date de plus de 3 mois. Déposez-en un plus récent.",
+      "address_mismatch": "L'adresse du document ne correspond pas à l'adresse de votre profil.",
+      "expired": "La pièce d'identité est expirée.",
+      "person_missing": "Le nom du titulaire n'est pas lisible sur la pièce d'identité.",
+      "representative_mismatch": "Le nom sur la pièce d'identité ne correspond à aucun dirigeant de l'extrait Kbis."
+    },
+    "errors": {
+      "type": "Format accepté : JPG, PNG, WebP ou PDF.",
+      "size": "Fichier trop volumineux (8 Mo maximum).",
+      "unavailable": "La vérification est momentanément indisponible. Réessayez plus tard.",
+      "analysis": "Le document n'a pas pu être analysé. Réessayez avec un fichier plus net."
+    },
+    "status": {
+      "verified": "Validé",
+      "rejected": "Refusé",
+      "missing": "À fournir"
+    },
+    "intro": "Cette étape est facultative. Elle affiche le badge « Vérifié » sur votre profil et rassure les reps qui souhaitent travailler avec vous. Vos documents sont analysés automatiquement.",
+    "privacy": "Vos documents sont stockés de façon privée et ne sont jamais affichés aux autres utilisateurs.",
+    "verifiedTitle": "Entreprise vérifiée",
+    "verifiedText": "Le badge « Vérifié » est affiché sur votre profil.",
+    "progress": "{{count}} document(s) validé(s) sur 3",
+    "analysing": "Analyse en cours…",
+    "replace": "Remplacer le document",
+    "choose": "Choisir un fichier",
+    "formats": "JPG, PNG, WebP ou PDF · 8 Mo max",
+    "badge": "Vérifié"
   }
 }

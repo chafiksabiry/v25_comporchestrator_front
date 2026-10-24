@@ -83,6 +83,15 @@
             "Click “Save”."
           ]
         },
+        "2": {
+          "title": "Verify your company",
+          "description": "Upload the three requested documents to get the “Verified” badge. This step is optional.",
+          "steps": [
+            "Pick a document in each card.",
+            "Wait for the automatic analysis (a few seconds).",
+            "Replace a rejected document following the stated reason."
+          ]
+        },
         "1": {
           "title": "Create your company profile",
           "description": "It only takes a few clicks.",
@@ -1342,8 +1351,8 @@
             "description": "Generate your company profile from your website, check it and save it"
           },
           "2": {
-            "title": "KYC / KYB Verification",
-            "description": "Secure identity verification"
+            "title": "Company verification (optional)",
+            "description": "Upload your registration extract, proof of address and the manager's ID to earn the “Verified” badge."
           }
         }
       },
@@ -1415,6 +1424,7 @@
       "progressing": "In progress",
       "locked": "Locked",
       "todo": "To do",
+      "optional": "Optional",
       "toComplete": "To complete",
       "completeProfile": "Complete the profile",
       "comingSoon": "Coming soon",
@@ -3589,5 +3599,56 @@
   },
   "trainingViewer": {
     "validateFormation": "Validate the training"
+  },
+  "companyVerification": {
+    "title": "Company verification",
+    "docs": {
+      "kbis": {
+        "title": "Company registration extract",
+        "help": "Kbis extract less than 3 months old, or the equivalent outside France (trade register extract, trade licence, certificate of incorporation). The name must match your profile."
+      },
+      "address_proof": {
+        "title": "Proof of operating address",
+        "help": "Utility bill, lease or tax notice less than 3 months old, at the operating address shown in your profile."
+      },
+      "manager_id": {
+        "title": "Manager's ID document",
+        "help": "Valid passport, national ID card or residence permit in the name of the company's legal representative."
+      }
+    },
+    "reasons": {
+      "default": "The document could not be validated. Please upload a clearer version.",
+      "illegible": "The document is unreadable or cropped. Upload a sharp scan or photo of the full page.",
+      "wrong_type": "This is not the document expected in this card. Check the requested document type.",
+      "suspected_tampering": "The document looks edited or is not an original. Please upload the original.",
+      "name_mismatch": "The company name on the document does not match your profile.",
+      "date_missing": "The issue date is not visible. Upload a dated document.",
+      "too_old": "The document is more than 3 months old. Upload a more recent one.",
+      "address_mismatch": "The address on the document does not match the address in your profile.",
+      "expired": "The ID document has expired.",
+      "person_missing": "The holder's name is not readable on the ID document.",
+      "representative_mismatch": "The name on the ID does not match any representative on the registration extract."
+    },
+    "errors": {
+      "type": "Accepted formats: JPG, PNG, WebP or PDF.",
+      "size": "File too large (8 MB maximum).",
+      "unavailable": "Verification is temporarily unavailable. Please try again later.",
+      "analysis": "The document could not be analysed. Try again with a sharper file."
+    },
+    "status": {
+      "verified": "Validated",
+      "rejected": "Rejected",
+      "missing": "To provide"
+    },
+    "intro": "This step is optional. It adds the “Verified” badge to your profile and reassures reps who want to work with you. Your documents are analysed automatically.",
+    "privacy": "Your documents are stored privately and are never shown to other users.",
+    "verifiedTitle": "Company verified",
+    "verifiedText": "The “Verified” badge is shown on your profile.",
+    "progress": "{{count}} of 3 document(s) validated",
+    "analysing": "Analysing…",
+    "replace": "Replace document",
+    "choose": "Choose a file",
+    "formats": "JPG, PNG, WebP or PDF · 8 MB max",
+    "badge": "Verified"
   }
 }
