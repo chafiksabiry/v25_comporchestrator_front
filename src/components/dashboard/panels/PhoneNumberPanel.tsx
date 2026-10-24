@@ -2215,7 +2215,8 @@ export function PhoneNumberPanel() {
                     {(callMonitorStatus === 'ended' || callMonitorStatus === 'failed') &&
                       !callReachedRinging && (
                         <p className="text-xs text-center text-rose-600 font-bold px-2">
-                          {t('phoneNumberPanel.myNumbers.testCall.hintNeverRang')}
+                          {/* The real reason (e.g. operator account inactive) beats the generic hint. */}
+                          {testCallError || t('phoneNumberPanel.myNumbers.testCall.hintNeverRang')}
                         </p>
                       )}
 
