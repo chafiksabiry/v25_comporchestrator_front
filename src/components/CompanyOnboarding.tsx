@@ -1897,8 +1897,9 @@ const CompanyOnboarding = () => {
     }
   }
 
-  // Step 1 (company search/profile) and gig wizard already render their own Back.
-  const stepHasOwnBack = activeStep === 1 || activeStep === 9 || showGigCreation;
+  // Step 1 (company search/profile), the gig wizard and step 12 (matching dashboard, which receives
+  // onBackToOnboarding and draws its own button) already render their own Back.
+  const stepHasOwnBack = activeStep === 1 || activeStep === 9 || activeStep === 12 || showGigCreation;
 
   if (activeComponent) {
     return (
