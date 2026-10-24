@@ -1103,7 +1103,11 @@
       "testPlaceholder": "Posez une question comme un REP (ex. Quelles garanties sont incluses ?)",
       "testButton": "Interroger",
       "testing": "Recherche…",
-      "testError": "La base n'a pas pu répondre. Réessayez."
+      "testError": "La base n'a pas pu répondre. Réessayez.",
+      "indexed": "Indexé pour la recherche",
+      "indexing": "Indexation en cours…",
+      "ocr": "texte reconnu (OCR)",
+      "tables": "{{count}} tableau(x) conservé(s)"
     },
     "analysis": {
       "languageHub": "Centre Linguistique",

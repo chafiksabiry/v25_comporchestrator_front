@@ -1103,7 +1103,11 @@
       "testPlaceholder": "Ask a question like a REP (e.g. Which guarantees are included?)",
       "testButton": "Ask",
       "testing": "Searching…",
-      "testError": "The base could not answer. Please try again."
+      "testError": "The base could not answer. Please try again.",
+      "indexed": "Indexed for search",
+      "indexing": "Indexing…",
+      "ocr": "text recognised (OCR)",
+      "tables": "{{count}} table(s) kept"
     },
     "analysis": {
       "languageHub": "Language Hub",
