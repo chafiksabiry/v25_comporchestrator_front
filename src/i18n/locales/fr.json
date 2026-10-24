@@ -92,6 +92,15 @@
             "Remplacez un document refusé en suivant le motif indiqué."
           ]
         },
+        "6": {
+          "title": "Personnalisez votre tableau de bord",
+          "description": "Choisissez les widgets à afficher et leur ordre. Cette étape est facultative.",
+          "steps": [
+            "Activez ou masquez chaque widget.",
+            "Changez l'ordre avec les flèches.",
+            "Cliquez sur « Enregistrer »."
+          ]
+        },
         "1": {
           "title": "Créez le profil de votre entreprise",
           "description": "Quelques clics suffisent.",
@@ -1373,8 +1382,8 @@
             "description": "Importez les contacts que vos REPS appelleront"
           },
           "6": {
-            "title": "Configuration des rapports",
-            "description": "Configurez vos indicateurs et vos rapports"
+            "title": "Tableau de bord personnalisé (facultatif)",
+            "description": "Choisissez les widgets affichés sur le tableau de bord de votre entreprise et leur ordre."
           }
         }
       },
@@ -3651,5 +3660,43 @@
     "choose": "Choisir un fichier",
     "formats": "JPG, PNG, WebP ou PDF · 8 Mo max",
     "badge": "Vérifié"
+  },
+  "dashboardWidgets": {
+    "title": "Votre tableau de bord",
+    "intro": "Choisissez les widgets affichés sur le tableau de bord de votre entreprise et leur ordre. Cette configuration est propre à votre entreprise et modifiable à tout moment. Cette étape est facultative.",
+    "items": {
+    "kpis": {
+      "title": "Indicateurs clés",
+      "description": "Appels, leads, conversion, qualité et solde en six cartes."
+    },
+    "voiceAssistant": {
+      "title": "Assistant vocal",
+      "description": "État et usage de l'assistant vocal."
+    },
+    "coverage": {
+      "title": "Couverture des leads et résultats d'appels",
+      "description": "Part des leads contactés et répartition des issues d'appel."
+    },
+    "agents": {
+      "title": "Agents",
+      "description": "Aperçu des agents actifs et de leurs performances."
+    },
+    "resources": {
+      "title": "Ressources",
+      "description": "Portefeuille, minutes, tokens IA et lignes téléphoniques."
+    },
+    "performance7d": {
+      "title": "Performance sur 7 jours",
+      "description": "Évolution des appels et des transactions."
+    }
+  },
+    "save": "Enregistrer",
+    "reset": "Réinitialiser",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "saved": "Configuration enregistrée",
+    "saveError": "L'enregistrement a échoué. Réessayez.",
+    "count": "{{count}} widget(s) affiché(s) sur {{total}}",
+    "badge": "Configuré"
   }
 }

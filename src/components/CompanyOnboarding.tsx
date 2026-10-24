@@ -21,9 +21,10 @@ import {
 import TelephonySetup from "./TelephonySetup";
 import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
 import CompanyVerification, { fetchKybVerified, KYB_STATUS_EVENT } from "./onboarding/CompanyVerification";
+import DashboardWidgetsSetup from "./onboarding/DashboardWidgetsSetup";
+import { DASHBOARD_CONFIG_EVENT, fetchDashboardConfig } from "./dashboard/widgets/catalog";
 import SubscriptionPlan from "./onboarding/SubscriptionPlan";
 import ScriptGenerator from "./ScriptGenerator";
-import ReportingSetup from "./onboarding/ReportingSetup";
 import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
@@ -148,11 +149,12 @@ const BASE_ONBOARDING_PHASES: Phase[] = [
       },
       {
         id: 6,
-        title: "Reporting Setup",
-        description: "Configure KPIs and reporting preferences",
+        title: "Dashboard widgets (optional)",
+        description: "Choose the widgets shown on your company dashboard and their order.",
         status: "pending",
-        component: ReportingSetup,
+        component: DashboardWidgetsSetup,
         disabled: true,
+        optional: true,
       },
     ],
   },
@@ -349,6 +351,7 @@ const CompanyOnboarding = () => {
   const [completedSteps, setCompletedSteps] = useState<number[]>(initialSnapshot.completedSteps);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [kybVerified, setKybVerified] = useState(false);
+  const [dashboardConfigured, setDashboardConfigured] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
@@ -587,6 +590,21 @@ const CompanyOnboarding = () => {
 
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-recette.up.railway.app/api';
+
+  // « Configuré » badge of the optional dashboard-widgets step (refreshed when leaving the step).
+  useEffect(() => {
+    if (!companyId || activeStep === 6) return;
+    let cancelled = false;
+    void fetchDashboardConfig(companyId).then((cfg) => {
+      if (!cancelled) setDashboardConfigured(cfg.configured);
+    });
+    const onChange = () => setDashboardConfigured(true);
+    window.addEventListener(DASHBOARD_CONFIG_EVENT, onChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(DASHBOARD_CONFIG_EVENT, onChange);
+    };
+  }, [companyId, activeStep]);
 
   // « Vérifié » badge of the optional company-verification step (refreshed when leaving the step).
   useEffect(() => {
@@ -1292,9 +1310,9 @@ const CompanyOnboarding = () => {
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
         
-      } else if (companyId && stepId !== 2) {
+      } else if (companyId && stepId !== 2 && stepId !== 6) {
         // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
-        // (l'étape 2, facultative, n'a pas de progression côté serveur)
+        // (les étapes 2 et 6, facultatives, n'ont pas de progression côté serveur)
         const phaseId =
           phases.findIndex((phase) =>
             phase.steps.some((step) => step.id === stepId)
@@ -2183,10 +2201,12 @@ const CompanyOnboarding = () => {
                           {t('companyOnboarding.ui.locked')}
                         </span>
                       ) : step.disabled && step.optional ? (
-                        kybVerified ? (
+                        (step.id === 6 ? dashboardConfigured : kybVerified) ? (
                           <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                             <BadgeCheck className="mr-1 h-3 w-3" />
-                            {t('companyVerification.badge', 'Vérifié')}
+                            {step.id === 6
+                              ? t('dashboardWidgets.badge', 'Configuré')
+                              : t('companyVerification.badge', 'Vérifié')}
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
@@ -2238,7 +2258,7 @@ const CompanyOnboarding = () => {
                           isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
                         }}
                       >
-                        {isCompleted || (step.optional && kybVerified) ? (step.id === 1 && profileIncomplete ? t('companyOnboarding.ui.completeProfile') : t('companyOnboarding.ui.reviewStep')) : t('companyOnboarding.ui.startStep')}
+                        {isCompleted || (step.optional && (step.id === 6 ? dashboardConfigured : kybVerified)) ? (step.id === 1 && profileIncomplete ? t('companyOnboarding.ui.completeProfile') : t('companyOnboarding.ui.reviewStep')) : t('companyOnboarding.ui.startStep')}
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     )}

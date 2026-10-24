@@ -65,6 +65,12 @@ import { getDashCallsApiBase } from '../lib/callsApiBase';
 import { authFetch } from '../../../lib/authFetch';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
 import {
+  DashboardWidgetConfig,
+  DashboardWidgetId,
+  defaultWidgetConfig,
+  fetchDashboardConfig,
+} from '../widgets/catalog';
+import {
   extractGigAgentList,
   getActiveAgentsForCompany,
   getGigAgents,
@@ -3108,6 +3114,18 @@ function OverviewView({
   selectedGigId: string;
   gigs: Array<{ _id: string; title: string }>;
 }) {
+  const [widgetConfig, setWidgetConfig] = useState<DashboardWidgetConfig[]>(defaultWidgetConfig());
+  useEffect(() => {
+    const cid = Cookies.get('companyId');
+    if (!cid) return;
+    let cancelled = false;
+    void fetchDashboardConfig(cid).then((cfg) => {
+      if (!cancelled) setWidgetConfig(cfg.widgets);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const { t, i18n } = useTranslation();
   const [selectedKpi, setSelectedKpi] = useState<OverviewKpiId | null>(null);
 
@@ -3296,8 +3314,10 @@ function OverviewView({
         })
       : t('opsDashboard.overview.kpi.walletSubFallback', 'Solde disponible');
 
-  return (
-    <>
+  // Block order and visibility are configured per company (onboarding, "dashboard widgets" step).
+  const widgetBlocks: Record<DashboardWidgetId, React.ReactNode> = {
+    kpis: (
+      <>
       {/* ---------- KPI cards (6) ---------- */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         {/* 1) Wallet — real company balance from `/wallet-company/:companyId`.
@@ -3391,8 +3411,16 @@ function OverviewView({
         />
       )}
 
+      </>
+    ),
+    voiceAssistant: (
+      <>
       <VoiceAssistantOverviewCard selectedGigId={selectedGigId} gigs={gigs} />
 
+      </>
+    ),
+    coverage: (
+      <>
       {/* ---------- Couverture leads + Résultats d'appels (donut) ---------- */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Couverture leads */}
@@ -3483,6 +3511,10 @@ function OverviewView({
         </section>
       </div>
 
+      </>
+    ),
+    agents: (
+      <>
       {/* ---------- Agents (aperçu) ---------- */}
       <section className="rounded-harx border border-harx-border bg-white p-5 shadow-harx">
         <header className="mb-4 flex items-center justify-between">
@@ -3592,6 +3624,10 @@ function OverviewView({
         )}
       </section>
 
+      </>
+    ),
+    resources: (
+      <>
       <OverviewResourcesSection
         walletBalance={walletBalance}
         walletDaysLeft={walletDaysLeft}
@@ -3599,9 +3635,24 @@ function OverviewView({
         onSeeWallet={onSeeWallet}
       />
 
+      </>
+    ),
+    performance7d: (
+      <>
       {/* ---------- Performance 7 jours ---------- */}
       <Performance7Days series={series7d} />
-    </>
+      </>
+    ),
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      {widgetConfig
+        .filter((w) => w.enabled)
+        .map((w) => (
+          <React.Fragment key={w.id}>{widgetBlocks[w.id]}</React.Fragment>
+        ))}
+    </div>
   );
 }
 
