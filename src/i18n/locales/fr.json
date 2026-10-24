@@ -125,7 +125,8 @@
           "steps": [
             "Choisissez le gig concerné.",
             "Déposez votre fichier CSV ou Excel.",
-            "Associez les colonnes (nom et téléphone obligatoires), puis confirmez."
+            "Associez les colonnes (nom et téléphone obligatoires), puis confirmez.",
+            "Cliquez sur « Sauvegarder … contacts » pour terminer l'import."
           ]
         },
         "7": {
