@@ -1995,6 +1995,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     processingRef.current = true;
 
     let didSave = false;
+    let unsavedLeads: any[] | null = null;
     try {
       // Convert leads to API format
       const currentUserId = Cookies.get('userId');
@@ -2066,27 +2067,41 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         throw new Error('Processing cancelled by user');
       }
 
-      // Progression fictive pour montrer que ça travaille
+      // Envoi par lots : un gros fichier (plusieurs dizaines de milliers de lignes) dépasse
+      // sinon le délai d'un seul appel et l'écran se vide sans rien enregistrer.
       setUploadProgress(30);
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_DASHBOARD_API}/leads/bulk`,
-        { leads: leadsForAPI },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentGigId}:${currentUserId}`
-          },
-          timeout: 60000 // 60 secondes pour le bulk
+      const BULK_CHUNK_SIZE = 500;
+      let savedCount = 0;
+      let serverSkipped = 0;
+      for (let i = 0; i < leadsForAPI.length; i += BULK_CHUNK_SIZE) {
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
         }
-      );
+        const chunk = leadsForAPI.slice(i, i + BULK_CHUNK_SIZE);
+        try {
+          const chunkResponse = await axios.post(
+            `${import.meta.env.VITE_DASHBOARD_API}/leads/bulk`,
+            { leads: chunk },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentGigId}:${currentUserId}`
+              },
+              timeout: 120000
+            }
+          );
+          const chunkData = chunkResponse.data as { count?: number; data?: any[]; skipped?: number };
+          savedCount += chunkData.count || (chunkData.data ? chunkData.data.length : 0);
+          serverSkipped += chunkData.skipped || 0;
+        } catch (chunkError) {
+          // Keep only what is still unsaved so the user can retry without losing the file.
+          unsavedLeads = leadsForAPI.slice(i);
+          throw chunkError;
+        }
+        setUploadProgress(30 + Math.round((60 * Math.min(i + BULK_CHUNK_SIZE, leadsForAPI.length)) / leadsForAPI.length));
+      }
 
-      setUploadProgress(90);
-
-      if (response.status === 200 || response.status === 201 || response.status === 207) {
-        const responseData = response.data as { count?: number; data?: any[]; skipped?: number };
-        const savedCount = responseData.count || (responseData.data ? responseData.data.length : 0);
-        const serverSkipped = responseData.skipped || 0;
+      {
         const totalSkipped = clientSkipped + serverSkipped;
 
         setUploadSuccess(true);
@@ -2142,15 +2157,20 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           console.error('Error updating onboarding progress:', error);
         }
 
-      } else {
-        throw new Error(response.statusText || 'Bulk save failed');
       }
 
     } catch (error: any) {
       console.error('Error in handleSaveLeads:', error);
-      const errorMessage = error.message || t('uploadContacts.errors.saveError');
+      const timedOut = error?.code === 'ECONNABORTED' || /timeout/i.test(String(error?.message || ''));
+      const errorMessage =
+        error?.response?.data?.message ||
+        (timedOut
+          ? t('uploadContacts.errors.saveTimeout', "Le serveur met trop de temps à répondre. Les contacts déjà enregistrés sont conservés ; cliquez de nouveau sur « Sauvegarder » pour envoyer le reste.")
+          : error.message) ||
+        t('uploadContacts.errors.saveError');
       setUploadError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage, { duration: 10000 });
+      if (unsavedLeads) setParsedLeads(unsavedLeads);
 
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
@@ -2162,8 +2182,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         localStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('uploadProcessing');
         void fetchLeads(1);
+        void fetchLeadQuickStats(selectedGigId);
       }
 
+      // Success only: on failure the file and its data stay on screen so the user can retry.
+      if (didSave) {
       // Store timer so a new upload can cancel it before it wipes the new file's state
       (window as any).__leadCleanupTimer = setTimeout(() => {
         (window as any).__leadCleanupTimer = null;
@@ -2193,6 +2216,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
           fileInput.value = '';
         }
       }, 2000);
+      }
     }
   };
 

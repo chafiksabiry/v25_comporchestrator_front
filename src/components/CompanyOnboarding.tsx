@@ -570,7 +570,15 @@ const CompanyOnboarding = () => {
           })
         );
       } else {
-        window.dispatchEvent(new CustomEvent('stepGuideUpdate', { detail: null }));
+        window.dispatchEvent(
+          new CustomEvent('stepGuideUpdate', {
+            detail: {
+              title: t('sidebar.nextAction.5.title'),
+              description: t('sidebar.nextAction.5.description'),
+              steps: t('sidebar.nextAction.5.steps', { returnObjects: true, defaultValue: [] }) as string[],
+            },
+          })
+        );
       }
     }
   }, [showUploadContacts, completedSteps, t]);

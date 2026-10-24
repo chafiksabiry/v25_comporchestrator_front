@@ -125,7 +125,8 @@
           "steps": [
             "Choose the gig they are for.",
             "Drop your CSV or Excel file.",
-            "Match the columns (name and phone are required), then confirm."
+            "Match the columns (name and phone are required), then confirm.",
+            "Click “Save … contacts” to finish the import."
           ]
         },
         "7": {
