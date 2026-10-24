@@ -175,3 +175,71 @@ export function withoutForeignCompliance(methodology: TrainingMethodology, count
   });
   return { ...methodology, components };
 }
+
+export interface MethodologyComparison {
+  /** What the gig-specific methodology brings that a ready-made one cannot. */
+  adds: string[];
+  /** Where a recommended ready-made methodology goes further. */
+  lacks: string[];
+}
+
+const sizeOf = (m: TrainingMethodology) => ({
+  hours: m.components.reduce((n, c) => n + (c.estimatedDuration || 0), 0),
+  modules: m.components.reduce((n, c) => n + c.modules.length, 0),
+  levels: m.certificationPath?.levels?.length || 0,
+});
+
+/**
+ * Explains, from the data, how the gig-specific methodology differs from the other recommended ones,
+ * so the user can choose knowingly.
+ */
+export function compareGigMethodology(
+  lang: MethodologyLang,
+  gigMethodology: TrainingMethodology,
+  gig: unknown,
+  recommended: TrainingMethodology[],
+  countryLabel?: string
+): MethodologyComparison {
+  const snap = (buildGigSnapshotForAi(gig) || {}) as Record<string, any>;
+  const adds: string[] = [];
+  const activities = (snap.activities || []) as string[];
+  const skillCount =
+    ((snap.skillsSummary?.professional || []) as string[]).length +
+    ((snap.skillsSummary?.technical || []) as string[]).length +
+    ((snap.skillsSummary?.soft || []) as string[]).length;
+  if (activities.length > 0) {
+    adds.push(
+      L(lang, `${activities.length === 1 ? 'Reprend l’activité' : `Reprend les ${activities.length} activités`} de votre gig : ${activities.slice(0, 4).join(', ')}${activities.length > 4 ? '…' : ''}`,
+        `Covers the ${activities.length === 1 ? 'activity' : `${activities.length} activities`} of your gig: ${activities.slice(0, 4).join(', ')}${activities.length > 4 ? '…' : ''}`)
+    );
+  }
+  if (skillCount > 0) {
+    adds.push(
+      L(
+        lang,
+        skillCount === 1 ? 'Forme à la compétence listée dans le gig' : `Forme aux ${skillCount} compétences listées dans le gig`,
+        skillCount === 1 ? 'Trains the skill listed in the gig' : `Trains the ${skillCount} skills listed in the gig`
+      )
+    );
+  }
+  if (snap.description) {
+    adds.push(L(lang, 'Utilise le vocabulaire et l’offre exacts décrits dans la fiche du gig', 'Uses the exact vocabulary and offer described in the gig sheet'));
+  }
+  const country = countryLabel || snap.destinationZone;
+  if (country) adds.push(L(lang, `Cadre légal ciblé sur ${country}`, `Legal framework targeted at ${country}`));
+  if ((snap.deliverables || []).length + (snap.highlights || []).length > 0) {
+    adds.push(L(lang, 'Intègre les objectifs et livrables du gig', 'Includes the gig’s objectives and deliverables'));
+  }
+
+  const mine = sizeOf(gigMethodology);
+  const lacks: string[] = [];
+  for (const other of recommended) {
+    const o = sizeOf(other);
+    const gaps: string[] = [];
+    if (o.hours > mine.hours) gaps.push(L(lang, `${o.hours} h de formation contre ${mine.hours} h`, `${o.hours} h of training vs ${mine.hours} h`));
+    if (o.modules > mine.modules) gaps.push(L(lang, `${o.modules} thèmes contre ${mine.modules}`, `${o.modules} topics vs ${mine.modules}`));
+    if (o.levels > mine.levels) gaps.push(L(lang, `${o.levels} niveaux de certification contre ${mine.levels}`, `${o.levels} certification levels vs ${mine.levels}`));
+    if (gaps.length > 0) lacks.push(`${other.name} : ${gaps.join(', ')}`);
+  }
+  return { adds, lacks };
+}

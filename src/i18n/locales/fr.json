@@ -3614,7 +3614,8 @@
       "finance": "Finance et banque",
       "realEstate": "Immobilier",
       "regulated": "Autres secteurs réglementés",
-      "gig": "Spécifique à votre gig"
+      "gig": "Spécifique à votre gig",
+      "recommended": "Recommandées pour votre gig"
     },
     "back": "Retour",
     "title": "Choisir la méthodologie de formation",
@@ -3749,7 +3750,13 @@
       }
     },
     "hideGroup": "Masquer",
-    "showGroup": "Afficher les {{count}} cas du secteur"
+    "showGroup": "Afficher les {{count}} cas du secteur",
+    "compare": {
+      "title": "En quoi se distingue-t-elle des méthodologies recommandées ?",
+      "adds": "Elle apporte en plus :",
+      "lacks": "Les recommandées vont plus loin sur :",
+      "advice": "Choisissez-la pour une formation courte, centrée sur la fiche de votre gig. Choisissez une recommandée pour une couverture complète du métier."
+    }
   },
   "trainingWizard": {
     "steps": {

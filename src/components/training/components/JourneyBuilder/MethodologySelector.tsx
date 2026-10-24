@@ -50,7 +50,7 @@ import {
   buildTransactionMethodology,
   type MethodologyGroup,
 } from '../../data/transactionMethodologies';
-import { buildGigSpecificMethodology, detectSectorIds, withoutForeignCompliance } from '../../data/gigMethodology';
+import { buildGigSpecificMethodology, compareGigMethodology, detectSectorIds, withoutForeignCompliance } from '../../data/gigMethodology';
 import { scrollJourneyMainToTop } from './journeyScroll';
 
 const SPEC_ICONS: Record<string, LucideIcon> = {
@@ -92,7 +92,7 @@ interface MethodologySelectorProps {
   gig?: unknown;
 }
 
-type IndustryGroup = 'gig' | MethodologyGroup;
+type IndustryGroup = 'recommended' | 'gig' | MethodologyGroup;
 
 type IndustryCard = {
   id: string;
@@ -232,6 +232,25 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
     ];
   }, [lang, t, countryLabel, gig]);
 
+  const isRecommendedCard = (industry: IndustryCard) =>
+    industry.group === 'gig' ||
+    (!!recommendedId && industry.methodology?.id === recommendedId) ||
+    gigSectorIds.includes(industry.id);
+
+  // Everything recommended for this gig is shown together, at the very top.
+  const recommendedCards = useMemo(
+    () => [...industries.filter(isRecommendedCard)].sort((a, b) => Number(b.group === 'gig') - Number(a.group === 'gig')),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [industries, recommendedId, gigSectorIds]
+  );
+
+  const comparison = useMemo(() => {
+    const gigCard = recommendedCards.find((c) => c.group === 'gig');
+    if (!gigCard?.methodology) return null;
+    const others = recommendedCards.filter((c) => c.group !== 'gig' && c.methodology).map((c) => c.methodology as TrainingMethodology);
+    return compareGigMethodology(lang, gigCard.methodology, gig, others, countryLabel || undefined);
+  }, [recommendedCards, lang, gig, countryLabel]);
+
   const handleIndustrySelect = (industry: IndustryCard) => {
     if (industry.methodology) {
       onMethodologySelect(industry.methodology);
@@ -305,11 +324,15 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
 
         <div>
           <h2 className="mb-2 text-center text-sm font-extrabold text-gray-900">{t('trainingMethodology.selectIndustry')}</h2>
-          {(['gig', ...METHODOLOGY_GROUP_ORDER] as IndustryGroup[]).map((group) => {
-            const groupItems = industries.filter((industry) => industry.group === group);
+          {(['recommended', ...METHODOLOGY_GROUP_ORDER] as IndustryGroup[]).map((group) => {
+            const groupItems =
+              group === 'recommended'
+                ? recommendedCards
+                : industries.filter((industry) => industry.group === group && !isRecommendedCard(industry));
             if (groupItems.length === 0) return null;
-            const isSector = group !== 'gig' && group !== 'generic';
-            const hasGigMatch = groupItems.some((industry) => gigSectorIds.includes(industry.id));
+            const isSector = group !== 'recommended' && group !== 'generic';
+            // Sector groups stay folded: the sector cases that fit the gig are already in the recommended block.
+            const hasGigMatch = false;
             const isOpen = !isSector || hasGigMatch || Boolean(openGroups[group]);
             return (
               <section key={group} className="mb-5">
@@ -331,12 +354,13 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
               const Icon = industry.icon;
               const isAvailable = industry.methodology !== null;
               const isSelectedSoon = selectedIndustry === industry.id;
-              const isRecommended =
-                (!!recommendedId && industry.methodology?.id === recommendedId) || gigSectorIds.includes(industry.id);
+              const isRecommended = group === 'recommended';
+              const isGigCard = industry.group === 'gig';
 
               return (
                 <div
                   key={industry.id}
+                  style={isGigCard ? { gridColumn: '1 / -1' } : undefined}
                   role={isAvailable ? 'button' : undefined}
                   tabIndex={isAvailable ? 0 : undefined}
                   onClick={() => isAvailable && handleIndustrySelect(industry)}
@@ -391,6 +415,33 @@ export default function MethodologySelector({ onMethodologySelect, onBack, hideB
                       <span className="font-semibold text-gray-800">{t('trainingMethodology.levels', { count: industry.certificationLevels })}</span>
                     </div>
                   </div>
+
+                  {isGigCard && comparison && (
+                    <div className="rounded-lg border border-harx-100 bg-harx-50/40 p-3 text-xs leading-relaxed text-gray-700">
+                      <p className="mb-1 font-bold text-gray-900">{t('trainingMethodology.compare.title')}</p>
+                      {comparison.adds.length > 0 && (
+                        <>
+                          <p className="font-semibold text-emerald-700">{t('trainingMethodology.compare.adds')}</p>
+                          <ul className="mb-1 list-disc pl-4">
+                            {comparison.adds.map((line) => (
+                              <li key={line}>{line}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      {comparison.lacks.length > 0 && (
+                        <>
+                          <p className="font-semibold text-amber-700">{t('trainingMethodology.compare.lacks')}</p>
+                          <ul className="mb-1 list-disc pl-4">
+                            {comparison.lacks.map((line) => (
+                              <li key={line}>{line}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                      <p className="mt-1 font-semibold text-gray-900">{t('trainingMethodology.compare.advice')}</p>
+                    </div>
+                  )}
 
                   <button
                     type="button"
