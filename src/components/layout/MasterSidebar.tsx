@@ -443,14 +443,11 @@ export function MasterSidebar({
 
           {!isCollapsed && (activeProject !== 'dashboard' || !isOnboardingFullyCompleted()) && (
             <div className={`flex flex-1 flex-col items-center ${currentStepGuide ? 'justify-start pt-4' : 'justify-center'}`}>
-              <div className="relative group shrink-0">
-                <div className="absolute -inset-4 bg-rose-500/20 rounded-full blur-2xl group-hover:bg-rose-500/30 transition-all duration-700" />
+              <div className="relative shrink-0">
                 <img
                   src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
                   alt="HARX Mascotte"
-                  className={`object-contain relative z-10 transition-all duration-500 group-hover:scale-105 drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] animate-float ${
-                    currentStepGuide ? 'w-20 h-20' : 'w-36 h-36'
-                  }`}
+                  className={`object-contain ${currentStepGuide ? 'w-20 h-20' : 'w-36 h-36'}`}
                 />
               </div>
 
