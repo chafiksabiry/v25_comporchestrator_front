@@ -18,7 +18,6 @@ export function CompanyLogo({ result }: CompanyLogoProps) {
       try {
         const domain = new URL(result.link).hostname;
         list.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
-        list.push(`https://logo.clearbit.com/${domain}`);
       } catch {
         // Ignore invalid URL
       }

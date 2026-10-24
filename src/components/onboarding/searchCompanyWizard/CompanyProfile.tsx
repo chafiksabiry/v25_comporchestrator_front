@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import {
@@ -213,11 +213,13 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     return null;
   };
 
+  const autoLogoTried = useRef(false);
   useEffect(() => {
-    if (!logoUrl && profile.contact.website) {
+    if (!logoUrl && profile.contact.website && !autoLogoTried.current) {
+      autoLogoTried.current = true;
       try {
         const domain = new URL(profile.contact.website).hostname;
-        setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+        setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
       } catch {
         // Invalid URL
       }
@@ -429,7 +431,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     setProfile(newProfile);
   };
 
-  const EditableField = ({
+  const renderEditableField = ({
     value,
     field,
     icon: Icon,
@@ -650,9 +652,18 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     );
   };
 
+  // Stable component identity: a component re-created at each render would remount
+  // (and blur) the inline inputs on every keystroke, making edits impossible.
+  const renderEditableFieldRef = useRef(renderEditableField);
+  renderEditableFieldRef.current = renderEditableField;
+  const EditableField = useMemo(
+    () => (props: Parameters<typeof renderEditableField>[0]) => renderEditableFieldRef.current(props),
+    []
+  );
+
   return (
     <div className="w-full h-full bg-white rounded-3xl shadow-2xl border border-harx-100 overflow-hidden flex relative min-h-[800px] animate-fade-in">
-      <div className="w-64 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
+      <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
         <div className="p-5 space-y-6">
           <div className="rounded-2xl border border-harx-100 bg-harx-50/60 p-4 space-y-2.5">
             <h3 className="flex items-center gap-2 text-sm font-bold text-harx-700">
@@ -965,14 +976,12 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                       alt={profile.name}
                       className="w-full h-full object-contain"
                       onError={() => {
-                        if (profile.contact.website && !logoUrl.includes("clearbit")) {
-                          try {
-                            const domain = new URL(profile.contact.website).hostname;
-                            setLogoUrl(`https://logo.clearbit.com/${domain}`);
-                          } catch {
-                            setLogoUrl("");
-                          }
-                        } else {
+                        // Last resort before the placeholder: Google's favicon service (128px).
+                        try {
+                          const domain = new URL(profile.contact.website).hostname;
+                          const fallback = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                          setLogoUrl(logoUrl === fallback ? "" : fallback);
+                        } catch {
                           setLogoUrl("");
                         }
                       }}
