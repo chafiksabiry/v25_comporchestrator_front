@@ -2155,7 +2155,7 @@ const CompanyOnboarding = () => {
                             step.description
                           )}
                     </p>
-                    {isClickable && !step.disabled && canAccessStep && (
+                    {isClickable && !step.disabled && canAccessStep && (isCurrentStep || isCompleted) && (
                       <button
                         {...(stepIndex === 0 ? { 'data-tour': 'tour-step-first-btn' } : {})}
                         className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black text-sm shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 transition-all hover:-translate-y-0.5"
