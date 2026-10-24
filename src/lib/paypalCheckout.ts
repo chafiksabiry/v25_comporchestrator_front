@@ -139,10 +139,16 @@ export async function confirmCompanyCheckout(
   return data;
 }
 
+/** New wallet balance returned by the server when it confirms a wallet deposit. */
+function balanceFromConfirmation(confirmation: any): number | undefined {
+  const balance = confirmation?.fulfillment?.data?.balance;
+  return typeof balance === 'number' && Number.isFinite(balance) ? balance : undefined;
+}
+
 export async function runPaypalCheckoutFlow(
   apiBaseUrl: string,
   initBody: CheckoutInitBody
-): Promise<{ paymentId: string }> {
+): Promise<{ paymentId: string; balance?: number }> {
   const initData = await initCompanyCheckout(apiBaseUrl, initBody);
   if (!initData.paypalApproveUrl) {
     throw new Error("La commande PayPal n'a pas pu être créée.");
@@ -162,8 +168,8 @@ export async function runPaypalCheckoutFlow(
   }
 
   if (!popup.closed) popup.close();
-  await confirmCompanyCheckout(apiBaseUrl, initData.paymentId, initData.paypalOrderId);
-  return { paymentId: initData.paymentId };
+  const confirmation = await confirmCompanyCheckout(apiBaseUrl, initData.paymentId, initData.paypalOrderId);
+  return { paymentId: initData.paymentId, balance: balanceFromConfirmation(confirmation) };
 }
 
 /** Wait until Stripe redirects to our return/cancel page or the user closes the popup. */
@@ -225,7 +231,7 @@ export const waitForStripePopup = (popup: Window): Promise<PaypalPopupOutcome> =
 export async function runStripeCheckoutFlow(
   apiBaseUrl: string,
   initBody: CheckoutInitBody
-): Promise<{ paymentId: string }> {
+): Promise<{ paymentId: string; balance?: number }> {
   const initData = await initCompanyCheckout(apiBaseUrl, initBody) as {
     paymentId: string;
     checkoutUrl?: string;
@@ -233,8 +239,8 @@ export async function runStripeCheckoutFlow(
 
   // No checkoutUrl → backend ran in stub mode (no STRIPE_SECRET_KEY). Just confirm.
   if (!initData.checkoutUrl) {
-    await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
-    return { paymentId: initData.paymentId };
+    const stub = await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
+    return { paymentId: initData.paymentId, balance: balanceFromConfirmation(stub) };
   }
 
   const popup = openCenteredPopup(initData.checkoutUrl, 'stripe-checkout');
@@ -247,8 +253,8 @@ export async function runStripeCheckoutFlow(
   if (outcome === 'closed') throw new Error('STRIPE_CLOSED');
 
   if (!popup.closed) popup.close();
-  await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
-  return { paymentId: initData.paymentId };
+  const confirmation = await confirmCompanyCheckout(apiBaseUrl, initData.paymentId);
+  return { paymentId: initData.paymentId, balance: balanceFromConfirmation(confirmation) };
 }
 
 /** Map checkout flow errors to user-facing French toasts. */

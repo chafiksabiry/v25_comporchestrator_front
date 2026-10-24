@@ -99,18 +99,27 @@ const WalletTopUpModal: React.FC<WalletTopUpModalProps> = ({
         amountEuros: parsed,
       };
 
-      if (provider === 'paypal') {
-        await runPaypalCheckoutFlow(resolvedApiBase, initBody);
-      } else {
-        await runStripeCheckoutFlow(resolvedApiBase, initBody);
-      }
+      const outcome =
+        provider === 'paypal'
+          ? await runPaypalCheckoutFlow(resolvedApiBase, initBody)
+          : await runStripeCheckoutFlow(resolvedApiBase, initBody);
 
       // Always refresh the navbar + any open panels (Approval & Publishing,
       // Operations wallet, etc.) — parent onSuccess alone is not enough when
       // it only updates local state.
-      await refreshAndBroadcastWalletBalance(companyId);
+      const snapshot = await refreshAndBroadcastWalletBalance(companyId, { fallbackBalance: outcome.balance });
 
       toast.success(`Dépôt de ${parsed.toLocaleString('fr-FR')} € validé !`);
+      if (snapshot && outcome.balance !== undefined && snapshot.balance !== outcome.balance) {
+        // Read-back disagrees with the server's confirmation: show what the server confirmed.
+        console.warn('[WalletTopUpModal] balance read-back differs from confirmation', snapshot.balance, outcome.balance);
+      }
+      if (!localStorage.getItem('token')) {
+        toast('Votre paiement est bien enregistré, mais votre session a expiré : reconnectez-vous pour afficher votre solde à jour.', {
+          duration: 10000,
+          icon: '⚠️',
+        });
+      }
       onSuccess?.(parsed);
       onClose();
     } catch (err) {
