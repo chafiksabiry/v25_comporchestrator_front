@@ -322,32 +322,7 @@ export function MasterSidebar({
           {booting ? (
             <SidebarBootSkeleton collapsed={isCollapsed} />
           ) : activeProject !== 'dashboard' || !isOnboardingFullyCompleted() ? (
-            <>
-              {orchestratorItems.map((item) => {
-                const isActive = activeTab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => {
-                      setActiveTab(item.key);
-                      goToCompanyOnboardingTab();
-                    }}
-                    className={`flex items-center gap-3 w-full px-3 py-2.5 transition-all duration-200 relative group overflow-hidden ${navActive(isActive)}`}
-                  >
-                    <div className="shrink-0">{item.icon}</div>
-                    {!isCollapsed && (
-                      <span className="font-semibold whitespace-nowrap overflow-hidden text-[13px]">{item.label}</span>
-                    )}
-                    {isCollapsed && (
-                      <div className="absolute left-16 px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 border bg-slate-900 text-white border-white/10 shadow-xl">
-                        {item.label}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-
-            </>
+            null
           ) : (
             <>
               {groupedItems.map((group, index) => {
