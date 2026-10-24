@@ -593,11 +593,13 @@ const CompanyOnboarding = () => {
 
   // « Configuré » badge of the optional dashboard-widgets step (refreshed when leaving the step).
   useEffect(() => {
-    if (!companyId || activeStep === 6) return;
+    if (!companyId) return;
     let cancelled = false;
-    void fetchDashboardConfig(companyId).then((cfg) => {
-      if (!cancelled) setDashboardConfigured(cfg.configured);
-    });
+    if (activeStep !== 6) {
+      void fetchDashboardConfig(companyId).then((cfg) => {
+        if (!cancelled) setDashboardConfigured(cfg.configured);
+      });
+    }
     const onChange = () => setDashboardConfigured(true);
     window.addEventListener(DASHBOARD_CONFIG_EVENT, onChange);
     return () => {
@@ -608,11 +610,13 @@ const CompanyOnboarding = () => {
 
   // « Vérifié » badge of the optional company-verification step (refreshed when leaving the step).
   useEffect(() => {
-    if (!companyId || activeStep === 2) return;
+    if (!companyId) return;
     let cancelled = false;
-    void fetchKybVerified(companyId).then((v) => {
-      if (!cancelled) setKybVerified(v);
-    });
+    if (activeStep !== 2) {
+      void fetchKybVerified(companyId).then((v) => {
+        if (!cancelled) setKybVerified(v);
+      });
+    }
     const onChange = (e: Event) => setKybVerified(Boolean((e as CustomEvent<{ verified?: boolean }>).detail?.verified));
     window.addEventListener(KYB_STATUS_EVENT, onChange);
     return () => {
@@ -1931,7 +1935,11 @@ const CompanyOnboarding = () => {
             ? (kbHasContent || stepStatuses[7] === 'completed')
             : (showGigDetails || showGigCreation)
               ? (hasGigs || stepStatuses[3] === 'completed')
-              : stepStatuses[getFocusedStepId() ?? -1] === 'completed') &&
+              : activeStep === 2
+                ? kybVerified
+                : activeStep === 6
+                  ? dashboardConfigured
+                  : stepStatuses[getFocusedStepId() ?? -1] === 'completed') &&
             !openedAsReview && (
             <OnboardingNextStepButton
               onClick={() => {
