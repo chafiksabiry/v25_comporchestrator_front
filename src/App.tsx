@@ -604,9 +604,27 @@ function AppContent() {
                 localStorage.setItem('companyName', name);
               }
 
-              if (rawLogo) {
-                setCompanyLogo(rawLogo);
-                localStorage.setItem('companyLogo', rawLogo);
+              const website = company?.contact?.website || company?.website;
+              if (website) localStorage.setItem('companyWebsite', String(website));
+              let logo = rawLogo;
+              if (
+                !logo ||
+                /cdninstagram|instagram\.com|fbcdn\.|s24\.fr|bdi\.dlpdomain/i.test(String(logo))
+              ) {
+                if (website) {
+                  try {
+                    const host = new URL(
+                      /^https?:\/\//i.test(website) ? website : `https://${website}`
+                    ).hostname.replace(/^www\./i, '');
+                    logo = `https://logo.clearbit.com/${host}`;
+                  } catch {
+                    /* keep previous */
+                  }
+                }
+              }
+              if (logo) {
+                setCompanyLogo(logo);
+                localStorage.setItem('companyLogo', logo);
               }
 
               const finalCompanyId =
@@ -1185,7 +1203,43 @@ function AppContent() {
                           src={companyLogo}
                           alt="Company Logo"
                           className="w-full h-full object-contain p-0.5"
-                          onError={() => setLogoError(true)}
+                          onError={() => {
+                            const website =
+                              localStorage.getItem('companyWebsite') ||
+                              Cookies.get('companyWebsite') ||
+                              '';
+                            if (
+                              companyLogo &&
+                              !companyLogo.includes('logo.clearbit.com') &&
+                              website
+                            ) {
+                              try {
+                                const host = new URL(
+                                  /^https?:\/\//i.test(website) ? website : `https://${website}`
+                                ).hostname.replace(/^www\./i, '');
+                                const fallback = `https://logo.clearbit.com/${host}`;
+                                setCompanyLogo(fallback);
+                                localStorage.setItem('companyLogo', fallback);
+                                return;
+                              } catch {
+                                /* fall through */
+                              }
+                            }
+                            if (companyLogo && !companyLogo.includes('google.com/s2/favicons') && website) {
+                              try {
+                                const host = new URL(
+                                  /^https?:\/\//i.test(website) ? website : `https://${website}`
+                                ).hostname.replace(/^www\./i, '');
+                                const fallback = `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
+                                setCompanyLogo(fallback);
+                                localStorage.setItem('companyLogo', fallback);
+                                return;
+                              } catch {
+                                /* fall through */
+                              }
+                            }
+                            setLogoError(true);
+                          }}
                         />
                       ) : (
                         userFullName.charAt(0).toUpperCase()

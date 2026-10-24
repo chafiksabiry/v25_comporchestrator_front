@@ -16,6 +16,7 @@ import ExistingCompanyProfile from "../CompanyProfile";
 import { OnboardingBackButton } from "./OnboardingBackButton";
 import { clearStaleCompanyClientState } from "../../../utils/companyClientState";
 import { useTranslation } from "react-i18next";
+import { clearbitLogo } from "./logoSources";
 
 interface Props {
   onBack?: () => void;
@@ -139,11 +140,11 @@ export default function SearchCompanyWizardStep({ onBack, companyId, onStepCompl
     setLoading(true);
     setError(null);
     try {
-      let logoUrl = result.pagemap?.metatags?.[0]?.["og:image"];
-      if (!logoUrl && result.link) {
+      // Google og:image is usually a campaign / social photo, not the mark.
+      let logoUrl: string | undefined;
+      if (result.link) {
         try {
-          const domain = new URL(result.link).hostname;
-          logoUrl = `https://logo.clearbit.com/${domain}`;
+          logoUrl = clearbitLogo(result.link);
         } catch {
           // Ignore invalid URL
         }

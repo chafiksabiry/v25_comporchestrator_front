@@ -12,13 +12,11 @@ export function CompanyLogo({ result }: CompanyLogoProps) {
 
   const sources = React.useMemo(() => {
     const list: string[] = [];
-    const ogImage = result.pagemap?.metatags?.[0]?.["og:image"];
-    if (ogImage) list.push(ogImage);
     if (result.link) {
       try {
-        const domain = new URL(result.link).hostname;
-        list.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
-        list.push(`https://logo.clearbit.com/${domain}`);
+        const host = new URL(result.link).hostname.replace(/^www\./i, "");
+        list.push(`https://logo.clearbit.com/${host}`);
+        list.push(`https://www.google.com/s2/favicons?domain=${host}&sz=128`);
       } catch {
         // Ignore invalid URL
       }

@@ -34,6 +34,7 @@ import { redirectToCompanyOnboarding } from "./navigation";
 import { OnboardingBackButton } from "./OnboardingBackButton";
 import { LucideProps } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { clearbitLogo, nextLogoFallback } from "./logoSources";
 
 /** Full onboarding profile + optional fields from URL scrape (generate-from-url). */
 type CompanyProfileType = CompanyProfileData & {
@@ -217,8 +218,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
   useEffect(() => {
     if (!logoUrl && profile.contact.website) {
       try {
-        const domain = new URL(profile.contact.website).hostname;
-        setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+        applyLogo(clearbitLogo(profile.contact.website));
       } catch {
         // Invalid URL
       }
@@ -256,6 +256,7 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
     return {
       ...data,
       name,
+      logo: logoUrl || data.logo,
       overview,
       overview_i18n,
       mission_i18n,
@@ -966,16 +967,9 @@ export function CompanyProfile({ profile: initialProfile, onBack, onPublished }:
                       alt={profile.name}
                       className="w-full h-full object-contain"
                       onError={() => {
-                        if (profile.contact.website && !logoUrl.includes("clearbit")) {
-                          try {
-                            const domain = new URL(profile.contact.website).hostname;
-                            setLogoUrl(`https://logo.clearbit.com/${domain}`);
-                          } catch {
-                            setLogoUrl("");
-                          }
-                        } else {
-                          setLogoUrl("");
-                        }
+                        const next = nextLogoFallback(profile.contact.website, logoUrl);
+                        if (next) applyLogo(next);
+                        else setLogoUrl("");
                       }}
                     />
                   ) : (

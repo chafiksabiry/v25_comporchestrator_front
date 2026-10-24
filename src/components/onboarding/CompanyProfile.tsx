@@ -517,7 +517,7 @@ function CompanyProfile({
   const getDomainFromWebsite = (website?: string): string | null => {
     if (!website) return null;
     try {
-      return new URL(website).hostname;
+      return new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`).hostname.replace(/^www\./i, "");
     } catch {
       return null;
     }
@@ -545,10 +545,13 @@ function CompanyProfile({
           "",
       };
       setCompany(normalizedCompany);
-      if (normalizedCompany.logo) {
-        setLogoUrl(normalizedCompany.logo);
-      } else if (normalizedCompany.logoUrl) {
-        setLogoUrl(normalizedCompany.logoUrl);
+      const storedLogo = normalizedCompany.logo || normalizedCompany.logoUrl || "";
+      const website = normalizedCompany.contact?.website || normalizedCompany.website;
+      if (storedLogo && !/cdninstagram|instagram\.com|fbcdn\.|s24\.fr|bdi\.dlpdomain/i.test(storedLogo)) {
+        setLogoUrl(storedLogo);
+      } else if (website) {
+        const domain = getDomainFromWebsite(website);
+        if (domain) setLogoUrl(`https://logo.clearbit.com/${domain}`);
       }
     } catch (err) {
       setError("Erreur lors du chargement des détails de l'entreprise.");
@@ -978,12 +981,12 @@ function CompanyProfile({
                           onError={() => {
                             const domain = getDomainFromWebsite(profile.contact?.website);
                             if (domain) {
-                              if (!logoUrl.includes("google.com/s2/favicons")) {
-                                setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
-                                return;
-                              }
                               if (!logoUrl.includes("logo.clearbit.com")) {
                                 setLogoUrl(`https://logo.clearbit.com/${domain}`);
+                                return;
+                              }
+                              if (!logoUrl.includes("google.com/s2/favicons")) {
+                                setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
                                 return;
                               }
                             }
