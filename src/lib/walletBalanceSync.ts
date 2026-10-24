@@ -34,6 +34,18 @@ export async function fetchCompanyWalletSnapshot(
       authFetch(`${apiBaseUrl}/escrow/wallet/${compId}`).catch(() => null),
     ]);
 
+    // Neither source answered (401 without session, network error...): do not invent a 0 € balance.
+    if (!walletRes?.ok && !escrowRes?.ok) {
+      console.warn(
+        '[walletBalanceSync] balance unreadable (wallet:',
+        walletRes?.status ?? 'no response',
+        ', escrow:',
+        escrowRes?.status ?? 'no response',
+        ')'
+      );
+      return null;
+    }
+
     let balance = 0;
     if (walletRes?.ok) {
       const walletJson = await walletRes.json();
@@ -97,7 +109,7 @@ export function broadcastWalletBalance(snapshot: WalletBalanceSnapshot): void {
  */
 export async function refreshAndBroadcastWalletBalance(
   companyId?: string,
-  options?: { retries?: number; delayMs?: number }
+  options?: { retries?: number; delayMs?: number; fallbackBalance?: number }
 ): Promise<WalletBalanceSnapshot | null> {
   const retries = options?.retries ?? 4;
   const delayMs = options?.delayMs ?? 400;
@@ -116,6 +128,13 @@ export async function refreshAndBroadcastWalletBalance(
     if (attempt < retries) {
       await new Promise((r) => setTimeout(r, delayMs));
     }
+  }
+  // The balance could not be read back (e.g. expired session), but the server confirmed the credit and
+  // returned the new balance: show that one instead of leaving the old value.
+  if (typeof options?.fallbackBalance === 'number' && Number.isFinite(options.fallbackBalance)) {
+    const snapshot = { balance: options.fallbackBalance };
+    broadcastWalletBalance(snapshot);
+    return snapshot;
   }
   return null;
 }
