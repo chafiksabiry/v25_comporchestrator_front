@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
+import SectorKnowledgePanel from './SectorKnowledgePanel';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
@@ -1990,6 +1991,14 @@ const KnowledgeBase: React.FC = () => {
       </div>
 
       {renderReadinessPanel()}
+      <SectorKnowledgePanel
+        userId={getUserId()}
+        gig={selectedGigId && selectedGigId !== 'all' ? gigs.find((g) => String(g._id || g.id) === String(selectedGigId)) || null : null}
+        onCreated={() => {
+          void fetchAndUpdateDocuments();
+          void loadReadiness();
+        }}
+      />
       {renderContent()}
       {renderUploadModal()}
       {renderPreviewModal()}

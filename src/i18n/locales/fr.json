@@ -1167,6 +1167,18 @@
       "videos": "Vidéos",
       "audio": "Audio",
       "noResults": "Aucune ressource ne correspond à ce filtre."
+    },
+    "sectorKb": {
+      "title": "Base de connaissances sectorielle (IA)",
+      "help": "Choisissez un cas sectoriel (assurance auto, santé, vie, crédit, immobilier…) : l'IA rédige la base de connaissances de ce cas et la rattache uniquement à ce gig. Contenu à faire valider par votre responsable conformité.",
+      "needGig": "Sélectionnez un gig précis pour créer sa base sectorielle.",
+      "choose": "Choisir un cas sectoriel…",
+      "suggested": "adapté à ce gig",
+      "generate": "Générer avec l’IA",
+      "generating": "Génération… (jusqu’à 2 min)",
+      "created": "Base « {{name}} » créée en {{language}} et rattachée à ce gig.",
+      "exists": "Une base « {{name}} » existe déjà pour ce gig.",
+      "error": "La génération a échoué. Réessayez dans un instant."
     }
   },
   "training": {
@@ -3685,7 +3697,9 @@
           "Excellence relationnelle"
         ]
       }
-    }
+    },
+    "hideGroup": "Masquer",
+    "showGroup": "Afficher les {{count}} cas du secteur"
   },
   "trainingWizard": {
     "steps": {
