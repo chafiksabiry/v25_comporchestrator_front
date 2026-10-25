@@ -176,11 +176,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
   // Show contextual guide in the sidebar while on the prompt screen
   useEffect(() => {
+    const rawSteps = t('sidebar.promptGuide.steps', { returnObjects: true });
     window.dispatchEvent(
       new CustomEvent('stepGuideUpdate', {
         detail: {
           title: t('sidebar.promptGuide.title', 'Créer un Gig avec l\'IA'),
-          steps: (t('sidebar.promptGuide.steps', { returnObjects: true }) as string[]),
+          ...(Array.isArray(rawSteps) ? { steps: rawSteps } : {}),
         },
       })
     );
