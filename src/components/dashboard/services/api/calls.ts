@@ -206,6 +206,16 @@ getCallDetails:async (callSid: string, ) => {
     return response.data;
   },
 
+  /** Company confirms, after checking the call, that the AI fraud flag is real (it leaves the "à examiner" queue). */
+  confirmFraud: async (id: string, payload: { reviewedBy?: string; reason?: string } = {}) => {
+    const response = await dashCallsApi.patch<{
+      success: boolean;
+      data?: Call;
+      message?: string;
+    }>(`/api/calls/${id}/fraud-review`, { ...payload, decision: 'confirm' });
+    return response.data;
+  },
+
 }
 
 export type NormalizedScoreCalibration = {

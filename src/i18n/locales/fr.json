@@ -596,7 +596,8 @@
       "fraud": "Fraude détectée",
       "toReview": "à examiner",
       "avgDuration": "Durée moy.",
-      "seriousCalls": "appels sérieux"
+      "seriousCalls": "appels sérieux",
+      "toReviewCount": "{{count}} à examiner"
     },
     "overview": {
       "detail": "Détail",
@@ -3234,7 +3235,12 @@
       "overturnHint": "Marquer cet appel comme n'étant pas une fraude — il ne comptera plus contre le rep.",
       "overturning": "En cours…",
       "overturnedSuccess": "Appel marqué comme non-frauduleux. Il ne compte plus contre le rep.",
-      "overturnFailed": "Impossible de marquer cet appel comme non-frauduleux."
+      "overturnFailed": "Impossible de marquer cet appel comme non-frauduleux.",
+      "confirm": "Confirmer la fraude",
+      "confirmHint": "Après vérification, confirmer que cet appel est bien frauduleux — il reste compté contre le rep.",
+      "confirmedBadge": "Fraude confirmée",
+      "confirmedSuccess": "Fraude confirmée. L’appel reste compté contre le rep.",
+      "confirmFailed": "Impossible de confirmer la fraude pour cet appel."
     },
     "analysis": {
       "requestedByRep": "Analyse demandée par le rep"
@@ -3903,5 +3909,37 @@
     "badge": "Configuré",
     "customize": "Personnaliser les widgets",
     "close": "Fermer"
+  },
+  "fraudReview": {
+    "intro": "Écoutez l’appel ou lisez la transcription, puis confirmez la fraude ou indiquez qu’il s’agit d’un faux positif. Tous les appels signalés sont listés ici, quelle que soit la période affichée.",
+    "tabs": {
+      "pending": "À examiner",
+      "confirmed": "Confirmées",
+      "overturned": "Écartées"
+    },
+    "overturnedNote": "Ces appels ne comptent plus contre le rep. Leurs commissions et leur résultat ne sont recalculés qu’après une nouvelle analyse de l’appel (page Appels).",
+    "loading": "Chargement des appels signalés…",
+    "error": "Impossible de charger ou d’enregistrer. Réessayez.",
+    "retry": "Réessayer",
+    "emptyPending": "Aucun appel signalé en attente de vérification.",
+    "emptyOther": "Aucun appel dans cette liste.",
+    "selfCall": "Le même interlocuteur semble tenir les deux rôles (appel à soi-même).",
+    "unknownLead": "Prospect inconnu",
+    "score": "Intégrité IA {{score}}/100",
+    "flagged": "Signalé",
+    "confirmedOn": "Fraude confirmée",
+    "overturnedOn": "Écartée comme faux positif",
+    "hideEvidence": "Masquer les éléments",
+    "showEvidence": "Écouter / lire l’appel",
+    "noRecording": "Aucun enregistrement disponible pour cet appel.",
+    "transcriptExcerpt": "Début de la transcription (extrait).",
+    "noTranscript": "Aucune transcription disponible.",
+    "reasonPlaceholder": "Motif de votre décision (facultatif)",
+    "consequence": "Confirmer : l’appel reste compté contre le rep et aucune commission n’est due. Écarter : il ne compte plus contre le rep.",
+    "confirm": "Confirmer la fraude",
+    "overturn": "Ce n’est pas une fraude",
+    "confirmAfterAll": "Finalement, c’est une fraude",
+    "overturnAfterAll": "Finalement, ce n’est pas une fraude",
+    "truncated": "Seuls les appels signalés les plus récents sont analysés pour cette liste."
   }
 }

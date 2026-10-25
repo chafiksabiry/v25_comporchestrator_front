@@ -596,7 +596,8 @@
       "fraud": "Fraud detected",
       "toReview": "to review",
       "avgDuration": "Avg. duration",
-      "seriousCalls": "engaged calls"
+      "seriousCalls": "engaged calls",
+      "toReviewCount": "{{count}} to review"
     },
     "overview": {
       "detail": "Detail",
@@ -3234,7 +3235,12 @@
       "overturnHint": "Mark this call as not fraud — it will no longer count against the rep.",
       "overturning": "Working…",
       "overturnedSuccess": "Call marked as not fraud. It no longer counts against the rep.",
-      "overturnFailed": "Could not mark this call as not fraud."
+      "overturnFailed": "Could not mark this call as not fraud.",
+      "confirm": "Confirm fraud",
+      "confirmHint": "After checking, confirm that this call is really fraudulent — it stays counted against the rep.",
+      "confirmedBadge": "Fraud confirmed",
+      "confirmedSuccess": "Fraud confirmed. The call stays counted against the rep.",
+      "confirmFailed": "Could not confirm the fraud for this call."
     },
     "analysis": {
       "requestedByRep": "Rep requested analysis"
@@ -3903,5 +3909,37 @@
     "badge": "Configured",
     "customize": "Customize widgets",
     "close": "Close"
+  },
+  "fraudReview": {
+    "intro": "Listen to the call or read the transcript, then confirm the fraud or mark it as a false positive. All flagged calls are listed here, whatever period is displayed.",
+    "tabs": {
+      "pending": "To review",
+      "confirmed": "Confirmed",
+      "overturned": "Dismissed"
+    },
+    "overturnedNote": "These calls no longer count against the rep. Their commissions and outcome are only recomputed after the call is analysed again (Calls page).",
+    "loading": "Loading flagged calls…",
+    "error": "Could not load or save. Please try again.",
+    "retry": "Retry",
+    "emptyPending": "No flagged call is waiting for review.",
+    "emptyOther": "No call in this list.",
+    "selfCall": "The same person seems to play both roles (self-call).",
+    "unknownLead": "Unknown lead",
+    "score": "AI integrity {{score}}/100",
+    "flagged": "Flagged",
+    "confirmedOn": "Fraud confirmed",
+    "overturnedOn": "Dismissed as a false positive",
+    "hideEvidence": "Hide details",
+    "showEvidence": "Listen to / read the call",
+    "noRecording": "No recording available for this call.",
+    "transcriptExcerpt": "Start of the transcript (excerpt).",
+    "noTranscript": "No transcript available.",
+    "reasonPlaceholder": "Reason for your decision (optional)",
+    "consequence": "Confirm: the call stays counted against the rep and no commission is due. Dismiss: it no longer counts against the rep.",
+    "confirm": "Confirm fraud",
+    "overturn": "Not fraud",
+    "confirmAfterAll": "Actually, it is fraud",
+    "overturnAfterAll": "Actually, it is not fraud",
+    "truncated": "Only the most recent flagged calls are scanned for this list."
   }
 }
