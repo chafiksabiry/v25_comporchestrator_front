@@ -953,7 +953,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 }}
                 rows={1}
                 placeholder={t('gigCreation.prompt.placeholder')}
-                className="w-full min-h-[120px] max-h-[220px] px-5 pt-5 pb-2 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-lg resize-none overflow-y-auto"
+                className="w-full min-h-[120px] max-h-[220px] px-5 pt-5 pb-2 bg-transparent border-none outline-none focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400 text-lg resize-none overflow-y-auto"
               />
               <div className="flex items-center justify-end gap-2 px-3 pb-3">
                 <AudioBriefRecorder
