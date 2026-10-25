@@ -194,6 +194,18 @@ getCallDetails:async (callSid: string, ) => {
     return response.data;
   },
 
+  /** Company overturns an AI fraud flag as a false positive — clears
+   *  flags.fraud on the call so it stops counting toward the rep's fraud
+   *  total / blacklist-risk warnings. */
+  overturnFraud: async (id: string, payload: { reviewedBy?: string; reason?: string } = {}) => {
+    const response = await dashCallsApi.patch<{
+      success: boolean;
+      data?: Call;
+      message?: string;
+    }>(`/api/calls/${id}/fraud-review`, payload);
+    return response.data;
+  },
+
 }
 
 export type NormalizedScoreCalibration = {

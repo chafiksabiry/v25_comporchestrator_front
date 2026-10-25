@@ -314,8 +314,12 @@ function isAgentSpeakerLabel(label: string): boolean {
 }
 
 /** True when AI flagged fraud (including self-call). Excludes voicemail. */
-export function isCallFraudDetected(call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean } }): boolean {
+export function isCallFraudDetected(call: CallLike & { flags?: { fraud?: boolean; selfCall?: boolean }; fraudReview?: { overturned?: boolean } }): boolean {
   if (isCallVoicemail(call)) return false;
+  // A company reviewer overturned the AI flag as a false positive — this
+  // must win over every other signal (callOutcome, raw AI score) so the
+  // call stops counting against the rep everywhere it's checked.
+  if (call.fraudReview?.overturned === true) return false;
   if (call.flags?.fraud === true || call.flags?.selfCall === true) return true;
   if (call.callOutcome === 'fraud') return true;
   const fraudScore = call.ai_call_score?.['Fraud detection']?.score;
