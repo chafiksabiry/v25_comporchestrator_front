@@ -880,8 +880,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         </div>
       )}
 
-      <div className="flex-1 flex flex-col items-center justify-start px-4 py-6">
-        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-5">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
