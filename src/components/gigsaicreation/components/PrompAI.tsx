@@ -873,7 +873,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           {backToOnboarding && (
             <button
               onClick={backToOnboarding}
-              className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:text-harx-500 transition-all duration-300 shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #e11d48 0%, #f97316 100%)' }}
             >
               <ChevronLeft className="w-4 h-4" />
               {t('companyOnboarding.ui.backToOnboarding', 'Retour à l\'onboarding')}
