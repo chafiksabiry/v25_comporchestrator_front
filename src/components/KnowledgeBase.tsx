@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Trash2, Video, LayoutGrid, Search, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
 import SectorKnowledgePanel from './SectorKnowledgePanel';
+import KnowledgeScoreCard from './knowledge/KnowledgeScoreCard';
+import KnowledgeAgentsPanel from './knowledge/KnowledgeAgentsPanel';
+import { useKnowledgeScores } from './knowledge/knowledgeInsights';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import { OnboardingService } from './training/infrastructure/services/OnboardingService';
@@ -164,6 +167,10 @@ const KnowledgeBase: React.FC = () => {
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'video' | 'audio'>('all');
+  const [kbTab, setKbTab] = useState<'overview' | 'documents' | 'agents'>('overview');
+  const [docSearch, setDocSearch] = useState('');
+  const [docScope, setDocScope] = useState<'all' | 'gig' | 'company'>('all');
+  const [docStatus, setDocStatus] = useState<'all' | 'ready' | 'issue' | 'notAnalyzed'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const ITEMS_PER_PAGE = 8;
 
@@ -264,6 +271,30 @@ const KnowledgeBase: React.FC = () => {
     const gig = gigs.find(g => (g._id || g.id) === gigId);
     return gig ? gig.title : null;
   };
+
+  // Relevance / maturity score of the base, per gig. Re-computed when the documents change.
+  const gigRefs = useMemo(
+    () => gigs.map((g) => ({ id: String(g._id || g.id), title: g.title, description: g.description })),
+    [gigs]
+  );
+  const scoreRefreshKey = readiness
+    ? `${readiness.summary.documents}-${readiness.summary.ready}-${readiness.summary.indexed ?? 0}-${readiness.summary.analyzed}`
+    : 'none';
+  const { scores, loading: scoreLoading, error: scoreError, reload: reloadScores } = useKnowledgeScores(
+    getUserId(),
+    gigRefs,
+    scoreRefreshKey
+  );
+  const hasGigSelected = Boolean(selectedGigId && selectedGigId !== 'all');
+  const activeScore = (hasGigSelected ? scores[selectedGigId] : scores.all) || null;
+  const docScoreById = useMemo(
+    () => Object.fromEntries((activeScore?.documents || []).map((d) => [d.id, d])),
+    [activeScore]
+  );
+  const readinessById = useMemo(
+    () => Object.fromEntries((readiness?.documents || []).map((d) => [d.id, d])),
+    [readiness]
+  );
 
   const loadReadiness = async (gigId?: string): Promise<Readiness | null> => {
     try {
@@ -1276,34 +1307,21 @@ const KnowledgeBase: React.FC = () => {
               : t('knowledgeBase.readiness.noneReady')}
         </p>
 
-        <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-100">
-          {documents.map((d) => (
-            <li key={d.id} className="flex flex-col gap-1 p-3 sm:flex-row sm:items-start sm:gap-4">
-              <div className="min-w-0 sm:w-64 shrink-0">
-                <p className="truncate text-sm font-bold text-gray-900" title={d.name}>{d.name}</p>
-                {d.ready ? (
-                  <>
-                    <span className="text-xs font-semibold text-green-700">{t('knowledgeBase.readiness.statusReady', { words: d.words })}</span>
-                    <span className="mt-0.5 block text-[11px] text-gray-500">
-                      {d.indexed ? t('knowledgeBase.readiness.indexed') : t('knowledgeBase.readiness.indexing')}
-                      {d.ocr ? ` · ${t('knowledgeBase.readiness.ocr')}` : ''}
-                      {d.tables ? ` · ${t('knowledgeBase.readiness.tables', { count: d.tables })}` : ''}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-xs font-semibold text-red-700">{t('knowledgeBase.readiness.statusNoText')}</span>
-                )}
-              </div>
-              <p className="text-xs leading-relaxed text-gray-600">
-                {!d.ready
-                  ? t('knowledgeBase.readiness.noTextHelp')
-                  : d.summary
-                    ? d.summary
-                    : t('knowledgeBase.readiness.notAnalyzed')}
-              </p>
-            </li>
-          ))}
-        </ul>
+        {documents.some((d) => !d.ready) && (
+          <ul className="divide-y divide-gray-100 rounded-2xl border border-red-100 bg-red-50/30">
+            {documents
+              .filter((d) => !d.ready)
+              .map((d) => (
+                <li key={d.id} className="flex flex-col gap-1 p-3 sm:flex-row sm:items-start sm:gap-4">
+                  <div className="min-w-0 sm:w-64 shrink-0">
+                    <p className="truncate text-sm font-bold text-gray-900" title={d.name}>{d.name}</p>
+                    <span className="text-xs font-semibold text-red-700">{t('knowledgeBase.readiness.statusNoText')}</span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-gray-600">{t('knowledgeBase.readiness.noTextHelp')}</p>
+                </li>
+              ))}
+          </ul>
+        )}
 
         {pendingAnalysis > 0 && (
           <button
@@ -1350,8 +1368,24 @@ const KnowledgeBase: React.FC = () => {
     );
   };
 
+  const itemTagsText = (item: any) => (Array.isArray(item.tags) ? item.tags.join(' ') : String(item.tags || ''));
+
+  const matchesDocFilters = (item: any) => {
+    const info = readinessById[item.id];
+    if (docScope === 'gig' && !item.gigId) return false;
+    if (docScope === 'company' && item.gigId) return false;
+    if (docStatus === 'ready' && !(info && info.ready)) return false;
+    if (docStatus === 'issue' && !(info && !info.ready)) return false;
+    if (docStatus === 'notAnalyzed' && !(info && info.ready && !info.analyzed)) return false;
+    const q = docSearch.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = `${item.name || ''} ${item.description || ''} ${itemTagsText(item)} ${info?.summary || ''}`.toLowerCase();
+    return q.split(/\s+/).every((word) => haystack.includes(word));
+  };
+
   const renderContent = () => {
-    const unifiedItems: any[] = getUnifiedItems();
+    const allItems: any[] = getUnifiedItems();
+    const unifiedItems: any[] = allItems.filter(matchesDocFilters);
 
     const isVideoItem = (item: any) =>
       item.type === 'video' ||
@@ -1415,15 +1449,63 @@ const KnowledgeBase: React.FC = () => {
     };
 
     const filterBar = (
-      <div className="flex flex-wrap items-center gap-2 mb-6">
+      <div className="mb-6 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[240px] flex-1">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              value={docSearch}
+              onChange={(e) => {
+                setDocSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={t('knowledgeBase.search.placeholder', 'Rechercher un document (nom, description, étiquette, résumé)…')}
+              aria-label={t('knowledgeBase.search.label', 'Rechercher dans les documents')}
+              className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-harx-400 focus:outline-none"
+            />
+          </div>
+          <select
+            value={docScope}
+            onChange={(e) => {
+              setDocScope(e.target.value as typeof docScope);
+              setCurrentPage(1);
+            }}
+            aria-label={t('knowledgeBase.search.scope', 'Portée')}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-bold text-gray-700"
+          >
+            <option value="all">{t('knowledgeBase.search.scopeAll', 'Tous les documents')}</option>
+            <option value="gig">{t('knowledgeBase.search.scopeGig', 'Propres au gig')}</option>
+            <option value="company">{t('knowledgeBase.search.scopeCompany', 'Communs à tous les gigs')}</option>
+          </select>
+          <select
+            value={docStatus}
+            onChange={(e) => {
+              setDocStatus(e.target.value as typeof docStatus);
+              setCurrentPage(1);
+            }}
+            aria-label={t('knowledgeBase.search.status', 'État')}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-bold text-gray-700"
+          >
+            <option value="all">{t('knowledgeBase.search.statusAll', 'Tous les états')}</option>
+            <option value="ready">{t('knowledgeBase.search.statusReady', 'Exploitables')}</option>
+            <option value="issue">{t('knowledgeBase.search.statusIssue', 'Illisibles (à corriger)')}</option>
+            <option value="notAnalyzed">{t('knowledgeBase.search.statusNotAnalyzed', 'Non analysés')}</option>
+          </select>
+        </div>
+      <div className="flex flex-wrap items-center gap-2">
         {filterChip('all', t('knowledgeBase.filters.all', 'All'), <LayoutGrid size={12} />, unifiedItems.length)}
         {filterChip('document', t('knowledgeBase.filters.docs', 'Docs'), <FileText size={12} />, docsCount)}
         {filterChip('video', t('knowledgeBase.filters.videos', 'Videos'), <Video size={12} />, videosCount)}
         {audiosCount > 0 && filterChip('audio', t('knowledgeBase.filters.audio', 'Audio'), <Mic size={12} />, audiosCount)}
+        <span className="ml-auto text-[11px] font-semibold text-gray-400">
+          {t('knowledgeBase.search.count', '{{shown}} sur {{total}} ressource(s)', { shown: unifiedItems.length, total: allItems.length })}
+        </span>
+      </div>
       </div>
     );
 
-    if (unifiedItems.length === 0) {
+    if (allItems.length === 0) {
       return (
         <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
           <Brain size={48} className="mx-auto text-gray-300 mb-6" />
@@ -1474,7 +1556,7 @@ const KnowledgeBase: React.FC = () => {
                   <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start gap-3 mb-2">
                       <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase flex-1 min-w-0 pr-2">{item.name}</h3>
-                      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
                           onClick={() =>
@@ -1485,24 +1567,76 @@ const KnowledgeBase: React.FC = () => {
                             })
                           }
                           className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
-                          title="View file"
+                          title={t('knowledgeBase.actions.preview', 'Aperçu du fichier')}
+                          aria-label={t('knowledgeBase.actions.preview', 'Aperçu du fichier')}
                         >
                           <Eye size={18} />
                         </button>
-                        <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
+                        {item.fileUrl && (
+                          <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
+                            title={t('knowledgeBase.actions.openOriginal', 'Ouvrir le fichier original')}
+                            aria-label={t('knowledgeBase.actions.openOriginal', 'Ouvrir le fichier original')}
+                          >
+                            <ExternalLink size={18} />
+                          </a>
+                        )}
+                        <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title={t('knowledgeBase.actions.analysis', 'Analyse IA du document')} aria-label={t('knowledgeBase.actions.analysis', 'Analyse IA du document')}>
                           <Brain size={18} />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(item.id)}
                           className="text-red-400 hover:bg-red-50 p-2 rounded-lg inline-flex"
-                          title="Delete"
+                          title={t('knowledgeBase.actions.delete', 'Supprimer')}
+                          aria-label={t('knowledgeBase.actions.delete', 'Supprimer')}
                         >
                           <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
+                    <p className="text-xs text-gray-500 mb-3 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
+                    {(() => {
+                      const info = readinessById[item.id];
+                      if (!info) return null;
+                      const quality = docScoreById[item.id];
+                      const chip = 'rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide';
+                      return (
+                        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                          {info.ready ? (
+                            <span className={`${chip} bg-green-50 text-green-700`}>{t('knowledgeBase.chips.ready', 'Exploitable')}</span>
+                          ) : (
+                            <span className={`${chip} bg-red-50 text-red-700`}>{t('knowledgeBase.chips.unreadable', 'Illisible')}</span>
+                          )}
+                          {info.ready && (
+                            <span className={`${chip} ${info.indexed ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
+                              {info.indexed ? t('knowledgeBase.chips.indexed', 'Indexé') : t('knowledgeBase.chips.notIndexed', 'Indexation en cours')}
+                            </span>
+                          )}
+                          {info.ready && (
+                            <span className={`${chip} ${info.analyzed ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
+                              {info.analyzed ? t('knowledgeBase.chips.analyzed', 'Analysé') : t('knowledgeBase.chips.notAnalyzed', 'Non analysé')}
+                            </span>
+                          )}
+                          {quality && quality.usable && (
+                            <span className={`${chip} bg-harx-50 text-harx-600`} title={t('knowledgeBase.chips.qualityHelp', 'Qualité du document comme source pour les REPS (texte, profondeur, index, analyse, fraîcheur)')}>
+                              {t('knowledgeBase.chips.quality', 'Qualité {{value}}', { value: quality.quality })}
+                            </span>
+                          )}
+                          {quality && quality.usable && quality.relevance !== null && (
+                            <span
+                              className={`${chip} ${quality.relevance >= 40 ? 'bg-harx-50 text-harx-600' : 'bg-amber-50 text-amber-700'}`}
+                              title={t('knowledgeBase.chips.relevanceHelp', 'Proximité avec le titre et la description du gig')}
+                            >
+                              {t('knowledgeBase.chips.relevance', 'Pertinence gig {{value}}%', { value: quality.relevance })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="flex items-center border-t border-gray-50 pt-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase">
@@ -1995,16 +2129,76 @@ const KnowledgeBase: React.FC = () => {
         </div>
       </div>
 
-      {renderReadinessPanel()}
-      <SectorKnowledgePanel
-        userId={getUserId()}
-        gig={selectedGigId && selectedGigId !== 'all' ? gigs.find((g) => String(g._id || g.id) === String(selectedGigId)) || null : null}
-        onCreated={() => {
-          void fetchAndUpdateDocuments();
-          void loadReadiness();
-        }}
-      />
-      {renderContent()}
+      <div role="tablist" aria-label={t('knowledgeBase.tabs.label', 'Sections de la base de connaissances')} className="mb-8 flex flex-wrap gap-2">
+        {(['overview', 'documents', 'agents'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={kbTab === id}
+            onClick={() => setKbTab(id)}
+            className={`rounded-full border px-5 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all ${
+              kbTab === id
+                ? 'border-transparent bg-gradient-harx text-white shadow-md shadow-harx-500/30'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-harx-300 hover:text-harx-600'
+            }`}
+          >
+            {t(`knowledgeBase.tabs.${id}`, id === 'overview' ? 'Vue d’ensemble' : id === 'documents' ? 'Documents' : 'Agents IA')}
+            {id === 'documents' && (
+              <span className="ml-2 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px]">{getUnifiedItems().length}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {kbTab === 'overview' && (
+        <>
+          <KnowledgeScoreCard
+            score={activeScore}
+            loading={scoreLoading}
+            error={scoreError}
+            gigTitle={hasGigSelected ? getGigTitle(selectedGigId) : null}
+            onRetry={() => void reloadScores()}
+            actions={{
+              onAddDocument: () => {
+                setUploadGigId(selectedGigId);
+                setShowUploadModal(true);
+              },
+              onShowUnreadable: () => {
+                setDocStatus('issue');
+                setKbTab('documents');
+              },
+              onReindex: () => {
+                const userId = getUserId();
+                if (!userId) return;
+                apiClient
+                  .post('/rag/reindex', { userId })
+                  .then(() => loadReadiness())
+                  .catch((error) => console.error('Error reindexing knowledge base:', error));
+              },
+              onAnalyzeAll: () => void analyzeAllPending(),
+            }}
+          />
+          {renderReadinessPanel()}
+          <SectorKnowledgePanel
+            userId={getUserId()}
+            gig={selectedGigId && selectedGigId !== 'all' ? gigs.find((g) => String(g._id || g.id) === String(selectedGigId)) || null : null}
+            onCreated={() => {
+              void fetchAndUpdateDocuments();
+              void loadReadiness();
+            }}
+          />
+        </>
+      )}
+      {kbTab === 'documents' && renderContent()}
+      {kbTab === 'agents' && (
+        <KnowledgeAgentsPanel
+          companyId={readiness?.companyId || Cookies.get('companyId') || null}
+          gigs={gigRefs}
+          scores={scores}
+          selectedGigId={selectedGigId}
+        />
+      )}
       {renderUploadModal()}
       {renderPreviewModal()}
       <style>{dropdownStyles}</style>
