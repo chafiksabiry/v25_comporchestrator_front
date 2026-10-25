@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
+import { Brain, HelpCircle, PlusCircle, ArrowUp, ChevronLeft } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
 import { AudioBriefRecorder } from './AudioBriefRecorder';
@@ -874,15 +874,26 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col bg-[#F8FAFC]">
-      {onBackToGigs && (
-        <div className="w-full max-w-4xl mx-auto px-4 pt-4 shrink-0">
-          <button
-            onClick={onBackToGigs}
-            className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:text-harx-500 transition-all duration-300 shadow-sm"
-          >
-            <Briefcase className="w-4 h-4" />
-            {t('gigCreation.prompt.backToGigs')}
-          </button>
+      {(onBackToGigs || backToOnboarding) && (
+        <div className="w-full max-w-4xl mx-auto px-4 pt-4 shrink-0 flex items-center gap-2">
+          {backToOnboarding && (
+            <button
+              onClick={backToOnboarding}
+              className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:text-harx-500 transition-all duration-300 shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              {t('companyOnboarding.ui.backToOnboarding', 'Retour à l\'onboarding')}
+            </button>
+          )}
+          {onBackToGigs && (
+            <button
+              onClick={onBackToGigs}
+              className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:text-harx-500 transition-all duration-300 shadow-sm"
+            >
+              <Briefcase className="w-4 h-4" />
+              {t('gigCreation.prompt.backToGigs')}
+            </button>
+          )}
         </div>
       )}
 
