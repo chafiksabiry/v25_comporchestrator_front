@@ -873,35 +873,21 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] overflow-hidden flex flex-col bg-[#F8FAFC]">
-      <div className="w-full max-w-5xl mx-auto px-4 pt-6 shrink-0">
-        {/* Navigation Buttons */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-3 items-center flex-wrap">
-            {onBackToGigs && (
-              <button
-                onClick={onBackToGigs}
-                className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
-              >
-                <Briefcase className="w-4 h-4" />
-                {t('gigCreation.prompt.backToGigs')}
-              </button>
-            )}
-          </div>
+    <div className="min-h-[calc(100vh-80px)] flex flex-col bg-[#F8FAFC]">
+      {onBackToGigs && (
+        <div className="w-full max-w-4xl mx-auto px-4 pt-4 shrink-0">
+          <button
+            onClick={onBackToGigs}
+            className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
+          >
+            <Briefcase className="w-4 h-4" />
+            {t('gigCreation.prompt.backToGigs')}
+          </button>
         </div>
-      </div>
+      )}
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-4xl mb-4">
-          {backToOnboarding && (
-            <OnboardingBackButton
-              variant="cta"
-              label={t('gigCreation.prompt.backToOnboarding', "Retour à l'onboarding")}
-              onClick={backToOnboarding}
-            />
-          )}
-        </div>
-        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 py-6">
+        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-5">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
