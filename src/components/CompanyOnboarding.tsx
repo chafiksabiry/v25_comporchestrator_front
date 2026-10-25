@@ -1180,11 +1180,12 @@ const CompanyOnboarding = () => {
       // Show contextual guide for the current step
       const stepGuideKey = `sidebar.stepGuide.${currentStep.id}`;
       const stepTitle = t(`${stepGuideKey}.title`, currentStep.title);
-      const stepSteps = t(`${stepGuideKey}.steps`, { returnObjects: true });
+      const rawStepSteps = t(`${stepGuideKey}.steps`, { returnObjects: true });
+      const stepSteps = Array.isArray(rawStepSteps) ? rawStepSteps : undefined;
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
           title: stepTitle,
-          steps: Array.isArray(stepSteps) ? stepSteps : undefined,
+          ...(stepSteps ? { steps: stepSteps } : { description: currentStep.description }),
         },
       }));
     } else {
