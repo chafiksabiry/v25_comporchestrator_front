@@ -51,6 +51,7 @@ import {
   getSectorOptions,
 } from '../lib/activitiesIndustries';
 import Logo from "./Logo";
+import mascotteImg from "../assets/mascotte.webp";
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
@@ -6168,7 +6169,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
           <div className="flex justify-center mb-6">
             <div className="relative">
               <img
-                src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                src={mascotteImg}
                 alt="HARX"
                 className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-lg"
               />
