@@ -3208,7 +3208,9 @@
       "gig": "Filter by gig",
       "allGigs": "All gigs",
       "status": "Filter by status",
-      "allStatus": "All statuses"
+      "allStatus": "All statuses",
+      "fraud": "Fraud detected",
+      "showFraud": "View fraudulent calls"
     },
     "status": {
       "completed": "Completed",

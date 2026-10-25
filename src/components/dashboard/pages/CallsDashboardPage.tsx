@@ -593,7 +593,9 @@ export default function CallsDashboardPage() {
     const matchesStatus =
       statusFilter === 'all' ||
       (statusFilter === 'voicemail' && isCallVoicemail(call)) ||
+      (statusFilter === 'fraud' && isCallFraudDetected(call)) ||
       (statusFilter !== 'voicemail' &&
+        statusFilter !== 'fraud' &&
         String(call.status || '').toLowerCase() === statusFilter.toLowerCase());
     const matchesGig = gigFilter === 'all' || callGigId(call) === gigFilter;
     const matchesOutcome = matchesCallOutcomeFilter(call, outcomeFilter);
@@ -712,6 +714,7 @@ export default function CallsDashboardPage() {
               <option value="missed">{t('calls.status.missed', 'Manqué')}</option>
               <option value="failed">{t('calls.status.failed', 'Échoué')}</option>
               <option value="voicemail">{t('calls.disp.called_voicemail', 'Appelé – Répondeur')}</option>
+              <option value="fraud">{t('calls.filters.fraud', 'Fraude détectée')}</option>
             </select>
           </div>
         </div>
@@ -734,6 +737,15 @@ export default function CallsDashboardPage() {
                   getCompanyFraudGlobalWarning(fraudCallCount, i18n.language)}
               </p>
             </div>
+            {statusFilter !== 'fraud' && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('fraud')}
+                className="ml-auto shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors"
+              >
+                {t('calls.filters.showFraud', 'Voir les appels frauduleux')}
+              </button>
+            )}
           </div>
 
           {agentFraudStats.length > 0 && (

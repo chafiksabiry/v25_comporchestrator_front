@@ -3208,7 +3208,9 @@
       "gig": "Filtrer par gig",
       "allGigs": "Tous les gigs",
       "status": "Filtrer par statut",
-      "allStatus": "Tous les statuts"
+      "allStatus": "Tous les statuts",
+      "fraud": "Fraude détectée",
+      "showFraud": "Voir les appels frauduleux"
     },
     "status": {
       "completed": "Terminé",
