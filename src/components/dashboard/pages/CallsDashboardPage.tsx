@@ -287,6 +287,22 @@ export default function CallsDashboardPage() {
 
   const [overturningFraudCallId, setOverturningFraudCallId] = useState<string | null>(null);
 
+  const handleConfirmFraud = async (callId: string) => {
+    if (overturningFraudCallId) return;
+    setOverturningFraudCallId(callId);
+    try {
+      const reviewedBy = localStorage.getItem('userId') || undefined;
+      await callsApi.confirmFraud(callId, { reviewedBy });
+      toast.success(t('calls.fraud.confirmedSuccess', 'Fraude confirmée. L’appel reste compté contre le rep.'));
+      await fetchCalls();
+    } catch (error) {
+      console.error('Error confirming fraud flag:', error);
+      toast.error(t('calls.fraud.confirmFailed', 'Impossible de confirmer la fraude pour cet appel.'));
+    } finally {
+      setOverturningFraudCallId(null);
+    }
+  };
+
   const handleOverturnFraud = async (callId: string) => {
     if (overturningFraudCallId) return;
     setOverturningFraudCallId(callId);
@@ -945,6 +961,24 @@ export default function CallsDashboardPage() {
                                   <ShieldAlert className="w-3 h-3" />
                                   {t('calls.status.fraud')}
                                 </span>
+                                {(call as { fraudReview?: { confirmed?: boolean } }).fraudReview?.confirmed ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-600 text-white">
+                                    {t('calls.fraud.confirmedBadge', 'Fraude confirmée')}
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    disabled={overturningFraudCallId === normalizeCallId(call)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleConfirmFraud(normalizeCallId(call));
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-600 hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={t('calls.fraud.confirmHint', 'Après vérification, confirmer que cet appel est bien frauduleux — il reste compté contre le rep.')}
+                                  >
+                                    {t('calls.fraud.confirm', 'Confirmer la fraude')}
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   disabled={overturningFraudCallId === normalizeCallId(call)}

@@ -64,6 +64,7 @@ import { computeMinutesPurchaseCents } from '../../../utils/minutesPricing';
 import { getDashCallsApiBase } from '../lib/callsApiBase';
 import { authFetch } from '../../../lib/authFetch';
 import { VoiceAssistantOverviewCard } from '../components/VoiceAssistantOverviewCard';
+import FraudReviewPanel from '../components/FraudReviewPanel';
 import {
   DASHBOARD_CONFIG_EVENT,
   DashboardWidgetConfig,
@@ -212,6 +213,7 @@ type AnalyticsOverview = {
     total: number;
     serious: number;
     fraud: number;
+    fraudToReview?: number;
     voicemail: number;
     unreachable: number;
     avgDuration: number;
@@ -413,6 +415,14 @@ export default function OperationsDashboard() {
   const [selectedGigId, setSelectedGigId] = useState<string>(() => {
     return (typeof window !== 'undefined' && localStorage.getItem('opsDashboard.selectedGigId')) || 'all';
   });
+  // The fraud review panel changed a decision: reload the analytics so the "à examiner" counter follows.
+  const [fraudReviewTick, setFraudReviewTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setFraudReviewTick((n) => n + 1);
+    window.addEventListener('FRAUD_REVIEW_CHANGED', bump);
+    return () => window.removeEventListener('FRAUD_REVIEW_CHANGED', bump);
+  }, []);
+
   const [selectedPeriodId, setSelectedPeriodId] = useState<DashboardPeriodId>(() => {
     const stored =
       typeof window !== 'undefined' ? localStorage.getItem('opsDashboard.selectedPeriodId') : null;
@@ -1255,7 +1265,7 @@ export default function OperationsDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [selectedGigId, selectedPeriodId, periodRange]);
+  }, [selectedGigId, selectedPeriodId, periodRange, fraudReviewTick]);
 
   const series7dChart = useMemo(
     () => overviewPeriod?.series7d ?? [],
@@ -1269,6 +1279,7 @@ export default function OperationsDashboard() {
     const voicemail = t?.voicemail ?? 0;
     const unreachable = t?.unreachable ?? 0;
     const fraud = t?.fraud ?? 0;
+    const fraudToReview = t?.fraudToReview ?? fraud;
     const avgDurationSec = t?.avgDuration ?? 0;
     const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0);
 
@@ -1278,6 +1289,7 @@ export default function OperationsDashboard() {
       voicemail,
       unreachable,
       fraud,
+      fraudToReview,
       avgDurationSec,
       pctSerious: pct(serious),
       pctVoicemail: pct(voicemail),
@@ -1734,6 +1746,7 @@ export default function OperationsDashboard() {
           mtd={mtd}
           series7d={series7dChart.length ? series7dChart : null}
           fmtDuration={fmtDuration}
+          gigId={selectedGigId}
         />
       ) : tab === 'agents' ? (
         <TeamView
@@ -4368,13 +4381,16 @@ function CallsView({
   mtd,
   series7d,
   fmtDuration,
+  gigId,
 }: {
+  gigId?: string;
   stats: {
     total: number;
     serious: number;
     voicemail: number;
     unreachable: number;
     fraud: number;
+    fraudToReview?: number;
     avgDurationSec: number;
     pctSerious: number;
     pctVoicemail: number;
@@ -4444,7 +4460,7 @@ function CallsView({
           icon={<ShieldAlert size={14} />}
           label={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
           value={stats.fraud.toLocaleString('fr-FR')}
-          sub={t('opsDashboard.kpi.toReview', 'à examiner')}
+          sub={t('opsDashboard.kpi.toReviewCount', '{{count}} à examiner', { count: stats.fraudToReview ?? stats.fraud })}
           subTone="rose"
           selected={selectedKpi === 'fraud'}
           onClick={() => toggleKpi('fraud')}
@@ -4507,8 +4523,13 @@ function CallsView({
           title={t('opsDashboard.kpi.fraud', 'Fraude détectée')}
           onClose={() => setSelectedKpi(null)}
         >
-          <DetailRow label={t('opsDashboard.kpi.fraud', 'Fraude détectée')} value={fmtCount(stats.fraud)} />
-          <DetailRow label={t('opsDashboard.kpi.toReview', 'À examiner')} value={t('opsDashboard.kpi.toReview', 'à examiner')} muted />
+          <div className="col-span-full">
+            <FraudReviewPanel
+              companyId={Cookies.get('companyId') || ''}
+              gigId={gigId}
+              onChanged={() => window.dispatchEvent(new CustomEvent('FRAUD_REVIEW_CHANGED'))}
+            />
+          </div>
         </InlineKpiDetailPanel>
       )}
       {selectedKpi === 'avgDuration' && (
