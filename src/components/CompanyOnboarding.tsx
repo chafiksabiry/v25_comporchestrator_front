@@ -1834,9 +1834,9 @@ const CompanyOnboarding = () => {
     return (
       <>
         {stepGuideLayer}
-        <div className="animate-fade-in relative min-h-[50vh] pb-24">
+        <div className="animate-fade-in relative">
           {!stepHasOwnBack ? (
-            <div className="px-4 pt-4 sm:px-6 mb-2">
+            <div className="px-4 pt-3 sm:px-6 mb-1">
               <OnboardingBackButton
                 variant="cta"
                 onClick={() => {
