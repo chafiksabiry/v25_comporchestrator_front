@@ -873,21 +873,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex flex-col relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 40%, #2d0a1e 100%)' }}
-    >
-      {/* Ambient blobs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20 blur-3xl" style={{ background: 'radial-gradient(circle, #ff4d6d, transparent)' }} />
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full opacity-15 blur-3xl" style={{ background: 'radial-gradient(circle, #a855f7, transparent)' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-5 blur-3xl" style={{ background: 'radial-gradient(circle, #ff4d6d, transparent)' }} />
-      </div>
-
+    <div className="min-h-[calc(100vh-80px)] flex flex-col bg-[#F8FAFC]">
       {onBackToGigs && (
-        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 pt-4 shrink-0">
+        <div className="w-full max-w-4xl mx-auto px-4 pt-4 shrink-0">
           <button
             onClick={onBackToGigs}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-xl text-xs font-black uppercase tracking-widest text-white/70 hover:bg-white/20 hover:text-white transition-all duration-300"
+            className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur border border-gray-200 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white hover:text-harx-500 transition-all duration-300 shadow-sm"
           >
             <Briefcase className="w-4 h-4" />
             {t('gigCreation.prompt.backToGigs')}
@@ -895,47 +886,42 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         </div>
       )}
 
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-6">
-        {/* Header text */}
-        <div className="w-full max-w-4xl mb-6 text-center">
-          <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/60 text-xs font-bold uppercase tracking-widest">
-            <Brain className="w-3.5 h-3.5 text-harx-400" />
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+        {/* Header badge */}
+        <div className="w-full max-w-4xl mb-5 text-center">
+          <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full bg-harx-50 border border-harx-100 text-harx-500 text-xs font-bold uppercase tracking-widest">
+            <Brain className="w-3.5 h-3.5" />
             {t('gigCreation.prompt.describeNeeds')}
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">
-            {t('gigCreation.prompt.placeholder', 'Décrivez votre besoin...')}
-          </h2>
         </div>
 
         {/* Main card */}
-        <div className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl shadow-black/50"
-          style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.12)' }}
-        >
+        <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           <form onSubmit={handleSubmit}>
             {/* Tips bar */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-white/8">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
               <button
                 type="button"
                 onClick={() => setShowGuidance(!showGuidance)}
-                className="flex items-center gap-1.5 text-harx-400 hover:text-harx-300 text-xs font-bold uppercase tracking-wider transition-colors"
+                className="flex items-center gap-1.5 text-harx-500 hover:text-harx-600 text-sm font-bold transition-colors"
               >
-                <HelpCircle className="w-3.5 h-3.5" />
+                <HelpCircle className="w-4 h-4" />
                 {t('gigCreation.prompt.writingTips')}
               </button>
               <button
                 type="button"
                 disabled
-                className="flex items-center gap-1.5 text-white/25 text-xs cursor-not-allowed"
+                className="flex items-center gap-1.5 text-gray-300 text-sm cursor-not-allowed"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
+                <PlusCircle className="w-4 h-4" />
                 {t('gigCreation.prompt.createManually')}
               </button>
             </div>
 
             {showGuidance && (
-              <div className="mx-6 mt-4 p-4 rounded-2xl border border-harx-500/30 bg-harx-500/10">
-                <h3 className="text-xs font-bold text-harx-300 uppercase tracking-wider mb-2">{t('gigCreation.prompt.writingTips')}</h3>
-                <ul className="text-xs text-white/60 space-y-1.5">
+              <div className="mx-6 mt-4 p-4 rounded-2xl border border-harx-100 bg-harx-50">
+                <h3 className="text-xs font-bold text-harx-600 uppercase tracking-wider mb-2">{t('gigCreation.prompt.writingTips')}</h3>
+                <ul className="text-xs text-harx-700 space-y-1.5">
                   <li>• {t('gigCreation.prompt.tipAudience')}</li>
                   <li>• {t('gigCreation.prompt.tipRequirements')}</li>
                   <li>• {t('gigCreation.prompt.tipSchedule')}</li>
@@ -946,7 +932,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
             )}
 
             {/* Textarea zone */}
-            <div className="mx-4 my-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+            <div className="mx-4 my-4 rounded-2xl bg-gray-50 border border-gray-100">
               <textarea
                 ref={textareaRef}
                 id="description"
@@ -973,7 +959,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 }}
                 rows={1}
                 placeholder={t('gigCreation.prompt.placeholder')}
-                className="w-full min-h-[120px] max-h-[220px] px-5 pt-5 pb-2 bg-transparent border-none focus:ring-0 text-white placeholder-white/30 text-lg resize-none overflow-y-auto"
+                className="w-full min-h-[120px] max-h-[220px] px-5 pt-5 pb-2 bg-transparent border-none focus:ring-0 text-gray-900 placeholder-gray-400 text-lg resize-none overflow-y-auto"
               />
               <div className="flex items-center justify-end gap-2 px-3 pb-3">
                 <AudioBriefRecorder
@@ -995,7 +981,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                     disabled={!input.trim() || isAnalyzing}
                     title={t('gigCreation.prompt.sendTitle')}
                     aria-label={t('gigCreation.prompt.sendAria')}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-harx-500/40"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-harx-500/20"
                   >
                     <ArrowUp className="w-5 h-5 stroke-[3]" />
                   </button>
@@ -1006,13 +992,13 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
             <div ref={setAudioPanelHost} />
 
             {audioReplaceSnippet && !isLiveDictating ? (
-              <p className="mx-6 mb-4 text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-400/20 rounded-xl px-3 py-2">
+              <p className="mx-6 mb-4 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                 {t('gigCreation.prompt.audioReplaceLabel')} «{' '}
                 {audioReplaceSnippet.length > 80 ? `${audioReplaceSnippet.slice(0, 80)}…` : audioReplaceSnippet}{' '}»
               </p>
             ) : null}
 
-            <p className="px-6 pb-5 text-xs font-medium text-white/30">
+            <p className="px-6 pb-5 text-xs font-medium text-gray-400">
               {isLiveDictating
                 ? t('gigCreation.prompt.dictatingHint')
                 : t('gigCreation.prompt.nonDictatingHint')}
