@@ -1196,6 +1196,149 @@
       "created": "Base « {{name}} » créée en {{language}} et rattachée à ce gig.",
       "exists": "Une base « {{name}} » existe déjà pour ce gig.",
       "error": "La génération a échoué. Réessayez dans un instant."
+    },
+    "tabs": {
+      "label": "Sections de la base de connaissances",
+      "overview": "Vue d’ensemble",
+      "documents": "Documents",
+      "agents": "Agents IA"
+    },
+    "score": {
+      "title": "Pertinence et maturité de la base",
+      "subtitleGig": "Ce que vos REPS et vos agents IA peuvent exploiter pour le gig « {{gig}} ».",
+      "subtitleAll": "Ce que vos REPS et vos agents IA peuvent exploiter, tous gigs confondus.",
+      "loading": "Calcul du score de votre base…",
+      "error": "Impossible de calculer le score de la base.",
+      "retry": "Réessayer",
+      "level": "Niveau {{level}}/5",
+      "next": "Pour le niveau {{level}} : {{points}} points",
+      "nextTopics": "et documenter : {{topics}}",
+      "top": "Niveau maximal atteint.",
+      "levels": {
+        "starting": "Démarrage",
+        "basic": "Base",
+        "operational": "Opérationnelle",
+        "solid": "Solide",
+        "reference": "Référence"
+      },
+      "dimensions": {
+        "coverage": {
+          "label": "Couverture des sujets",
+          "help": "Offre, tarifs, objections, conformité, process, FAQ, arguments : ce qu’un REP doit trouver."
+        },
+        "depth": {
+          "label": "Profondeur",
+          "help": "Quantité de contenu exploitable (volume de texte, nombre de documents)."
+        },
+        "exploitable": {
+          "label": "Exploitabilité",
+          "help": "Documents lisibles, indexés pour la recherche et analysés."
+        },
+        "freshness": {
+          "label": "Fraîcheur",
+          "help": "Âge des documents : au-delà de 6 mois le score baisse, à 18 mois il est nul."
+        },
+        "alignment": {
+          "label": "Alignement avec le gig",
+          "help": "Proximité des documents avec le titre et la description du gig."
+        }
+      },
+      "topicsTitle": "Ce qu’un REP trouve dans la base",
+      "topics": {
+        "offer": "Offre et produits",
+        "pricing": "Tarifs et conditions",
+        "objections": "Objections",
+        "compliance": "Conformité et légal",
+        "process": "Process et souscription",
+        "faq": "FAQ et glossaire",
+        "arguments": "Arguments et concurrence"
+      },
+      "topicStatus": {
+        "covered": "Couvert",
+        "partial": "Partiel",
+        "missing": "Absent"
+      },
+      "recommendationsTitle": "À faire en priorité",
+      "recommendations": {
+        "add_first_document": "Ajoutez votre premier document : offre, tarifs, objections ou script commercial.",
+        "fix_unreadable_documents": "{{count}} document(s) sans texte exploitable (scan, image, vidéo) : remplacez-les par une version texte ou un PDF lisible.",
+        "index_documents": "{{count}} document(s) pas encore indexé(s) : les REPS et les agents IA ne peuvent pas les retrouver.",
+        "analyze_documents": "{{count}} document(s) non analysé(s) : l’analyse produit les résumés et mots-clés qui améliorent la recherche.",
+        "refresh_documents": "Vos documents sont anciens : ajoutez ou remplacez-les par des versions à jour (tarifs, offres, règles).",
+        "add_depth": "La base reste légère : ajoutez des documents détaillés (guides produit, cas clients, scripts).",
+        "align_with_gig": "Les documents s’éloignent du gig : ajoutez des documents qui parlent de son offre et de sa cible.",
+        "add": {
+          "offer": "Documentez l’offre : produits, garanties, formules, ce qui est inclus ou exclu.",
+          "pricing": "Documentez les tarifs : grille de prix, remises, conditions de paiement et de résiliation.",
+          "objections": "Documentez les objections fréquentes (« trop cher », « je dois réfléchir ») et les réponses validées.",
+          "compliance": "Documentez la conformité : mentions obligatoires, consentement, RGPD, devoir de conseil.",
+          "process": "Documentez le process : étapes de souscription ou de prise de rendez-vous, pièces à fournir.",
+          "faq": "Ajoutez une FAQ et un glossaire : les questions que les prospects posent le plus.",
+          "arguments": "Ajoutez l’argumentaire : avantages différenciants et comparaison avec la concurrence."
+        }
+      },
+      "actions": {
+        "add": "Ajouter un document",
+        "showUnreadable": "Voir les documents concernés",
+        "reindex": "Indexer maintenant",
+        "analyze": "Analyser maintenant"
+      },
+      "disclaimer": "Estimation automatique : elle mesure la couverture et la qualité exploitable des documents (détection par mots-clés), pas l’exactitude de leur contenu."
+    },
+    "agents": {
+      "title": "Agents IA par gig",
+      "subtitle": "L’agent vocal IA appelle vos prospects en suivant le script du gig et consulte cette base pour répondre aux questions (produit, prix, conditions) sans rien inventer.",
+      "noGigs": "Aucun gig pour le moment.",
+      "ready": "Prêt à travailler",
+      "incomplete": "À compléter",
+      "checks": {
+        "kb": "Base de connaissances : {{score}}/100, niveau {{level}}/5 (niveau {{min}} requis)",
+        "kbLoading": "Base de connaissances : calcul en cours",
+        "script": "Script d’appel actif",
+        "scriptMissing": "Aucun script actif — créez et activez le script du gig (Script d’appel)",
+        "voice": "Agent vocal IA activé",
+        "voiceMissing": "Agent vocal IA désactivé pour ce gig — à activer dans la configuration vocale du gig"
+      },
+      "testTitle": "Ce que l’agent trouverait",
+      "testSubtitle": "Posez la question d’un prospect : voici les passages que l’agent IA recevrait pour répondre.",
+      "testGig": "Gig",
+      "testPlaceholder": "Ex. : quelle est la franchise en cas de vol ?",
+      "testButton": "Tester",
+      "testError": "La recherche a échoué. Réessayez.",
+      "testNothing": "Rien trouvé dans la base : l’agent répondrait qu’un conseiller rappellera. Ajoutez un document qui traite ce point.",
+      "matchScore": "pertinence {{score}}"
+    },
+    "search": {
+      "placeholder": "Rechercher un document (nom, description, étiquette, résumé)…",
+      "label": "Rechercher dans les documents",
+      "scope": "Portée",
+      "scopeAll": "Tous les documents",
+      "scopeGig": "Propres au gig",
+      "scopeCompany": "Communs à tous les gigs",
+      "status": "État",
+      "statusAll": "Tous les états",
+      "statusReady": "Exploitables",
+      "statusIssue": "Illisibles (à corriger)",
+      "statusNotAnalyzed": "Non analysés",
+      "count": "{{shown}} sur {{total}} ressource(s)"
+    },
+    "actions": {
+      "preview": "Aperçu du fichier",
+      "openOriginal": "Ouvrir le fichier original",
+      "analysis": "Analyse IA du document",
+      "delete": "Supprimer"
+    },
+    "chips": {
+      "ready": "Exploitable",
+      "unreadable": "Illisible",
+      "indexed": "Indexé",
+      "notIndexed": "Indexation en cours",
+      "analyzed": "Analysé",
+      "notAnalyzed": "Non analysé",
+      "quality": "Qualité {{value}}",
+      "qualityHelp": "Qualité du document comme source pour les REPS (texte, profondeur, index, analyse, fraîcheur)",
+      "relevance": "Pertinence gig {{value}}%",
+      "relevanceHelp": "Proximité avec le titre et la description du gig"
     }
   },
   "training": {

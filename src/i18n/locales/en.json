@@ -1196,6 +1196,149 @@
       "created": "“{{name}}” base created in {{language}} and attached to this gig.",
       "exists": "A “{{name}}” base already exists for this gig.",
       "error": "Generation failed. Please try again shortly."
+    },
+    "tabs": {
+      "label": "Knowledge base sections",
+      "overview": "Overview",
+      "documents": "Documents",
+      "agents": "AI agents"
+    },
+    "score": {
+      "title": "Knowledge base relevance and maturity",
+      "subtitleGig": "What your REPS and AI agents can rely on for the gig “{{gig}}”.",
+      "subtitleAll": "What your REPS and AI agents can rely on, all gigs together.",
+      "loading": "Computing your knowledge base score…",
+      "error": "Could not compute the knowledge base score.",
+      "retry": "Retry",
+      "level": "Level {{level}}/5",
+      "next": "For level {{level}}: {{points}} points",
+      "nextTopics": "and document: {{topics}}",
+      "top": "Top level reached.",
+      "levels": {
+        "starting": "Starting",
+        "basic": "Basic",
+        "operational": "Operational",
+        "solid": "Solid",
+        "reference": "Reference"
+      },
+      "dimensions": {
+        "coverage": {
+          "label": "Topic coverage",
+          "help": "Offer, pricing, objections, compliance, process, FAQ, arguments: what a REP must find."
+        },
+        "depth": {
+          "label": "Depth",
+          "help": "Amount of usable content (text volume, number of documents)."
+        },
+        "exploitable": {
+          "label": "Usability",
+          "help": "Readable documents, indexed for search and analysed."
+        },
+        "freshness": {
+          "label": "Freshness",
+          "help": "Document age: the score drops after 6 months and reaches zero at 18 months."
+        },
+        "alignment": {
+          "label": "Alignment with the gig",
+          "help": "How close the documents are to the gig title and description."
+        }
+      },
+      "topicsTitle": "What a REP finds in the base",
+      "topics": {
+        "offer": "Offer and products",
+        "pricing": "Pricing and conditions",
+        "objections": "Objections",
+        "compliance": "Compliance and legal",
+        "process": "Process and onboarding",
+        "faq": "FAQ and glossary",
+        "arguments": "Arguments and competition"
+      },
+      "topicStatus": {
+        "covered": "Covered",
+        "partial": "Partial",
+        "missing": "Missing"
+      },
+      "recommendationsTitle": "Do this first",
+      "recommendations": {
+        "add_first_document": "Add your first document: offer, pricing, objections or sales script.",
+        "fix_unreadable_documents": "{{count}} document(s) without usable text (scan, image, video): replace them with a text version or a readable PDF.",
+        "index_documents": "{{count}} document(s) not indexed yet: REPS and AI agents cannot find them.",
+        "analyze_documents": "{{count}} document(s) not analysed: analysis produces the summaries and keywords that improve search.",
+        "refresh_documents": "Your documents are old: add or replace them with up-to-date versions (prices, offers, rules).",
+        "add_depth": "The base is still thin: add detailed documents (product guides, customer cases, scripts).",
+        "align_with_gig": "The documents drift away from the gig: add documents about its offer and target.",
+        "add": {
+          "offer": "Document the offer: products, guarantees, plans, what is included or excluded.",
+          "pricing": "Document pricing: price grid, discounts, payment and cancellation terms.",
+          "objections": "Document frequent objections (“too expensive”, “I need to think about it”) and validated answers.",
+          "compliance": "Document compliance: mandatory mentions, consent, GDPR, duty of advice.",
+          "process": "Document the process: subscription or appointment steps, required documents.",
+          "faq": "Add an FAQ and a glossary: the questions prospects ask most.",
+          "arguments": "Add the sales pitch: differentiating benefits and comparison with competitors."
+        }
+      },
+      "actions": {
+        "add": "Add a document",
+        "showUnreadable": "Show the documents",
+        "reindex": "Index now",
+        "analyze": "Analyse now"
+      },
+      "disclaimer": "Automatic estimate: it measures the coverage and usable quality of the documents (keyword detection), not the accuracy of their content."
+    },
+    "agents": {
+      "title": "AI agents per gig",
+      "subtitle": "The AI voice agent calls your prospects following the gig script and queries this base to answer questions (product, price, conditions) without inventing anything.",
+      "noGigs": "No gig yet.",
+      "ready": "Ready to work",
+      "incomplete": "To complete",
+      "checks": {
+        "kb": "Knowledge base: {{score}}/100, level {{level}}/5 (level {{min}} required)",
+        "kbLoading": "Knowledge base: computing",
+        "script": "Active call script",
+        "scriptMissing": "No active script — create and activate the gig script (Call script)",
+        "voice": "AI voice agent enabled",
+        "voiceMissing": "AI voice agent disabled for this gig — enable it in the gig voice settings"
+      },
+      "testTitle": "What the agent would find",
+      "testSubtitle": "Ask a prospect’s question: these are the passages the AI agent would receive to answer.",
+      "testGig": "Gig",
+      "testPlaceholder": "E.g. what is the deductible for theft?",
+      "testButton": "Test",
+      "testError": "The search failed. Please try again.",
+      "testNothing": "Nothing found in the base: the agent would say an advisor will call back. Add a document covering this point.",
+      "matchScore": "relevance {{score}}"
+    },
+    "search": {
+      "placeholder": "Search a document (name, description, tag, summary)…",
+      "label": "Search documents",
+      "scope": "Scope",
+      "scopeAll": "All documents",
+      "scopeGig": "Specific to the gig",
+      "scopeCompany": "Shared by all gigs",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "statusReady": "Usable",
+      "statusIssue": "Unreadable (to fix)",
+      "statusNotAnalyzed": "Not analysed",
+      "count": "{{shown}} of {{total}} resource(s)"
+    },
+    "actions": {
+      "preview": "File preview",
+      "openOriginal": "Open the original file",
+      "analysis": "AI analysis of the document",
+      "delete": "Delete"
+    },
+    "chips": {
+      "ready": "Usable",
+      "unreadable": "Unreadable",
+      "indexed": "Indexed",
+      "notIndexed": "Indexing",
+      "analyzed": "Analysed",
+      "notAnalyzed": "Not analysed",
+      "quality": "Quality {{value}}",
+      "qualityHelp": "Document quality as a source for REPS (text, depth, index, analysis, freshness)",
+      "relevance": "Gig relevance {{value}}%",
+      "relevanceHelp": "Closeness to the gig title and description"
     }
   },
   "training": {
