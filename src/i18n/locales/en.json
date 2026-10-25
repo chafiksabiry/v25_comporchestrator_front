@@ -3227,6 +3227,13 @@
       "wrong_number": "Wrong number",
       "too_short": "Immediate hang-up"
     },
+    "fraud": {
+      "markNotFraud": "Not fraud",
+      "overturnHint": "Mark this call as not fraud — it will no longer count against the rep.",
+      "overturning": "Working…",
+      "overturnedSuccess": "Call marked as not fraud. It no longer counts against the rep.",
+      "overturnFailed": "Could not mark this call as not fraud."
+    },
     "analysis": {
       "requestedByRep": "Rep requested analysis"
     },

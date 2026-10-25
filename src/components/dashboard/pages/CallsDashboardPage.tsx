@@ -285,6 +285,26 @@ export default function CallsDashboardPage() {
     }
   };
 
+  const [overturningFraudCallId, setOverturningFraudCallId] = useState<string | null>(null);
+
+  const handleOverturnFraud = async (callId: string) => {
+    if (overturningFraudCallId) return;
+    setOverturningFraudCallId(callId);
+    try {
+      const reviewedBy = localStorage.getItem('userId') || undefined;
+      await callsApi.overturnFraud(callId, { reviewedBy });
+      toast.success(
+        t('calls.fraud.overturnedSuccess', 'Appel marqué comme non-frauduleux. Il ne compte plus contre le rep.')
+      );
+      await fetchCalls();
+    } catch (error) {
+      console.error('Error overturning fraud flag:', error);
+      toast.error(t('calls.fraud.overturnFailed', 'Impossible de marquer cet appel comme non-frauduleux.'));
+    } finally {
+      setOverturningFraudCallId(null);
+    }
+  };
+
   const handleAnalyzeCall = async (callId: string, options?: { force?: boolean }) => {
     const target = calls.find((c) => normalizeCallId(c) === callId) || selectedCall;
     // Block too-short calls unless force=true (company can override for legacy
@@ -908,10 +928,26 @@ export default function CallsDashboardPage() {
                               </span>
                             )}
                             {isCallFraudDetected(call) && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
-                                <ShieldAlert className="w-3 h-3" />
-                                {t('calls.status.fraud')}
-                              </span>
+                              <>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                                  <ShieldAlert className="w-3 h-3" />
+                                  {t('calls.status.fraud')}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={overturningFraudCallId === normalizeCallId(call)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOverturnFraud(normalizeCallId(call));
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={t('calls.fraud.overturnHint', "Marquer cet appel comme n'étant pas une fraude — il ne comptera plus contre le rep.")}
+                                >
+                                  {overturningFraudCallId === normalizeCallId(call)
+                                    ? t('calls.fraud.overturning', 'En cours…')
+                                    : t('calls.fraud.markNotFraud', "Ce n'est pas une fraude")}
+                                </button>
+                              </>
                             )}
                             {call.analysisCompanyAlert?.requestedAt && (
                               <button
