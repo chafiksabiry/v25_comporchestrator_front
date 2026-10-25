@@ -90,6 +90,29 @@ function throwInsufficientTokens(data: any, status?: number): never {
   throw err;
 }
 
+/** Map a backend error code to a user-friendly French message (never expose raw API details). */
+function friendlyAiErrorMessage(data: any, httpStatus: number): string {
+  const code: string = String(data?.error || '');
+
+  if (code === 'invalid_api_key') {
+    return 'Le service IA est temporairement indisponible. Notre équipe a été notifiée. Réessayez dans quelques instants.';
+  }
+  if (code === 'rate_limit' || code === 'rate_limit_exceeded') {
+    return 'Le service IA est momentanément surchargé. Réessayez dans quelques secondes.';
+  }
+  if (code === 'insufficient_quota') {
+    return 'Le service IA est temporairement indisponible. Réessayez plus tard.';
+  }
+  if (code === 'ai_unavailable' || code === 'all_providers_failed') {
+    return 'Le service IA est temporairement indisponible. Réessayez dans quelques instants.';
+  }
+  if (httpStatus >= 500) {
+    return 'Une erreur technique est survenue côté serveur. Réessayez dans quelques instants.';
+  }
+  // Generic fallback — never expose raw API / key details
+  return 'Une erreur est survenue lors de la génération. Vérifiez votre connexion et réessayez.';
+}
+
 // Helper function to validate and clean territory IDs
 // Removes timezone IDs that might have been incorrectly included in territories
 function validateTerritories(territories: string[], timezoneId?: string): string[] {
@@ -190,9 +213,14 @@ export async function generateGigSuggestions(
     }
 
     if (!response.ok) {
-      throw new Error(
-        String(data?.message || data?.error || `Backend API error: ${response.statusText}`)
-      );
+      if (response.status === 402 || data?.error === 'insufficient_tokens') {
+        throwInsufficientTokens(data, response.status);
+      }
+      const userMessage = friendlyAiErrorMessage(data, response.status);
+      const err = new Error(userMessage) as Error & { code?: string; httpStatus?: number };
+      err.code = data?.error || 'api_error';
+      err.httpStatus = response.status;
+      throw err;
     }
 
     applyBackendAiUsage(data?.usage, companyId);
