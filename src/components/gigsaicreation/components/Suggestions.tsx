@@ -1366,18 +1366,21 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
         setSuggestions(result);
       } catch (err) {
-        const msg =
-          err && typeof err === "object" && (err as any).code === "insufficient_tokens"
-            ? (err as Error).message ||
-              "Solde de tokens AI insuffisant. Rechargez pour continuer."
-            : err instanceof Error
-              ? err.message
-              : "Failed to generate suggestions";
-        setError(msg);
-        // Allow retry after token top-up
-        if (err && typeof err === "object" && (err as any).code === "insufficient_tokens") {
+        const errCode = err && typeof err === "object" ? (err as any).code : undefined;
+
+        let msg: string;
+        if (errCode === "insufficient_tokens") {
+          msg = (err as Error).message || "Solde de tokens AI insuffisant. Rechargez pour continuer.";
+          // Allow retry after token top-up
           lastProcessedInputRef.current = "";
+        } else if (err instanceof Error && err.message) {
+          // ai.ts already sanitized the message — use it directly
+          msg = err.message;
+        } else {
+          msg = "Une erreur est survenue lors de la génération. Réessayez dans quelques instants.";
         }
+
+        setError(msg);
       } finally {
         setLoading(false);
         isGeneratingRef.current = false;
@@ -6164,27 +6167,28 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <Logo className="mb-6" />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 space-y-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+          <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 space-y-6">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-50 rounded-full mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
 
-            <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {t('gigCreation.suggestions.errorTitle')}
+            <div className="space-y-3 text-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {t('gigCreation.suggestions.errorTitle', 'Erreur lors de la génération')}
               </h2>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-500 text-sm leading-relaxed">
                 {error}
               </p>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
+            <div className="pt-4 border-t border-gray-100 flex justify-center">
               <button
                 onClick={props.onBack}
-                className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 shadow-sm transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-black uppercase tracking-widest text-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl active:scale-95 transition-all duration-300"
+                style={{ background: 'linear-gradient(135deg, #e11d48 0%, #f97316 100%)' }}
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t('gigCreation.suggestions.backToInput')}
+                <ArrowLeft className="w-4 h-4" />
+                {t('gigCreation.suggestions.backToInput', 'Retour à la saisie')}
               </button>
             </div>
           </div>
