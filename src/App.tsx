@@ -661,18 +661,6 @@ function AppContent() {
 
     localStorage.removeItem('activeTab');
 
-    const handleStepGuideUpdate = (event: CustomEvent) => {
-      if (event.detail) {
-        setCurrentStepGuide({
-          title: event.detail.title,
-          description: event.detail.description,
-          ...(event.detail.steps ? { steps: event.detail.steps } : {}),
-        });
-      } else {
-        setCurrentStepGuide(null);
-      }
-    };
-
     const openComporchestrator = () => {
       setActiveProject('comporchestrator');
       window.location.hash = '#/orchestrator';
@@ -695,17 +683,35 @@ function AppContent() {
     };
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
-    window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
     window.addEventListener('openCompanyDashboard', openCompanyDashboard);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
-      window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
       window.removeEventListener('openCompanyDashboard', openCompanyDashboard);
     };
   }, [location.pathname, isZohoCallback, isZohoAuth, navigate, markGuideComplete, explainDashboardBlocked]);
+
+  // Stable listener for sidebar guide updates — must NOT be inside the effect that depends on
+  // explainDashboardBlocked / t, because a language switch causes that effect to teardown/re-setup,
+  // creating a race condition where PrompAI dispatches the guide event before the listener is
+  // re-attached and the event is silently lost.
+  useEffect(() => {
+    const handleStepGuideUpdate = (event: CustomEvent) => {
+      if (event.detail) {
+        setCurrentStepGuide({
+          title: event.detail.title,
+          description: event.detail.description,
+          ...(event.detail.steps ? { steps: event.detail.steps } : {}),
+        });
+      } else {
+        setCurrentStepGuide(null);
+      }
+    };
+    window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+    return () => window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+  }, []);
 
   useEffect(() => {
     const onNavigateOpenCall = (event: Event) => {
