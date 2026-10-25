@@ -370,7 +370,7 @@ function AppContent() {
 
   useEffect(() => {
     // Delay so the page's own data fetches get priority on first render
-    const initTimer = setTimeout(() => fetchNavbarBalances(), 1200);
+    const initTimer = setTimeout(() => fetchNavbarBalances(), 400);
 
     // Also fetch when the company-ready event fires (cookie just set by auth flow)
     const handleCompanyReady = () => setTimeout(() => fetchNavbarBalances(), 300);
