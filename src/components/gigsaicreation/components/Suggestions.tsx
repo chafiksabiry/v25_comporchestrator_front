@@ -6095,37 +6095,50 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-harx-50/30 to-harx-50/20 flex flex-col justify-center items-center">
-        <div className="text-center max-w-lg mx-auto px-4">
-          <div className="mb-8">
-            <Logo className="mb-6" />
+      <div className="min-h-[calc(100vh-80px)] bg-[#F8FAFC] flex flex-col items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+
+          {/* Mascot + icon badge */}
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <img
+                src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                alt="HARX"
+                className="w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-lg"
+              />
+              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 shadow-lg ring-2 ring-white">
+                <AlertCircle className="w-4 h-4 text-white" />
+              </span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 space-y-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-red-50 rounded-full mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-500" />
-            </div>
+          {/* Card */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
 
-            <div className="space-y-3 text-center">
-              <h2 className="text-xl font-bold text-gray-900">
-                {t('gigCreation.suggestions.errorTitle', 'Erreur lors de la génération')}
-              </h2>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                {error}
-              </p>
-            </div>
+            {/* Top accent bar */}
+            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #e11d48, #f97316)' }} />
 
-            <div className="pt-4 border-t border-gray-100 flex justify-center">
+            <div className="px-6 py-8 sm:px-8 space-y-5 text-center">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+                  {t('gigCreation.suggestions.errorTitle', 'Erreur lors de la génération')}
+                </h2>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {error}
+                </p>
+              </div>
+
               <button
                 onClick={props.onBack}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-black uppercase tracking-widest text-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl active:scale-95 transition-all duration-300"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-black uppercase tracking-widest text-white rounded-xl shadow-md hover:scale-105 hover:shadow-lg active:scale-95 transition-all duration-300"
                 style={{ background: 'linear-gradient(135deg, #e11d48 0%, #f97316 100%)' }}
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 shrink-0" />
                 {t('gigCreation.suggestions.backToInput', 'Retour à la saisie')}
               </button>
             </div>
           </div>
+
         </div>
       </div>
     );
