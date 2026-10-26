@@ -1314,7 +1314,7 @@ function AppContent() {
               activeView={activeProject}
               dashboard={<DashboardApp />}
               comporchestrator={
-                <div className="relative h-full px-4 py-3 pb-32">
+                <div className="relative min-h-full px-4 py-3 pb-32">
                   {renderContent()}
                   {activeTab !== 'company-onboarding' &&
                     ORCHESTRATOR_STEP_TABS.has(activeTab) &&
