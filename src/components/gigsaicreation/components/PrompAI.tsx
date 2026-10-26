@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Brain, HelpCircle, PlusCircle, ArrowUp, ChevronLeft } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
@@ -922,50 +923,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   {t('gigCreation.prompt.writingTips')}
                 </button>
 
-                {/* Floating popup */}
-                {showGuidance && (
-                  <>
-                    {/* backdrop to close on outside click */}
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setShowGuidance(false)}
-                    />
-                    <div className="absolute left-0 top-full mt-3 z-50 w-72 sm:w-80 rounded-2xl shadow-2xl border border-harx-100 bg-white overflow-hidden animate-fade-in-up">
-                      {/* Header bar */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-harx-50 bg-harx-50">
-                        <div className="flex items-center gap-2 text-harx-600">
-                          <HelpCircle className="w-4 h-4 shrink-0" />
-                          <span className="text-xs font-black uppercase tracking-widest">{t('gigCreation.prompt.writingTips')}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowGuidance(false)}
-                          className="text-harx-400 hover:text-harx-600 transition-colors ml-2"
-                          aria-label="Fermer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      {/* Tips list */}
-                      <ul className="px-4 py-3 space-y-2.5">
-                        {[
-                          t('gigCreation.prompt.tipAudience'),
-                          t('gigCreation.prompt.tipRequirements'),
-                          t('gigCreation.prompt.tipSchedule'),
-                          t('gigCreation.prompt.tipTools'),
-                          t('gigCreation.prompt.tipCompensation'),
-                        ].map((tip, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-gray-600 leading-snug">
-                            <span className="shrink-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center mt-px bg-harx-100 text-harx-600">
-                              {i + 1}
-                            </span>
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
               </div>
 
               <button
@@ -1054,6 +1011,62 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         </div>
       </div>
     </div>
+
+    {/* Writing Tips — centred modal portal */}
+    {showGuidance && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+        onClick={() => setShowGuidance(false)}
+      >
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+        {/* Modal card */}
+        <div
+          className="relative z-10 w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Gradient top bar */}
+          <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, #e11d48, #f97316)' }} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-harx-600">
+              <HelpCircle className="w-4 h-4 shrink-0" />
+              <span className="text-sm font-black uppercase tracking-widest">{t('gigCreation.prompt.writingTips')}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGuidance(false)}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-xs font-bold"
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Tips */}
+          <ul className="px-5 py-5 space-y-3">
+            {[
+              t('gigCreation.prompt.tipAudience'),
+              t('gigCreation.prompt.tipRequirements'),
+              t('gigCreation.prompt.tipSchedule'),
+              t('gigCreation.prompt.tipTools'),
+              t('gigCreation.prompt.tipCompensation'),
+            ].map((tip, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="shrink-0 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
+                  style={{ background: 'linear-gradient(135deg, #e11d48, #f97316)', color: '#fff' }}>
+                  {i + 1}
+                </span>
+                <span className="text-sm text-gray-600 leading-snug">{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>,
+      document.body
+    )}
   );
 };
 
