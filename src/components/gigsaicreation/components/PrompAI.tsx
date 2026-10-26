@@ -906,14 +906,62 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           <form onSubmit={handleSubmit}>
             {/* Tips bar */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => setShowGuidance(!showGuidance)}
-                className="flex items-center gap-1.5 text-harx-500 hover:text-harx-600 text-sm font-bold transition-colors"
-              >
-                <HelpCircle className="w-4 h-4" />
-                {t('gigCreation.prompt.writingTips')}
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowGuidance(!showGuidance)}
+                  className="flex items-center gap-1.5 text-harx-500 hover:text-harx-600 text-sm font-bold transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  {t('gigCreation.prompt.writingTips')}
+                </button>
+
+                {/* Floating popup */}
+                {showGuidance && (
+                  <>
+                    {/* backdrop to close on outside click */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowGuidance(false)}
+                    />
+                    <div className="absolute left-0 top-full mt-3 z-50 w-72 sm:w-80 rounded-2xl shadow-2xl border border-harx-100 bg-white overflow-hidden animate-fade-in-up">
+                      {/* Header bar */}
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-harx-50 bg-harx-50">
+                        <div className="flex items-center gap-2 text-harx-600">
+                          <HelpCircle className="w-4 h-4 shrink-0" />
+                          <span className="text-xs font-black uppercase tracking-widest">{t('gigCreation.prompt.writingTips')}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowGuidance(false)}
+                          className="text-harx-400 hover:text-harx-600 transition-colors ml-2"
+                          aria-label="Fermer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {/* Tips list */}
+                      <ul className="px-4 py-3 space-y-2.5">
+                        {[
+                          t('gigCreation.prompt.tipAudience'),
+                          t('gigCreation.prompt.tipRequirements'),
+                          t('gigCreation.prompt.tipSchedule'),
+                          t('gigCreation.prompt.tipTools'),
+                          t('gigCreation.prompt.tipCompensation'),
+                        ].map((tip, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-gray-600 leading-snug">
+                            <span className="shrink-0 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center mt-px bg-harx-100 text-harx-600">
+                              {i + 1}
+                            </span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 type="button"
                 disabled
@@ -923,19 +971,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 {t('gigCreation.prompt.createManually')}
               </button>
             </div>
-
-            {showGuidance && (
-              <div className="mx-6 mt-4 p-4 rounded-2xl border border-harx-100 bg-harx-50">
-                <h3 className="text-xs font-bold text-harx-600 uppercase tracking-wider mb-2">{t('gigCreation.prompt.writingTips')}</h3>
-                <ul className="text-xs text-harx-700 space-y-1.5">
-                  <li>• {t('gigCreation.prompt.tipAudience')}</li>
-                  <li>• {t('gigCreation.prompt.tipRequirements')}</li>
-                  <li>• {t('gigCreation.prompt.tipSchedule')}</li>
-                  <li>• {t('gigCreation.prompt.tipTools')}</li>
-                  <li>• {t('gigCreation.prompt.tipCompensation')}</li>
-                </ul>
-              </div>
-            )}
 
             {/* Textarea zone */}
             <div className="mx-4 my-4 rounded-2xl bg-gray-50 border border-gray-100">
