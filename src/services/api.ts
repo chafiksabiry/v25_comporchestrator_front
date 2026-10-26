@@ -52,6 +52,14 @@ const api = axios.create({
   },
 });
 
+// The phone-number routes require the logged-in user's token.
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers?.set('Authorization', `Bearer ${token}`);
+  return config;
+});
+
+
 // Custom error class for phone number service errors
 export class PhoneNumberServiceError extends Error {
   constructor(
