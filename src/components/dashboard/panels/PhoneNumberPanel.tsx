@@ -573,7 +573,7 @@ export function PhoneNumberPanel() {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/test-call`, {
+      const res = await authFetch(`${apiBaseUrl}/phone-numbers/test-call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -617,7 +617,7 @@ export function PhoneNumberPanel() {
     }
     setHangingUp(true);
     try {
-      await fetch(`${apiBaseUrl}/phone-numbers/test-call/${encodeURIComponent(apiCallId)}/hangup`, {
+      await authFetch(`${apiBaseUrl}/phone-numbers/test-call/${encodeURIComponent(apiCallId)}/hangup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: apiCallProvider }),
@@ -643,7 +643,7 @@ export function PhoneNumberPanel() {
     let cancelled = false;
     const poll = async () => {
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${apiBaseUrl}/phone-numbers/test-call/${encodeURIComponent(apiCallId)}/status?provider=${apiCallProvider || ''}`
         );
         const data = await safeParseJson(res);
@@ -814,7 +814,7 @@ export function PhoneNumberPanel() {
         ? `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`
         : `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
       console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
-      const res = await fetch(endpoint);
+      const res = await authFetch(endpoint);
       if (res.ok) {
         const data = await res.json();
         if (data?.regulatoryBlocked) {
@@ -879,7 +879,7 @@ export function PhoneNumberPanel() {
     }
     setAssigningNumber(num.phoneNumber);
     try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/assign-gig`, {
+      const res = await authFetch(`${apiBaseUrl}/phone-numbers/assign-gig`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -931,7 +931,7 @@ export function PhoneNumberPanel() {
 
     setTerminatingNumber(num.phoneNumber);
     try {
-      const res = await fetch(`${apiBaseUrl}/phone-numbers/terminate`, {
+      const res = await authFetch(`${apiBaseUrl}/phone-numbers/terminate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -962,7 +962,7 @@ export function PhoneNumberPanel() {
   const handleDirectPurchase = async (numberToBuy: string, provider: 'twilio' | 'telnyx') => {
     setPurchasing(numberToBuy);
     try {
-      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
+      const purchaseRes = await authFetch(`${apiBaseUrl}/phone-numbers/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1055,7 +1055,7 @@ export function PhoneNumberPanel() {
     if (!checkoutNumber) return;
     (async () => {
       try {
-        const res = await fetch(`${apiBaseUrl}/phone-numbers/checkout/config`);
+        const res = await authFetch(`${apiBaseUrl}/phone-numbers/checkout/config`);
         const cfg = await safeParseJson(res);
         if (!res.ok || !cfg) return;
         if (cfg.pricing?.amountCents) {
@@ -1074,7 +1074,7 @@ export function PhoneNumberPanel() {
 
   const initLineCheckout = useCallback(
     async (provider: 'stripe' | 'paypal') => {
-      const initRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
+      const initRes = await authFetch(`${apiBaseUrl}/phone-numbers/checkout/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1116,7 +1116,7 @@ export function PhoneNumberPanel() {
 
   const confirmLineCheckout = useCallback(
     async (paymentId: string, providerRef?: string) => {
-      const confirmRes = await fetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
+      const confirmRes = await authFetch(`${apiBaseUrl}/phone-numbers/checkout/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentId, providerRef })
@@ -1136,7 +1136,7 @@ export function PhoneNumberPanel() {
     async (paymentId: string) => {
       if (!checkoutNumber || !selectedGigIdForNumber) return;
 
-      const purchaseRes = await fetch(`${apiBaseUrl}/phone-numbers/purchase`, {
+      const purchaseRes = await authFetch(`${apiBaseUrl}/phone-numbers/purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
