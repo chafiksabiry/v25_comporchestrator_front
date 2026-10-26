@@ -183,6 +183,13 @@
               } catch (e) {
                 data = {};
               }
+              // PAY-12 : l'orchestrateur exige un jeton de connexion sur les routes de confirmation, que cette page
+              // statique ne possède pas. En fenêtre de paiement, la page qui l'a ouverte confirme elle-même
+              // avec sa session (waitForStripePopup -> confirm) : on la prévient au lieu d'afficher une erreur.
+              if ((res.status === 401 || res.status === 403) && window.opener && !window.opener.closed) {
+                succeed();
+                return;
+              }
               if (!res.ok || !data.success) {
                 throw new Error(
                   (data && (data.message || data.error)) ||
