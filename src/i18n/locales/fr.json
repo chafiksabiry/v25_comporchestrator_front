@@ -1283,7 +1283,14 @@
         "reindex": "Indexer maintenant",
         "analyze": "Analyser maintenant"
       },
-      "disclaimer": "Estimation automatique : elle mesure la couverture et la qualité exploitable des documents (détection par mots-clés), pas l’exactitude de leur contenu."
+      "disclaimer": "Estimation automatique : elle mesure la couverture et la qualité exploitable des documents (détection par mots-clés), pas l’exactitude de leur contenu.",
+      "reindex": {
+        "busy": "Indexation en cours…",
+        "nothing": "Rien à indexer : tous les documents exploitables le sont déjà.",
+        "done": "{{count}} document(s) indexé(s).",
+        "partial": "{{done}} document(s) indexé(s), {{failed}} en échec : {{reason}}",
+        "error": "L'indexation a échoué. Réessayez dans un instant."
+      }
     },
     "agents": {
       "title": "Agents IA par gig",

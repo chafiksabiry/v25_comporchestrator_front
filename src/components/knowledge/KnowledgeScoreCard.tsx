@@ -16,6 +16,11 @@ export interface ScoreCardActions {
 
 const barTone = (value: number) => (value >= 70 ? 'bg-emerald-500' : value >= 40 ? 'bg-amber-500' : 'bg-red-500');
 
+export interface ScoreCardNotice {
+  type: 'busy' | 'ok' | 'error';
+  text: string;
+}
+
 export default function KnowledgeScoreCard({
   score,
   loading,
@@ -23,7 +28,9 @@ export default function KnowledgeScoreCard({
   gigTitle,
   actions,
   onRetry,
+  notice,
 }: {
+  notice?: ScoreCardNotice | null;
   score: KnowledgeScore | null;
   loading: boolean;
   error: boolean;
@@ -150,6 +157,17 @@ export default function KnowledgeScoreCard({
       {score.recommendations.length > 0 && (
         <div>
           <h4 className="mb-2 text-xs font-black uppercase tracking-widest text-gray-500">{t('knowledgeBase.score.recommendationsTitle', 'À faire en priorité')}</h4>
+          {notice && (
+            <p
+              role={notice.type === 'error' ? 'alert' : 'status'}
+              className={`mb-2 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${
+                notice.type === 'error' ? 'bg-red-50 text-red-800' : notice.type === 'ok' ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'
+              }`}
+            >
+              {notice.type === 'busy' && <Loader2 size={14} className="animate-spin" />}
+              {notice.text}
+            </p>
+          )}
           <ol className="space-y-2">
             {score.recommendations.slice(0, 5).map((r) => {
               const action = recommendationAction(r);
@@ -164,7 +182,12 @@ export default function KnowledgeScoreCard({
                     })}
                   </p>
                   {action && (
-                    <button type="button" onClick={action.run} className="shrink-0 rounded-lg border border-harx-200 px-3 py-1.5 text-xs font-bold text-harx-600 hover:bg-harx-50">
+                    <button
+                      type="button"
+                      onClick={action.run}
+                      disabled={notice?.type === 'busy'}
+                      className="shrink-0 rounded-lg border border-harx-200 px-3 py-1.5 text-xs font-bold text-harx-600 hover:bg-harx-50 disabled:cursor-wait disabled:opacity-50"
+                    >
                       {action.label}
                     </button>
                   )}
