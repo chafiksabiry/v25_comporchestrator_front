@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
 import SectorKnowledgePanel from './SectorKnowledgePanel';
-import KnowledgeScoreCard from './knowledge/KnowledgeScoreCard';
+import KnowledgeScoreCard, { type ScoreCardNotice } from './knowledge/KnowledgeScoreCard';
 import KnowledgeAgentsPanel from './knowledge/KnowledgeAgentsPanel';
 import { useKnowledgeScores } from './knowledge/knowledgeInsights';
 import Cookies from 'js-cookie';
@@ -168,6 +168,7 @@ const KnowledgeBase: React.FC = () => {
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'document' | 'video' | 'audio'>('all');
   const [kbTab, setKbTab] = useState<'overview' | 'documents' | 'agents'>('overview');
+  const [reindexNotice, setReindexNotice] = useState<ScoreCardNotice | null>(null);
   const [docSearch, setDocSearch] = useState('');
   const [docScope, setDocScope] = useState<'all' | 'gig' | 'company'>('all');
   const [docStatus, setDocStatus] = useState<'all' | 'ready' | 'issue' | 'notAnalyzed'>('all');
@@ -2154,6 +2155,7 @@ const KnowledgeBase: React.FC = () => {
       {kbTab === 'overview' && (
         <>
           <KnowledgeScoreCard
+            notice={reindexNotice}
             score={activeScore}
             loading={scoreLoading}
             error={scoreError}
@@ -2168,13 +2170,38 @@ const KnowledgeBase: React.FC = () => {
                 setDocStatus('issue');
                 setKbTab('documents');
               },
-              onReindex: () => {
+              onReindex: async () => {
                 const userId = getUserId();
                 if (!userId) return;
-                apiClient
-                  .post('/rag/reindex', { userId })
-                  .then(() => loadReadiness())
-                  .catch((error) => console.error('Error reindexing knowledge base:', error));
+                setReindexNotice({ type: 'busy', text: t('knowledgeBase.score.reindex.busy', 'Indexation en cours…') });
+                try {
+                  const response = await apiClient.post('/rag/reindex', { userId });
+                  const result = ((response.data as any)?.data || {}) as {
+                    documents?: number;
+                    embedded?: number;
+                    failed?: Array<{ name?: string; error?: string }>;
+                  };
+                  await loadReadiness();
+                  const failed = result.failed || [];
+                  if (failed.length > 0) {
+                    setReindexNotice({
+                      type: 'error',
+                      text: t('knowledgeBase.score.reindex.partial', '{{done}} document(s) indexé(s), {{failed}} en échec : {{reason}}', {
+                        done: result.embedded ?? 0,
+                        failed: failed.length,
+                        reason: failed[0]?.error || failed[0]?.name || '',
+                      }),
+                    });
+                  } else if (!result.documents) {
+                    setReindexNotice({ type: 'ok', text: t('knowledgeBase.score.reindex.nothing', 'Rien à indexer : tous les documents exploitables le sont déjà.') });
+                  } else {
+                    setReindexNotice({ type: 'ok', text: t('knowledgeBase.score.reindex.done', '{{count}} document(s) indexé(s).', { count: result.embedded ?? result.documents }) });
+                  }
+                  void reloadScores();
+                } catch (error) {
+                  console.error('Error reindexing knowledge base:', error);
+                  setReindexNotice({ type: 'error', text: t('knowledgeBase.score.reindex.error', "L'indexation a échoué. Réessayez dans un instant.") });
+                }
               },
               onAnalyzeAll: () => void analyzeAllPending(),
             }}

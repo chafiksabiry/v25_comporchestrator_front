@@ -1283,7 +1283,14 @@
         "reindex": "Index now",
         "analyze": "Analyse now"
       },
-      "disclaimer": "Automatic estimate: it measures the coverage and usable quality of the documents (keyword detection), not the accuracy of their content."
+      "disclaimer": "Automatic estimate: it measures the coverage and usable quality of the documents (keyword detection), not the accuracy of their content.",
+      "reindex": {
+        "busy": "Indexing…",
+        "nothing": "Nothing to index: every usable document already is.",
+        "done": "{{count}} document(s) indexed.",
+        "partial": "{{done}} document(s) indexed, {{failed}} failed: {{reason}}",
+        "error": "Indexing failed. Please try again in a moment."
+      }
     },
     "agents": {
       "title": "AI agents per gig",
