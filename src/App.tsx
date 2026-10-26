@@ -1015,8 +1015,10 @@ function AppContent() {
             On md+ it's part of the flex flow; below md it becomes an
             off-canvas drawer toggled by the navbar hamburger. */}
         <div
-          className={`md:shrink-0 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[60] max-md:transition-transform max-md:duration-300 ${
-            mobileSidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+          className={`md:shrink-0 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[60] max-md:transition-all max-md:duration-300 ${
+            mobileSidebarOpen
+              ? 'max-md:translate-x-0 max-md:visible'
+              : 'max-md:-translate-x-full max-md:invisible max-md:pointer-events-none'
           }`}
         >
           <MasterSidebar
