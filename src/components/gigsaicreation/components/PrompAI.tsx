@@ -874,6 +874,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   }
 
   return (
+    <>
     <div className="min-h-[calc(100vh-80px)] flex flex-col bg-[#F8FAFC]">
       {(onBackToGigs || backToOnboarding) && (
         <div className="w-full max-w-4xl mx-auto px-4 pt-4 shrink-0 flex items-center gap-2">
@@ -1067,6 +1068,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       </div>,
       document.body
     )}
+    </>
   );
 };
 
