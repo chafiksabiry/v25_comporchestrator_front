@@ -307,12 +307,16 @@ const StepGuideModal: React.FC<StepGuideModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm overflow-hidden">
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm overflow-hidden"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="company-onboarding-help-title"
         className={`relative w-full ${isStep1 || isStep8 ? 'max-w-3xl' : 'max-w-md'} overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-2xl`}
+        onClick={e => e.stopPropagation()}
       >
         <button
           type="button"
