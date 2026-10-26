@@ -205,7 +205,7 @@ function AppContent() {
         authFetch(`${apiBaseUrl}/wallet-company/${compId}`).catch(() => null),
         authFetch(`${apiBaseUrl}/minutes-company/${compId}`).catch(() => null),
         authFetch(`${apiBaseUrl}/tokens-company/${compId}`).catch(() => null),
-        fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
+        authFetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
       ]);
 
       if (walletRes?.ok) {

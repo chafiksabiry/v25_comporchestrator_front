@@ -47,7 +47,12 @@ export async function fetchKnowledgeScores(userId: string, gigs: GigRef[]): Prom
 }
 
 export async function searchAgentPassages(companyId: string, gigId: string | null, query: string): Promise<{ found: boolean; passages: AgentPassage[] }> {
-  const response = await apiClient.post('/rag/agent-search', { companyId, gigId: gigId || undefined, query, topK: 3 });
+  const token = localStorage.getItem('token');
+  const response = await apiClient.post(
+    '/rag/agent-search',
+    { companyId, gigId: gigId || undefined, query, topK: 3 },
+    token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+  );
   const data = (response.data as any)?.data;
   return { found: Boolean(data?.found), passages: Array.isArray(data?.passages) ? data.passages : [] };
 }

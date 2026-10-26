@@ -62,10 +62,7 @@ const FraudReviewPanel: React.FC<{
     if (busyId) return;
     setBusyId(call.id);
     try {
-      await reviewFraudCall(call.id, decision, {
-        reviewedBy: localStorage.getItem('userId') || undefined,
-        reason: reasons[call.id]?.trim() || undefined,
-      });
+      await reviewFraudCall(call.id, decision, { reason: reasons[call.id]?.trim() || undefined });
       setExpandedId(null);
       await load();
       onChanged?.();

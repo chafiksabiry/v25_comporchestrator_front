@@ -1,4 +1,5 @@
 import { getDashCallsApiBase } from '../components/dashboard/lib/callsApiBase';
+import { authFetch } from './authFetch';
 
 export type BilingualText = { fr: string; en: string };
 
@@ -99,7 +100,7 @@ export async function fetchFraudCalls(
   if (!base || !companyId) throw new Error('missing base or companyId');
   const qs = new URLSearchParams({ status: options.status });
   if (options.gigId && options.gigId !== 'all') qs.set('gigId', options.gigId);
-  const res = await fetch(`${base}/calls/company/${encodeURIComponent(companyId)}/fraud-calls?${qs.toString()}`);
+  const res = await authFetch(`${base}/calls/company/${encodeURIComponent(companyId)}/fraud-calls?${qs.toString()}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
   return json.data as FraudCallsApi;
@@ -109,11 +110,12 @@ export async function fetchFraudCalls(
 export async function reviewFraudCall(
   callId: string,
   decision: 'confirm' | 'overturn',
-  options: { reviewedBy?: string; reason?: string } = {}
+  options: { reason?: string } = {}
 ): Promise<void> {
   const base = getDashCallsApiBase();
   if (!base || !callId) throw new Error('missing base or callId');
-  const res = await fetch(`${base}/calls/${encodeURIComponent(callId)}/fraud-review`, {
+  // The reviewer recorded is the authenticated user (decided by the server).
+  const res = await authFetch(`${base}/calls/${encodeURIComponent(callId)}/fraud-review`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ decision, ...options }),

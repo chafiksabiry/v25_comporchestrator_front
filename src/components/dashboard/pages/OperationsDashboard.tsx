@@ -685,7 +685,7 @@ export default function OperationsDashboard() {
         const [minsRes, subRes, phoneRes, entriesRes, repTxRes] = await Promise.all([
           authFetch(`${apiBaseUrl}/minutes-company/${companyId}`).catch(() => null),
           fetch(`${backUrl}/api/subscriptions/current/${companyId}`).catch(() => null),
-          fetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
+          authFetch(`${apiBaseUrl}/phone-numbers`).catch(() => null),
           authFetch(`${apiBaseUrl}/wallet-company/entries/${companyId}`).catch(() => null),
           authFetch(`${apiBaseUrl}/escrow/company/rep-transactions/${companyId}`).catch(() => null),
         ]);

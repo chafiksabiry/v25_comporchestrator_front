@@ -15,6 +15,13 @@ const dashCallsApi = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Company-facing routes (fraud review...) require the logged-in user's token.
+dashCallsApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers?.set('Authorization', `Bearer ${token}`);
+  return config;
+});
+
 
 export interface Call {
   _id: string;

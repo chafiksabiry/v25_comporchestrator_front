@@ -31,6 +31,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
+import { authFetch } from '../../../lib/authFetch';
 import {
   markGigSteps,
   type SetupStepField,
@@ -429,7 +430,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
       // 1. Pre-fetch the phone-number directory.
       const phoneByGig: Record<string, boolean> = {};
       try {
-        const r = await fetch(`${PHONE_API()}/phone-numbers`);
+        const r = await authFetch(`${PHONE_API()}/phone-numbers`);
         if (r.ok) {
           const j = await r.json();
           const list = Array.isArray(j?.data)
