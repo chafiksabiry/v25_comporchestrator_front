@@ -702,7 +702,7 @@ export function PhoneNumberPanel() {
     if (!isSilent) setLoading(true);
     try {
       // 1. Fetch phone numbers active
-      const res = await fetch(`${apiBaseUrl}/phone-numbers`);
+      const res = await authFetch(`${apiBaseUrl}/phone-numbers`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
