@@ -1173,9 +1173,18 @@ const CompanyOnboarding = () => {
   }, [companyId, loadCompanyProgress]);
 
 
-  // Dispatch step guide to sidebar
+  // Dispatch step guide to sidebar — runs immediately and whenever phase/step data changes
   useEffect(() => {
-    if (phases.length === 0 || isInitialLoad) return;
+    if (phases.length === 0) {
+      // Phases not loaded yet — show a generic onboarding loading guide
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: t('companyOnboarding.ui.loading', 'Onboarding en cours…'),
+          description: t('companyOnboarding.ui.loadingDesc', 'Chargement de vos étapes…'),
+        },
+      }));
+      return;
+    }
 
     const currentPhaseSteps = phases[displayedPhase - 1]?.steps || [];
     const currentStep = currentPhaseSteps.find(step =>
@@ -1195,18 +1204,18 @@ const CompanyOnboarding = () => {
         },
       }));
     } else {
-      // If all steps in phase are completed, show phase summary or next instruction
+      // All steps in current phase completed → show phase summary or next instruction
       const isLastPhase = displayedPhase === 4;
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
           title: t(`companyOnboarding.phases.${displayedPhase}.title`, phases[displayedPhase - 1]?.title),
           description: isLastPhase
             ? t('companyOnboarding.ui.allPhasesCompleted')
-            : t('companyOnboarding.ui.phaseCompleted')
-        }
+            : t('companyOnboarding.ui.phaseCompleted'),
+        },
       }));
     }
-  }, [completedSteps, displayedPhase, phases]);
+  }, [completedSteps, displayedPhase, phases, t]);
 
   // Fonction pour vérifier si l'utilisateur vient de se connecter à Zoho
   const checkZohoConnection = async () => {
