@@ -1898,7 +1898,7 @@ const CompanyOnboarding = () => {
     return (
       <div className="space-y-8 animate-pulse">
         {/* Phase Cards Skeleton - Premium Glassmorphism */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="relative rounded-3xl p-3 bg-white/40 backdrop-blur-sm border border-white/60 h-28 overflow-hidden shadow-sm">
               <div className="flex items-center space-x-4">
@@ -1956,7 +1956,7 @@ const CompanyOnboarding = () => {
       {stepGuideLayer}
       <div className="space-y-6">
       {/* Progress Overview */}
-      <div className="grid grid-cols-5 gap-4" data-tour="tour-phase-tabs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4" data-tour="tour-phase-tabs">
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
