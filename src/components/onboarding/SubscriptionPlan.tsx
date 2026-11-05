@@ -4,6 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import EmbeddedSubscriptionFlow from '../stripe/EmbeddedSubscriptionFlow';
 import { markCompanyGigsStepDone } from '../../services/gigSetupSync';
+import { authHeaders } from '../../lib/authFetch';
 
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -20,7 +21,8 @@ const SubscriptionPlan = () => {
     if (!companyId) return;
     try {
       const response = await axios.get(
-        `${backUrl}/api/subscriptions/current/${companyId}`
+        `${backUrl}/api/subscriptions/current/${companyId}`,
+        { headers: authHeaders() }
       );
       const subData = (response.data as any).data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {

@@ -11,6 +11,7 @@ import { markGigStepDone } from '../../services/gigSetupSync';
 import { timeToMinutes } from '../gigsaicreation/lib/scheduleUtils';
 import { getOrchestratorApiBase } from '../../lib/paypalCheckout';
 import { limitsFromSubscriptionPayload } from '../../lib/planMetadata';
+import { authFetch } from '../../lib/authFetch';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
@@ -120,7 +121,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         let cancelled = false;
         (async () => {
             try {
-                const res = await fetch(`${getOrchestratorApiBase()}/subscriptions/current/${encodeURIComponent(companyId)}`);
+                const res = await authFetch(`${getOrchestratorApiBase()}/subscriptions/current/${encodeURIComponent(companyId)}`);
                 const json = await res.json();
                 if (cancelled || !json?.success) return;
                 setRepQuota(resolveRepQuota(json));

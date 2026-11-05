@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Sparkles, CreditCard } from 'lucide-react';
 import EmbeddedSubscriptionFlow from '../../stripe/EmbeddedSubscriptionFlow';
 import { markCompanyGigsStepDone } from '../../../services/gigSetupSync';
+import { authHeaders } from '../../../lib/authFetch';
 
 /**
  * Dashboard panel for subscription / upgrade.
@@ -28,7 +29,8 @@ export function SubscriptionPanel() {
     if (!companyId) return;
     try {
       const response = await axios.get(
-        `${backUrl}/api/subscriptions/current/${companyId}`
+        `${backUrl}/api/subscriptions/current/${companyId}`,
+        { headers: authHeaders() }
       );
       const subData = (response.data as { data?: { status?: string; planId?: { name?: string } } }).data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {

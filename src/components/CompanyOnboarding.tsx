@@ -60,6 +60,7 @@ import {
   ONBOARDING_NEXT_STEP_GATE_EVENT,
 } from "./onboarding/OnboardingNextStepButton";
 import { OnboardingBackButton } from "./onboarding/searchCompanyWizard/OnboardingBackButton";
+import { authHeaders } from '../lib/authFetch';
 
 // NOTE: The orchestrator welcome guide is rendered ONCE at the App.tsx level
 // (see useOrchestratorGuide). Do not re-mount it here, otherwise it would
@@ -908,7 +909,8 @@ const CompanyOnboarding = () => {
         const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
         if (backUrl && apiUrl) {
           const { data } = await axios.get(
-            `${backUrl}/api/subscriptions/current/${effectiveCompanyId}`
+            `${backUrl}/api/subscriptions/current/${effectiveCompanyId}`,
+            { headers: authHeaders() }
           );
           const subData = (data as any)?.data;
           const ok = (data as any)?.success !== false && subData;
