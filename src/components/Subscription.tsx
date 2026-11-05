@@ -3,6 +3,7 @@ import { CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import StripePricingTable from './stripe/StripePricingTable';
+import { authHeaders } from '../lib/authFetch';
 
 const Subscription: React.FC = () => {
   const [activePlanName, setActivePlanName] = useState<string | null>(null);
@@ -15,7 +16,7 @@ const Subscription: React.FC = () => {
   const fetchSubscription = async (): Promise<string | null> => {
     if (!companyId) return null;
     try {
-      const response = await axios.get(`${apiBaseUrl}/subscriptions/current/${companyId}`);
+      const response = await axios.get(`${apiBaseUrl}/subscriptions/current/${companyId}`, { headers: authHeaders() });
       const subData = response.data?.data;
       if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
         if (subData.planId?.name) setActivePlanName(subData.planId.name);

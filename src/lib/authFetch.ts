@@ -15,3 +15,9 @@ export function authFetch(input: RequestInfo | URL, init: RequestInit = {}): Pro
   }
   return fetch(input, { ...init, headers });
 }
+
+/** En-tête Authorization de l'utilisateur connecté, pour les appels axios (vide si aucune session). */
+export function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}

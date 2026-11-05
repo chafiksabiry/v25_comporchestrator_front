@@ -46,6 +46,7 @@ import ActiveGigLimitModal, {
 } from './ActiveGigLimitModal';
 import { getOrchestratorApiBase } from '../lib/paypalCheckout';
 import { limitsFromSubscriptionPayload } from '../lib/planMetadata';
+import { authHeaders } from '../lib/authFetch';
 
 interface Gig {
   _id: string;
@@ -617,7 +618,7 @@ const ApprovalPublishing = () => {
       const apiBase = getOrchestratorApiBase();
       const response = await axios.get(
         `${apiBase}/subscriptions/current/${companyId}`,
-        { timeout: 8000 }
+        { timeout: 8000, headers: authHeaders() }
       );
       const body = response.data as any;
       const plan = body?.data?.planId || {};

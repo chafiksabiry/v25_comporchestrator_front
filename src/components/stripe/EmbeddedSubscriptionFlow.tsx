@@ -7,6 +7,7 @@ import {
   EmbeddedCheckout,
 } from '@stripe/react-stripe-js';
 import { X, ShieldCheck, Sparkles, Check, Loader2 } from 'lucide-react';
+import { authHeaders } from '../../lib/authFetch';
 
 interface ApiPlan {
   _id: string;
@@ -157,7 +158,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
           status?: string;
           planId?: { _id?: string; name?: string; stripePriceId?: string };
         };
-      }>(`${baseUrl}/api/subscriptions/current/${companyId}`);
+      }>(`${baseUrl}/api/subscriptions/current/${companyId}`, { headers: authHeaders() });
       const sub = data?.data;
       if (
         sub &&
