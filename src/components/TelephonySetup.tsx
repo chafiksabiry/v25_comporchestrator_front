@@ -14,6 +14,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService, BASE_URL } from '../services/api';
 import { markGigStepDone } from '../services/gigSetupSync';
 import { providerForDestinationCountry } from '../utils/phoneProvider';
+import { NUMBER_SEARCH_FAILURE_KEY, type NumberSearchFailure } from '../utils/numberSearchError';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
@@ -138,6 +139,16 @@ const TelephonySetup = ({
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
+  // Refus du serveur à la recherche (pays non autorisé pour cette entreprise, pays illisible) : message clair affiché au lieu d'une liste vide muette.
+  const [numberSearchError, setNumberSearchError] = useState<string | null>(null);
+  const explainSearchError = (error: unknown): boolean => {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === 'COUNTRY_NOT_ALLOWED' || code === 'COUNTRY_CHECK_UNAVAILABLE') {
+      setNumberSearchError(t(NUMBER_SEARCH_FAILURE_KEY[code as NumberSearchFailure]));
+      return true;
+    }
+    return false;
+  };
   const [isSearchingNumbers, setIsSearchingNumbers] = useState(false);
   const [trialInfo, setTrialInfo] = useState<{
     eligible: boolean;
@@ -485,7 +496,8 @@ const TelephonySetup = ({
     // Check for available numbers first (provider follows destination country)
     try {
       const lineProvider = providerForDestinationCountry(destZone);
-      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, lineProvider);
+      setNumberSearchError(null);
+      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, lineProvider, companyId);
       setAvailableNumbers(Array.isArray(numbers) ? numbers : []);
 
       // If no numbers available, don't proceed with requirements
@@ -501,6 +513,11 @@ const TelephonySetup = ({
       }
     } catch (error) {
       console.error('Error checking available numbers:', error);
+      // Pays refusé par le serveur : inutile de poursuivre (dossier réglementaire), on explique pourquoi aucun numéro n'est proposé.
+      if (explainSearchError(error)) {
+        setAvailableNumbers([]);
+        return;
+      }
       // Even if we fail to check numbers, continue with requirements check
       // as this might be a temporary API issue
     }
@@ -809,11 +826,13 @@ const TelephonySetup = ({
     }
 
     setIsSearchingNumbers(true);
+    setNumberSearchError(null);
     try {
-      const data = await phoneNumberService.searchPhoneNumbers(zone, provider);
+      const data = await phoneNumberService.searchPhoneNumbers(zone, provider, companyId);
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
+      explainSearchError(error);
       setAvailableNumbers([]);
     } finally {
       setIsSearchingNumbers(false);
@@ -1462,6 +1481,12 @@ const TelephonySetup = ({
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {numberSearchError && (
+                <div role="alert" data-testid="number-search-error" className="mx-auto mb-6 max-w-[520px] rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[13px] font-semibold text-red-700">
+                  {numberSearchError}
                 </div>
               )}
 
