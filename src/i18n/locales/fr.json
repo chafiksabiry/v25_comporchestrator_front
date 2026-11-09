@@ -281,6 +281,8 @@
       "unknownFormat": "Format de données inconnu reçu de la recherche.",
       "searchError": "Erreur technique lors de la recherche.",
       "searchFailed": "Échec de la recherche de numéros.",
+      "countryNotAllowed": "Les numéros ne sont disponibles que dans le pays de votre entreprise (ou dans toute l'Europe pour une entreprise européenne). Vérifiez le pays indiqué dans le profil de votre société.",
+      "countryCheckUnavailable": "Impossible de vérifier le pays de votre entreprise pour le moment. Réessayez dans un instant.",
       "selectGigFirst": "Veuillez d'abord sélectionner un Gig à associer.",
       "popupBlocked": "Veuillez autoriser les pop-ups pour finaliser le paiement.",
       "paymentCancelled": "Paiement annulé.",

@@ -30,6 +30,7 @@ import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
 import { markGigStepDone } from '../../../services/gigSetupSync';
 import { providerForDestinationCountry } from '../../../utils/phoneProvider';
+import { numberSearchFailure, NUMBER_SEARCH_FAILURE_KEY } from '../../../utils/numberSearchError';
 import { requirementService } from '../../../services/requirementService';
 import { RequirementFormModal } from '../../RequirementFormModal';
 import { authFetch } from '../../../lib/authFetch';
@@ -811,8 +812,8 @@ export function PhoneNumberPanel() {
       }
 
       const endpoint = searchProvider === 'twilio' 
-        ? `${apiBaseUrl}/phone-numbers/search/twilio?countryCode=${targetCountry}&limit=${searchLimit}`
-        : `${apiBaseUrl}/phone-numbers/search?countryCode=${targetCountry}&limit=${searchLimit}`;
+        ? `${apiBaseUrl}/phone-numbers/search/twilio?companyId=${encodeURIComponent(companyId)}&countryCode=${targetCountry}&limit=${searchLimit}`
+        : `${apiBaseUrl}/phone-numbers/search?companyId=${encodeURIComponent(companyId)}&countryCode=${targetCountry}&limit=${searchLimit}`;
       console.log('[handleSearchNumbers] Fetching telephony search endpoint:', endpoint);
       const res = await authFetch(endpoint);
       if (res.ok) {
@@ -852,7 +853,9 @@ export function PhoneNumberPanel() {
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        toast.error(errorData.error || t('phoneNumberPanel.toasts.searchError'), { duration: 6000 });
+        // Pays refusé par le serveur (hors du pays de l'entreprise / de l'Europe) ou illisible : message clair traduit.
+        const failure = numberSearchFailure(res.status, errorData);
+        toast.error(failure ? t(NUMBER_SEARCH_FAILURE_KEY[failure]) : errorData.error || t('phoneNumberPanel.toasts.searchError'), { duration: 8000 });
       }
     } catch (err) {
       console.error(err);

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { numberSearchFailure } from '../utils/numberSearchError';
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -179,9 +180,15 @@ export const phoneNumberService = {
     }
   },
 
+  /**
+   * Le serveur ne cherche des numéros que pour l'entreprise de l'appelant (`companyId` obligatoire) et dans son pays (ou en Europe pour une
+   * entreprise européenne). Refus de pays (403 COUNTRY_NOT_ALLOWED) et pays illisible (503) : l'erreur est levée (PhoneNumberServiceError,
+   * `code` = NUMBER_SEARCH_FAILURE) pour être expliquée ; toute autre panne renvoie une liste vide, comme avant.
+   */
   searchPhoneNumbers: async (
     countryCode: string,
-    provider: 'telnyx' | 'twilio' = 'telnyx'
+    provider: 'telnyx' | 'twilio' = 'telnyx',
+    companyId?: string | null
   ): Promise<AvailablePhoneNumber[]> => {
     try {
       // France is Twilio-only
@@ -193,7 +200,7 @@ export const phoneNumberService = {
       
 
       const response = await api.get<AvailablePhoneNumber[]>(endpoint, {
-        params: { countryCode, limit: 50 }
+        params: { countryCode, limit: 50, companyId }
       });
 
       // Handle empty or invalid response.
@@ -227,6 +234,17 @@ export const phoneNumberService = {
 
       return numbers;
     } catch (error) {
+      const failure = numberSearchFailure(
+        (error as ApiError)?.response?.status,
+        (error as ApiError)?.response?.data
+      );
+      if (failure) {
+        throw new PhoneNumberServiceError(
+          failure === 'COUNTRY_NOT_ALLOWED' ? 'Country not allowed' : 'Company country lookup failed',
+          failure,
+          (error as ApiError).response?.status
+        );
+      }
       // Always return empty array on any search failure — never show mock/stale data
       console.warn(`⚠️ ${provider} number search failed, returning empty:`, error);
       return [];
