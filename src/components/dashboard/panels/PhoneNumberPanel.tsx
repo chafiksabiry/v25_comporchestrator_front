@@ -25,6 +25,7 @@ import {
   Mic,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { SessionExpiredNotice } from './SessionExpiredNotice';
 import toast from 'react-hot-toast';
 import { gigsApi } from '../services/api/endpoints';
 import { waitForStripePopup, getOrchestratorApiBase } from '../../../lib/paypalCheckout';
@@ -152,10 +153,9 @@ interface GigAndReps {
   enrolledReps: EnrolledRep[];
 }
 
-export function PhoneNumberPanel() {
+function PhoneNumberPanelContent({ companyId }: { companyId: string }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const [phoneNumbers, setPhoneNumbers] = useState<PurchasedNumber[]>([]);
   const [gigsAndReps, setGigsAndReps] = useState<GigAndReps[]>([]);
   /** gigId → required team size (from gig.team.size) */
@@ -2925,4 +2925,11 @@ export function PhoneNumberPanel() {
     </div>
   );
 }
+/** Sans société en session : message de reconnexion, aucun appel API (plus de repli sur une société codée en dur). */
+export function PhoneNumberPanel() {
+  const companyId = Cookies.get('companyId');
+  if (!companyId) return <SessionExpiredNotice />;
+  return <PhoneNumberPanelContent companyId={companyId} />;
+}
+
 export default PhoneNumberPanel;

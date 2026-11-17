@@ -22,6 +22,7 @@ import {
   PhoneOutgoing
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { SessionExpiredNotice } from './SessionExpiredNotice';
 import toast from 'react-hot-toast';
 import { PremiumAudioPlayer } from '../components/PremiumAudioPlayer';
 import {
@@ -275,7 +276,7 @@ function mapApiCallToCompanyCall(raw: Record<string, unknown>): CompanyCall {
   };
 }
 
-export function MinutesCompanyPanel() {
+function MinutesCompanyPanelContent({ companyId }: { companyId: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [minutesWallet, setMinutesWallet] = useState<MinutesState | null>(null);
   const [calls, setCalls] = useState<CompanyCall[]>([]);
@@ -297,7 +298,6 @@ export function MinutesCompanyPanel() {
   const [selectedCall, setSelectedCall] = useState<CompanyCall | null>(null);
   const [selectedCallTab, setSelectedCallTab] = useState<'transcript' | 'insights'>('transcript');
 
-  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const apiBaseUrl = getOrchestratorApiBase();
 
   const fetchData = async (isSilent = false) => {
@@ -1038,4 +1038,11 @@ export function MinutesCompanyPanel() {
     </div>
   );
 }
+/** Sans société en session : message de reconnexion, aucun appel API (plus de repli sur une société codée en dur). */
+export function MinutesCompanyPanel() {
+  const companyId = Cookies.get('companyId');
+  if (!companyId) return <SessionExpiredNotice />;
+  return <MinutesCompanyPanelContent companyId={companyId} />;
+}
+
 export default MinutesCompanyPanel;

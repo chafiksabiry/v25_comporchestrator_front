@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authHeaders } from '../lib/authFetch';
 
 interface DocumentUploadResponse {
   id: string;
@@ -37,6 +38,7 @@ export const documentService = {
         formData,
         {
           headers: {
+            ...authHeaders(),
             'Content-Type': 'multipart/form-data',
           },
         }

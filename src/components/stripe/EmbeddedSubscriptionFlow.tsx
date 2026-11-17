@@ -252,7 +252,7 @@ const EmbeddedSubscriptionFlow: React.FC<Props> = ({
           planName: plan.name,
           provider: 'stripe',
           uiMode: 'embedded',
-        });
+        }, { headers: authHeaders() });
         if (!data?.clientSecret) {
           throw new Error('No clientSecret returned by the server');
         }
