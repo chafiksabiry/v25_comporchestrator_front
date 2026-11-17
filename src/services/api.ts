@@ -448,7 +448,8 @@ export const phoneNumberService = {
     }
   },
 
-  createTwilioBundle: async (data: { friendlyName: string; email: string; regulationSid: string; isoCountry: string }): Promise<any> => {
+  // L'e-mail de contact et le libellé du dossier sont décidés par le serveur (contact de l'entreprise) : ne jamais les envoyer d'ici.
+  createTwilioBundle: async (data: { regulationSid: string; isoCountry: string; type?: string; endUserType?: string }): Promise<any> => {
     try {
       const response = await api.post('/phone-numbers/twilio/bundles', data, STRICT_STATUS);
       return response.data;

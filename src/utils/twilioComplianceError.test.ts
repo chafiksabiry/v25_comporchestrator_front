@@ -12,6 +12,12 @@ test('404 (dossier d\'une autre entreprise) : message « introuvable »', () => 
   assert.equal(twilioComplianceErrorKey({ status: 404, message: 'Resource not found' }), TWILIO_COMPLIANCE_ERROR_KEY.notFound);
 });
 
+test('400 contact_email_required : message « complétez le contact de l\'entreprise »', () => {
+  assert.equal(twilioComplianceErrorKey({ status: 400, code: 'contact_email_required', message: 'x' }), TWILIO_COMPLIANCE_ERROR_KEY.contactEmailRequired);
+  assert.equal(twilioComplianceErrorKey({ response: { status: 400, data: { code: 'contact_email_required' } } }), TWILIO_COMPLIANCE_ERROR_KEY.contactEmailRequired);
+  assert.equal(twilioComplianceErrorKey({ code: 'TWILIO_CUSTOMER_NAME_REQUIRED' }), TWILIO_COMPLIANCE_ERROR_KEY.customerNameRequired);
+});
+
 test('les autres erreurs gardent leur propre message', () => {
   assert.equal(twilioComplianceErrorKey({ status: 500 }), null);
   assert.equal(twilioComplianceErrorKey(new Error('boom')), null);
