@@ -19,6 +19,7 @@ import { requirementService, RequirementDetail } from '../services/requirementSe
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
+import { requireSid, twilioComplianceErrorKey, TWILIO_COMPLIANCE_ERROR_KEY } from '../utils/twilioComplianceError';
 import { ONBOARDING_NEXT_STEP_GATE_EVENT } from './onboarding/OnboardingNextStepButton';
 
 interface PhoneNumber {
@@ -472,7 +473,13 @@ const TelephonySetup = ({
 
     } catch (error) {
       console.error('Error fetching Twilio requirements:', error);
-      setRequirementStatus((prev: any) => ({ ...prev, isChecking: false, error: 'Failed to fetch requirements' }));
+      // A refused check (403 / 404 / other) never counts as "no requirements": keep the step incomplete and show why.
+      setRequirementStatus((prev: any) => ({
+        ...prev,
+        isChecking: false,
+        isComplete: false,
+        error: t(twilioComplianceErrorKey(error) || TWILIO_COMPLIANCE_ERROR_KEY.requirements)
+      }));
     }
   };
 
@@ -1012,7 +1019,7 @@ const TelephonySetup = ({
               // For simplicity, we create generic end user.
             }
           });
-          endUserSid = endUser.sid;
+          endUserSid = requireSid(endUser);
 
         }
 
@@ -1023,7 +1030,7 @@ const TelephonySetup = ({
           regulationSid: regulationSid,
           isoCountry: destinationZone
         });
-        const bundleSid = bundle.sid;
+        const bundleSid = requireSid(bundle);
 
 
         // 3. Assign End User to Bundle
@@ -1044,7 +1051,7 @@ const TelephonySetup = ({
               {} // attributes
             );
 
-            await phoneNumberService.assignItemToBundle(bundleSid, doc.sid);
+            await phoneNumberService.assignItemToBundle(bundleSid, requireSid(doc));
           }
         }
 
@@ -1063,7 +1070,7 @@ const TelephonySetup = ({
             postalCode: values['postal_code'] || '',
             isoCountry: destinationZone
           });
-          addressSid = address.sid;
+          addressSid = requireSid(address);
 
         }
 
@@ -1109,7 +1116,13 @@ const TelephonySetup = ({
       }
     } catch (error) {
       console.error('❌ Error submitting requirements:', error);
-      setPurchaseError(error instanceof Error ? error.message : 'Failed to submit requirements');
+      // Any failed step stops the chain here: the requirements are never marked complete and the user sees why.
+      const twilioKey = provider === 'twilio'
+        ? (twilioComplianceErrorKey(error)
+          || ((error as { code?: string } | null)?.code === 'TWILIO_INCOMPLETE' ? TWILIO_COMPLIANCE_ERROR_KEY.incomplete : null))
+        : null;
+      if (provider === 'twilio') setRequirementStatus(prev => ({ ...prev, isComplete: false }));
+      setPurchaseError(twilioKey ? t(twilioKey) : (error instanceof Error ? error.message : 'Failed to submit requirements'));
       setPurchaseStatus('error');
     }
   };

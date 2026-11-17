@@ -1535,7 +1535,11 @@
     "nextStepRequiresNumber": "Purchase at least one phone number to continue",
     "errors": {
       "configurationTitle": "Configuration Error",
-      "companyIdMissing": "Required company ID not found. Please refresh the page if this persists."
+      "companyIdMissing": "Required company ID not found. Please refresh the page if this persists.",
+      "twilioForbidden": "Your account is not allowed to submit regulatory documents. Only a company account (not an agent) can do this.",
+      "twilioNotFound": "This regulatory bundle or document was not found for your company. Please start the submission again.",
+      "twilioIncomplete": "The regulatory submission could not be completed. Please try again.",
+      "twilioRequirements": "We couldn't check the regulatory requirements for this country. Please try again."
     },
     "selectGigProfile": "Select Gig Profile",
     "required": "Required",
