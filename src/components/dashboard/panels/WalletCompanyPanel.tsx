@@ -19,6 +19,7 @@ import {
   Plus,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import { SessionExpiredNotice } from './SessionExpiredNotice';
 import toast from 'react-hot-toast';
 import CallDetailModal, { type NormalizedCall } from '../components/CallDetailModal';
 import { callsApi } from '../services/api/calls';
@@ -199,7 +200,7 @@ function repTxCauseLabel(type?: string): { label: string; tone: string } {
   }
 }
 
-export function WalletCompanyPanel() {
+function WalletCompanyPanelContent({ companyId }: { companyId: string }) {
   const { t } = useTranslation();
   const [wallet, setWallet] = useState<WalletState | null>(null);
   const [agentWithdrawals, setAgentWithdrawals] = useState<AgentWithdrawal[]>([]);
@@ -223,7 +224,6 @@ export function WalletCompanyPanel() {
   const [withdrawAmount, setWithdrawAmount] = useState('200');
   const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
 
-  const companyId = Cookies.get('companyId') || '6a0bfd35d605ccca8b51e13b';
   const apiBaseUrl = getOrchestratorApiBase();
 
   const fetchData = async (isSilent = false) => {
@@ -1103,4 +1103,11 @@ export function WalletCompanyPanel() {
     </div>
   );
 }
+/** Sans société en session : message de reconnexion, aucun appel API (plus de repli sur une société codée en dur). */
+export function WalletCompanyPanel() {
+  const companyId = Cookies.get('companyId');
+  if (!companyId) return <SessionExpiredNotice />;
+  return <WalletCompanyPanelContent companyId={companyId} />;
+}
+
 export default WalletCompanyPanel;

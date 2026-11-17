@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authHeaders } from '../lib/authFetch';
 
 interface RequirementUpdate {
   requirementId: string;
@@ -11,7 +12,8 @@ export const requirementGroupService = {
     try {
       await axios.patch(
         `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/${groupId}/requirements`,
-        { requirements }
+        { requirements },
+        { headers: authHeaders() }
       );
     } catch (error) {
       console.error('Error updating requirements:', error);

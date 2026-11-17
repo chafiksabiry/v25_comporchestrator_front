@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { documentService } from '../services/documentService';
 import { addressService } from '../services/addressService';
 import { requirementGroupService } from '../services/requirementGroupService';
+import { authFetch } from '../lib/authFetch';
 import {
   FileText,
   Upload,
@@ -12,6 +13,39 @@ import {
   ArrowRight,
   ArrowLeft
 } from 'lucide-react';
+
+/**
+ * Ouvre une pièce réglementaire : la route de téléchargement exige le jeton (JWT + société
+ * propriétaire), qu'un simple lien <a href> ne peut pas envoyer. On télécharge donc via
+ * authFetch, puis on affiche le Blob par une URL d'objet temporaire, révoquée ensuite.
+ */
+async function openAuthenticatedDocument(documentId: string, filename?: string): Promise<void> {
+  // Onglet ouvert pendant le clic (sinon bloqué par le navigateur), rempli après le téléchargement.
+  const tab = window.open('', '_blank');
+  try {
+    const res = await authFetch(
+      `${import.meta.env.VITE_API_BASE_URL}/documents/${encodeURIComponent(documentId)}/download`
+    );
+    if (!res.ok) throw new Error(`Download failed (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    if (tab) {
+      tab.location.href = url;
+    } else {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'document';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (err) {
+    tab?.close();
+    throw err;
+  }
+}
+
 
 interface RequirementType {
   id: string;
@@ -632,14 +666,21 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                         {existingValue?.submittedAt && `Submitted: ${new Date(existingValue.submittedAt).toLocaleString()}`}
                       </span>
                     </div>
-                    <a
-                      href={`${import.meta.env.VITE_API_BASE_URL}/documents/${JSON.parse(existingValue.value).id}/download`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const raw = existingValue?.value;
+                        if (!raw) return;
+                        const doc = JSON.parse(raw);
+                        openAuthenticatedDocument(doc.id, doc.filename).catch(err => {
+                          console.error('Error downloading document:', err);
+                          setErrors(prev => ({ ...prev, [req.id]: 'Unable to open the document. Please sign in again and retry.' }));
+                        });
+                      }}
                       className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       View Document
-                    </a>
+                    </button>
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   </div>
                 </div>

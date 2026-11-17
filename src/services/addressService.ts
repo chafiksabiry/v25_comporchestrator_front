@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authHeaders } from '../lib/authFetch';
 
 interface AddressData {
   businessName: string;
@@ -31,7 +32,8 @@ export const addressService = {
       
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/addresses`,
-        data
+        data,
+        { headers: authHeaders() }
       );
       return response.data as AddressResponse;
     } catch (error) {

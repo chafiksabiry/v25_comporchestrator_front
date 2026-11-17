@@ -1,3 +1,5 @@
+import { authFetch } from './authFetch';
+
 export type PaypalPopupOutcome = 'approved' | 'cancelled' | 'closed';
 
 const RETURN_ORIGINS = new Set([
@@ -99,7 +101,7 @@ export type CheckoutInitBody =
   | { companyId: string; purpose: 'tokens_purchase'; provider: 'stripe' | 'paypal'; tokens: number };
 
 export async function initCompanyCheckout(apiBaseUrl: string, body: CheckoutInitBody) {
-  const res = await fetch(`${apiBaseUrl}/payments/checkout/init`, {
+  const res = await authFetch(`${apiBaseUrl}/payments/checkout/init`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -311,7 +313,7 @@ export async function initSubscriptionCheckout(
   apiBaseUrl: string,
   body: SubscriptionCheckoutInitBody & { uiMode?: 'embedded' | 'hosted' }
 ) {
-  const res = await fetch(`${apiBaseUrl}/subscriptions/checkout/init`, {
+  const res = await authFetch(`${apiBaseUrl}/subscriptions/checkout/init`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)

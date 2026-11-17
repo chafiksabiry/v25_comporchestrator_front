@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authHeaders } from '../lib/authFetch';
 
 interface ApiError {
   response?: {
@@ -119,7 +120,8 @@ export const requirementService = {
       // First, try to get existing group
       try {
         const response = await axios.get<RequirementGroup>(
-          `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`
+          `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`,
+          { headers: authHeaders() }
         );
         
         return {
@@ -136,7 +138,8 @@ export const requirementService = {
               {
                 companyId,
                 destinationZone
-              }
+              },
+              { headers: authHeaders() }
             );
             
             return {
@@ -152,7 +155,8 @@ export const requirementService = {
                 // If group already exists (rare race condition)
                 
                 const retryResponse = await axios.get<RequirementGroup>(
-                  `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`
+                  `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`,
+                  { headers: authHeaders() }
                 );
                 return {
                   group: retryResponse.data,
@@ -183,6 +187,7 @@ export const requirementService = {
         formData,
         {
           headers: {
+            ...authHeaders(),
             'Content-Type': 'multipart/form-data'
           }
         }
@@ -201,7 +206,8 @@ export const requirementService = {
       
       const response = await axios.post<RequirementGroup>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/values/${field}`,
-        { value }
+        { value },
+        { headers: authHeaders() }
       );
       
       return response.data;
@@ -236,7 +242,8 @@ export const requirementService = {
         validUntil?: string;
         isComplete: boolean;
       }>(
-        `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/status`
+        `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/status`,
+        { headers: authHeaders() }
       );
       
       return response.data;
@@ -251,7 +258,8 @@ export const requirementService = {
     try {
       
       const response = await axios.get<GroupStatusResponse>(
-        `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/${groupId}/status`
+        `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/${groupId}/status`,
+        { headers: authHeaders() }
       );
       
       return response.data;
@@ -276,7 +284,9 @@ export const requirementService = {
         groupId?: string;
         telnyxId?: string;
       }>(
-        `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/validate`
+        `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/validate`,
+        undefined,
+        { headers: authHeaders() }
       );
       
       return response.data;
