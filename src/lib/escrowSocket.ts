@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import { getAuthToken } from './authFetch';
 
 export type EscrowMessage = {
   type?: string;
@@ -50,6 +51,8 @@ export function connectEscrowSocket(
   let socket: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let disposed = false;
+  // Consecutive failed attempts (closed before opening, or auth refused): backs off instead of hammering the server.
+  let failures = 0;
 
   const RELEVANT_TYPES = new Set([
     'escrow_update',
@@ -59,12 +62,22 @@ export function connectEscrowSocket(
 
   const connect = () => {
     if (disposed) return;
+    // The server requires the user's JWT (sub-protocol `bearer, <token>`): no session, no connection and no retry loop.
+    const token = getAuthToken();
+    if (!token) return;
+    let opened = false;
     try {
-      socket = new WebSocket(wsUrl);
+      socket = new WebSocket(wsUrl, ['bearer', token]);
     } catch {
+      failures += 1;
       scheduleReconnect();
       return;
     }
+
+    socket.onopen = () => {
+      opened = true;
+      failures = 0;
+    };
 
     socket.onmessage = (event) => {
       let data: EscrowMessage;
@@ -86,8 +99,17 @@ export function connectEscrowSocket(
       onCompanyUpdate();
     };
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       socket = null;
+      // 4401: token expired mid-connection; 401: refused. Reconnect with the current token
+      // right away if it changed, otherwise back off (no token => no reconnect, see connect()).
+      const authClose = event.code === 4401 || event.code === 401;
+      if (authClose && getAuthToken() && getAuthToken() !== token) {
+        failures = 0;
+        scheduleReconnect(0);
+        return;
+      }
+      if (authClose || !opened) failures += 1;
       scheduleReconnect();
     };
 
@@ -100,12 +122,13 @@ export function connectEscrowSocket(
     };
   };
 
-  const scheduleReconnect = () => {
-    if (disposed || reconnectTimer) return;
+  const scheduleReconnect = (delayMs?: number) => {
+    if (disposed || reconnectTimer || !getAuthToken()) return;
+    const delay = delayMs ?? Math.min(60000, 5000 * 2 ** Math.min(failures, 4));
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       connect();
-    }, 5000);
+    }, delay);
   };
 
   connect();

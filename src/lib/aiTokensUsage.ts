@@ -126,7 +126,7 @@ export async function chargeCompanyAiUsage(opts: {
   if (used <= 0) return { tokens: await fetchCompanyAiTokens(id), charged: false };
 
   const apiBaseUrl = getOrchestratorApiBase();
-  const res = await fetch(`${apiBaseUrl}/tokens-company/charge-usage`, {
+  const res = await authFetch(`${apiBaseUrl}/tokens-company/charge-usage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

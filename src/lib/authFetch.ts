@@ -7,8 +7,17 @@
  * either. Now that the backend requires one, every call to those endpoints
  * must go through this helper instead of a bare `fetch`.
  */
+/** Jeton de l'utilisateur connecté (même source pour fetch, axios et WebSocket) ; null sans session. */
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem('token');
+  } catch {
+    return null;
+  }
+}
+
 export function authFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   const headers = new Headers(init.headers);
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
@@ -18,6 +27,6 @@ export function authFetch(input: RequestInfo | URL, init: RequestInit = {}): Pro
 
 /** En-tête Authorization de l'utilisateur connecté, pour les appels axios (vide si aucune session). */
 export function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
