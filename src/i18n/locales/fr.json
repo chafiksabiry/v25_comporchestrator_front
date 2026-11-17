@@ -1535,7 +1535,11 @@
     "nextStepRequiresNumber": "Achetez au moins un numéro pour passer à l'étape suivante",
     "errors": {
       "configurationTitle": "Erreur de Configuration",
-      "companyIdMissing": "ID d'entreprise requis introuvable. Veuillez rafraîchir la page si le problème persiste."
+      "companyIdMissing": "ID d'entreprise requis introuvable. Veuillez rafraîchir la page si le problème persiste.",
+      "twilioForbidden": "Votre compte n'est pas autorisé à déposer des documents réglementaires. Seul un compte entreprise (pas un agent) peut le faire.",
+      "twilioNotFound": "Ce dossier ou ce document réglementaire est introuvable pour votre entreprise. Veuillez recommencer le dépôt.",
+      "twilioIncomplete": "Le dépôt réglementaire n'a pas pu aboutir. Veuillez réessayer.",
+      "twilioRequirements": "Impossible de vérifier les exigences réglementaires pour ce pays. Veuillez réessayer."
     },
     "selectGigProfile": "Sélectionner un Profil Gig",
     "required": "Requis",

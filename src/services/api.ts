@@ -53,6 +53,11 @@ const api = axios.create({
   },
 });
 
+// Twilio regulatory calls (/phone-numbers/twilio/*) must not treat a 4xx as success: the server answers 403 (agent / no company)
+// and 404 (bundle or item not owned). The instance-wide validateStatus above lets 4xx through for other callers, so these calls
+// opt into a strict 2xx check and handleApiError turns the failure into a PhoneNumberServiceError carrying the status.
+const STRICT_STATUS = { validateStatus: (status: number) => status >= 200 && status < 300 };
+
 // The phone-number routes require the logged-in user's token.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -405,7 +410,8 @@ export const phoneNumberService = {
   getTwilioRequirements: async (countryCode: string, type: string = 'local'): Promise<any> => {
     try {
       const response = await api.get('/phone-numbers/twilio/requirements', {
-        params: { countryCode, type }
+        params: { countryCode, type },
+        ...STRICT_STATUS
       });
       return response.data;
     } catch (error) {
@@ -415,7 +421,7 @@ export const phoneNumberService = {
 
   createTwilioEndUser: async (data: { friendlyName: string; type: string; attributes: any }): Promise<any> => {
     try {
-      const response = await api.post('/phone-numbers/twilio/end-users', data);
+      const response = await api.post('/phone-numbers/twilio/end-users', data, STRICT_STATUS);
       return response.data;
     } catch (error) {
       return handleApiError(error, 'createTwilioEndUser');
@@ -433,7 +439,8 @@ export const phoneNumberService = {
       const response = await api.post('/phone-numbers/twilio/documents', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        ...STRICT_STATUS
       });
       return response.data;
     } catch (error) {
@@ -443,7 +450,7 @@ export const phoneNumberService = {
 
   createTwilioBundle: async (data: { friendlyName: string; email: string; regulationSid: string; isoCountry: string }): Promise<any> => {
     try {
-      const response = await api.post('/phone-numbers/twilio/bundles', data);
+      const response = await api.post('/phone-numbers/twilio/bundles', data, STRICT_STATUS);
       return response.data;
     } catch (error) {
       return handleApiError(error, 'createTwilioBundle');
@@ -452,7 +459,7 @@ export const phoneNumberService = {
 
   assignItemToBundle: async (bundleSid: string, objectSid: string): Promise<any> => {
     try {
-      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/items`, { objectSid });
+      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/items`, { objectSid }, STRICT_STATUS);
       return response.data;
     } catch (error) {
       return handleApiError(error, 'assignItemToBundle');
@@ -461,7 +468,7 @@ export const phoneNumberService = {
 
   submitTwilioBundle: async (bundleSid: string): Promise<any> => {
     try {
-      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/submit`);
+      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/submit`, undefined, STRICT_STATUS);
       return response.data;
     } catch (error) {
       return handleApiError(error, 'submitTwilioBundle');
@@ -477,7 +484,7 @@ export const phoneNumberService = {
     isoCountry: string;
   }): Promise<any> => {
     try {
-      const response = await api.post('/phone-numbers/twilio/addresses', data);
+      const response = await api.post('/phone-numbers/twilio/addresses', data, STRICT_STATUS);
       return response.data;
     } catch (error) {
       return handleApiError(error, 'createTwilioAddress');
