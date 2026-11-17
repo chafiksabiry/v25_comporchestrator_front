@@ -20,6 +20,7 @@ import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 import { requireSid, twilioComplianceErrorKey, TWILIO_COMPLIANCE_ERROR_KEY } from '../utils/twilioComplianceError';
+import { bundleRequest, customerNameFrom, endUserTypeFrom, hasAddressFields } from '../utils/twilioBundle';
 import { ONBOARDING_NEXT_STEP_GATE_EVENT } from './onboarding/OnboardingNextStepButton';
 
 interface PhoneNumber {
@@ -1006,6 +1007,13 @@ const TelephonySetup = ({
         const regulationSid = requirementStatus.groupId; // We stored regulationSid here
         if (!regulationSid) throw new Error('Regulation SID missing');
 
+        const endUserType = endUserTypeFrom(countryReq.requirements?.find(r => r.id === 'end_user')?.name);
+        // Address holder: the name the user entered (never a generic placeholder). Checked before anything is sent to Twilio.
+        const customerName = customerNameFrom(values);
+        if (hasAddressFields(values) && !customerName) {
+          throw Object.assign(new Error('Customer name is required for the address'), { code: 'TWILIO_CUSTOMER_NAME_REQUIRED' });
+        }
+
         // 1. Create End User
         const endUserVal = values['end_user'];
         let endUserSid;
@@ -1013,7 +1021,7 @@ const TelephonySetup = ({
           // Assuming textual input contains JSON or simple string name
           const endUser = await phoneNumberService.createTwilioEndUser({
             friendlyName: typeof endUserVal === 'string' ? endUserVal : 'End User',
-            type: countryReq.requirements?.find(r => r.id === 'end_user')?.name.split(' ')[0].toLowerCase() || 'individual',
+            type: endUserType,
             attributes: {
               // business_name: ... if strictly structured input.
               // For simplicity, we create generic end user.
@@ -1023,13 +1031,8 @@ const TelephonySetup = ({
 
         }
 
-        // 2. Create Bundle
-        const bundle = await phoneNumberService.createTwilioBundle({
-          friendlyName: `France: Local - Business`,
-          email: 'chafik.sabiry@aiagentsco.tech',
-          regulationSid: regulationSid,
-          isoCountry: destinationZone
-        });
+        // 2. Create Bundle (contact email and friendly name are set server-side from the company)
+        const bundle = await phoneNumberService.createTwilioBundle(bundleRequest(regulationSid, destinationZone, endUserType));
         const bundleSid = requireSid(bundle);
 
 
@@ -1061,9 +1064,9 @@ const TelephonySetup = ({
 
         // 6. Handle Address creation if needed (simplified check)
         let addressSid = twilioRegulatorySids.addressSid;
-        if (values['street'] || values['city'] || values['postal_code']) {
+        if (hasAddressFields(values)) {
           const address = await phoneNumberService.createTwilioAddress({
-            customerName: values['customer_name'] || 'Business',
+            customerName,
             street: values['street'] || '',
             city: values['city'] || '',
             region: values['region'] || '',

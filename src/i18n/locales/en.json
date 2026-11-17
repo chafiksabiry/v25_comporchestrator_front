@@ -1539,7 +1539,9 @@
       "twilioForbidden": "Your account is not allowed to submit regulatory documents. Only a company account (not an agent) can do this.",
       "twilioNotFound": "This regulatory bundle or document was not found for your company. Please start the submission again.",
       "twilioIncomplete": "The regulatory submission could not be completed. Please try again.",
-      "twilioRequirements": "We couldn't check the regulatory requirements for this country. Please try again."
+      "twilioRequirements": "We couldn't check the regulatory requirements for this country. Please try again.",
+      "twilioContactEmailRequired": "No contact email is set for your company. Complete your company profile (contact email) before submitting the regulatory bundle.",
+      "twilioCustomerNameRequired": "Please enter the name of the business or person the address belongs to."
     },
     "selectGigProfile": "Select Gig Profile",
     "required": "Required",

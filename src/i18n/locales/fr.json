@@ -1539,7 +1539,9 @@
       "twilioForbidden": "Votre compte n'est pas autorisé à déposer des documents réglementaires. Seul un compte entreprise (pas un agent) peut le faire.",
       "twilioNotFound": "Ce dossier ou ce document réglementaire est introuvable pour votre entreprise. Veuillez recommencer le dépôt.",
       "twilioIncomplete": "Le dépôt réglementaire n'a pas pu aboutir. Veuillez réessayer.",
-      "twilioRequirements": "Impossible de vérifier les exigences réglementaires pour ce pays. Veuillez réessayer."
+      "twilioRequirements": "Impossible de vérifier les exigences réglementaires pour ce pays. Veuillez réessayer.",
+      "twilioContactEmailRequired": "Aucune adresse e-mail de contact n'est renseignée pour votre entreprise. Complétez le profil de l'entreprise (e-mail de contact) avant de déposer le dossier réglementaire.",
+      "twilioCustomerNameRequired": "Indiquez le nom de l'entreprise ou de la personne titulaire de l'adresse."
     },
     "selectGigProfile": "Sélectionner un Profil Gig",
     "required": "Requis",
