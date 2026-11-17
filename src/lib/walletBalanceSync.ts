@@ -146,7 +146,12 @@ export async function triggerCompanyWalletReconcile(companyId?: string): Promise
 
   const apiBaseUrl = getApiBaseUrl();
   try {
-    await fetch(`${apiBaseUrl}/escrow/reconcile/${compId}`, { method: 'POST' });
+    // Reconcile requires the company owner's JWT: a member (403) or an expired session (401)
+    // is not an error for the UI — the balance refresh that follows still runs.
+    const res = await authFetch(`${apiBaseUrl}/escrow/reconcile/${compId}`, { method: 'POST' });
+    if (!res.ok && res.status !== 401 && res.status !== 403) {
+      console.warn('[walletBalanceSync] reconcile request failed:', res.status);
+    }
   } catch (err) {
     console.warn('[walletBalanceSync] reconcile request failed:', err);
   }
