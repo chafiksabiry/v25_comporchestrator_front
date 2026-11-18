@@ -1,2 +1,4 @@
 node_modules/
 .env
+# Build output, rebuilt by Netlify on each deploy (netlify.toml: npm run build, publish = dist)
+dist/
