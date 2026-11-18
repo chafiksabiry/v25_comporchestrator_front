@@ -3,6 +3,7 @@ import PremiumDashboard from '../../training/components/Dashboard/PremiumDashboa
 import { getActiveAgentsForCompany } from '../../../api/matching';
 import OperationsDashboard from './OperationsDashboard';
 import Cookies from 'js-cookie';
+import { authFetch } from '../../../lib/authFetch';
 import { isCallCenterWorkspace } from '../../../utils/callCenterWorkspace';
 
 export default function PremiumDashboardPage() {
@@ -79,7 +80,7 @@ export default function PremiumDashboardPage() {
             if (selectedGigId !== 'all') {
               leadsUrl = `${leadsUrl}?gigId=${selectedGigId}`;
             }
-            const leadsResponse = await fetch(leadsUrl);
+            const leadsResponse = await authFetch(leadsUrl);
             if (leadsResponse.ok) {
               const leadsData = await leadsResponse.json();
               stats.activeLeads = leadsData.count || 0;
@@ -92,7 +93,7 @@ export default function PremiumDashboardPage() {
             const callsBase = callsApiUrl.endsWith('/api') ? callsApiUrl : `${callsApiUrl}/api`;
             
             // A. Fetch GLOBAL stats for the cards (Total company calls)
-            const globalResponse = await fetch(`${callsBase}/calls?companyId=${companyId}`);
+            const globalResponse = await authFetch(`${callsBase}/calls?companyId=${companyId}`);
             if (globalResponse.ok) {
               const globalData = await globalResponse.json();
               stats.calls = globalData.count || 0;
@@ -129,7 +130,7 @@ export default function PremiumDashboardPage() {
             const filteredUrl = `${callsBase}/calls?${filterParams.toString()}`;
             console.log('[Dashboard] Fetching filtered calls:', filteredUrl);
 
-            const callsResponse = await fetch(filteredUrl);
+            const callsResponse = await authFetch(filteredUrl);
             if (callsResponse.ok) {
               const callsDataRaw = await callsResponse.json();
               const filteredArray = Array.isArray(callsDataRaw.data) ? callsDataRaw.data : (Array.isArray(callsDataRaw) ? callsDataRaw : []);

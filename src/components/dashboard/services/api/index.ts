@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { env } from '../../lib/env';
+import { getAuthToken } from '../../../../lib/authFetch';
 
 const api = axios.create({
   baseURL: env.API_URL,
@@ -15,7 +16,12 @@ headers: {
 }
 });
 
-
+// Calls routes (VITE_API_URL_CALL) are scoped to the logged-in user's company: send their JWT.
+apiCall.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) config.headers?.set('Authorization', `Bearer ${token}`);
+  return config;
+});
 
 // Request interceptor
 /* api.interceptors.request.use(

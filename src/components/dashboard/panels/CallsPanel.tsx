@@ -23,6 +23,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { authHeaders } from '../../../lib/authFetch';
 import { GlobalAIAssistant } from '../components/GlobalAIAssistant';
 import { AIAssistantAPI } from '../components/GlobalAIAssistant';
 
@@ -80,7 +81,8 @@ function CallsPanel() {
       if (!currentUser?.id) return;
       
       const response = await axios.get(`${import.meta.env.VITE_API_URL_CALL}/api/calls`, {
-        params: { userId: currentUser.id }
+        params: { userId: currentUser.id },
+        headers: authHeaders(),
       });
       
        setCalls(response.data.data);

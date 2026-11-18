@@ -365,8 +365,6 @@ const ApprovalPublishing = () => {
 
     try {
       const companyId = Cookies.get('companyId');
-      const gigId = Cookies.get('gigId');
-      const userId = Cookies.get('userId');
 
       
 
@@ -380,7 +378,7 @@ const ApprovalPublishing = () => {
 
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${gigId}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         }
       });
@@ -727,7 +725,6 @@ const ApprovalPublishing = () => {
 
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
-      const gigIdCookie = Cookies.get('gigId');
 
       if (!companyId || !userId) {
         setError(t('approvalPublishing.errors.approveGig'));
@@ -793,7 +790,7 @@ const ApprovalPublishing = () => {
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
@@ -968,7 +965,6 @@ const ApprovalPublishing = () => {
       
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
-      const gigIdCookie = Cookies.get('gigId');
 
       
 
@@ -987,7 +983,7 @@ const ApprovalPublishing = () => {
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
@@ -1351,7 +1347,6 @@ const ApprovalPublishing = () => {
       
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
-      const gigIdCookie = Cookies.get('gigId');
 
       
 
@@ -1370,7 +1365,7 @@ const ApprovalPublishing = () => {
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
@@ -1406,7 +1401,6 @@ const ApprovalPublishing = () => {
       
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
-      const gigIdCookie = Cookies.get('gigId');
 
       
 
@@ -1420,7 +1414,7 @@ const ApprovalPublishing = () => {
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         }
       });
@@ -1460,7 +1454,6 @@ const ApprovalPublishing = () => {
       
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
-      const gigIdCookie = Cookies.get('gigId');
 
       
 
@@ -1475,7 +1468,7 @@ const ApprovalPublishing = () => {
       const getResponse = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         }
       });
