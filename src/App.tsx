@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { sessionAuthHeader } from './api/sessionToken';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -412,7 +413,7 @@ function AppContent() {
         try {
           // Fetch user details
           const registrationBackendUrl = import.meta.env.VITE_REGISTRATION_BACKEND_URL;
-          const userResponse = await fetch(`${registrationBackendUrl}/api/users/${userId}`);
+          const userResponse = await fetch(`${registrationBackendUrl}/api/users/${userId}`, { headers: sessionAuthHeader() });
           if (userResponse.ok) {
             const userData = await userResponse.json();
             if (userData.data && userData.data.fullName) {

@@ -1,8 +1,11 @@
 import axios from 'axios';
+import { attachSessionToken } from './sessionToken';
 
 const apiClient = axios.create({
     baseURL: `${import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API}/api`
 });
+// Le service de connaissance exige le jeton de la session.
+attachSessionToken(apiClient);
 
 export const knowledgeApi = {
     analyzeKnowledgeBase: async (companyId: string) => {

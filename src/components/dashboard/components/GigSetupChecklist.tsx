@@ -31,6 +31,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Cookies from 'js-cookie';
+import { sessionAuthHeader } from '../../../api/sessionToken';
 import { authFetch } from '../../../lib/authFetch';
 import {
   markGigSteps,
@@ -246,7 +247,7 @@ async function probeGigSetup(
     ),
     safeBool(
       (async () => {
-        const r = await fetch(`${KB_API()}/rag/scripts?gigId=${gigId}`);
+        const r = await fetch(`${KB_API()}/rag/scripts?gigId=${gigId}`, { headers: sessionAuthHeader() });
         if (!r.ok) return false;
         const j = await r.json().catch(() => null);
         const list = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
@@ -256,7 +257,7 @@ async function probeGigSetup(
     safeBool(
       (async () => {
         const readDocs = async (params: URLSearchParams) => {
-          const r = await fetch(`${KB_API()}/documents?${params.toString()}`);
+          const r = await fetch(`${KB_API()}/documents?${params.toString()}`, { headers: sessionAuthHeader() });
           if (!r.ok) return [] as unknown[];
           const j = await r.json().catch(() => null);
           return Array.isArray(j?.documents)
