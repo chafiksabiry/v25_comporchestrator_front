@@ -33,7 +33,7 @@ import {
 import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
-import { authHeaders } from '../../lib/authFetch';
+import { authHeaders, authFetch } from '../../lib/authFetch';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
@@ -1132,7 +1132,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
   const loadGigFieldVisibility = async (gigId: string) => {
     try {
       // Prefer mapping endpoint: visibility + custom field display titles together.
-      const mappingRes = await fetch(
+      const mappingRes = await authFetch(
         `${import.meta.env.VITE_DASHBOARD_API}/file-processing/mapping/${gigId}`,
         { headers: { Accept: 'application/json' } }
       );
@@ -1168,7 +1168,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         }
       }
 
-      const response = await fetch(
+      const response = await authFetch(
         `${import.meta.env.VITE_DASHBOARD_API}/file-processing/visibility/${gigId}`,
         { headers: { Accept: 'application/json' } }
       );
@@ -1312,7 +1312,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
     updateRealProgress(30, t('uploadContacts.import.analyzing'));
 
-    const response = await fetch(
+    const response = await authFetch(
       `${import.meta.env.VITE_DASHBOARD_API}/file-processing/analyze`,
       {
         method: 'POST',
@@ -1380,7 +1380,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
     updateRealProgress(40, t('uploadContacts.mapping.applying'));
 
-    const response = await fetch(
+    const response = await authFetch(
       `${import.meta.env.VITE_DASHBOARD_API}/file-processing/apply-mapping`,
       {
         method: 'POST',

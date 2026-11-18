@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton } from '../components/common/Skeleton';
 import { GigReview } from '../../gigsaicreation/components/GigReview';
 import Swal from 'sweetalert2';
+import { authFetch } from '../../../lib/authFetch';
 
 const DAYS_OF_WEEK = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
@@ -24,7 +25,7 @@ function GigDetailsPanel() {
 
       try {
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+        const response = await authFetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch gig details: ${response.status} ${response.statusText}`);
@@ -99,7 +100,7 @@ function GigDetailsPanel() {
   const patchGig = useCallback(async (patch: Record<string, any>) => {
     if (!gigId) return false;
     try {
-      const res = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+      const res = await authFetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch)

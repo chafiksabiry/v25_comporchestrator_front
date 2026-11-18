@@ -457,7 +457,7 @@ export default function OperationsDashboard() {
       'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
     (async () => {
       try {
-        const res = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
+        const res = await authFetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
         if (!res.ok) return;
         const json = await res.json();
         const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];
@@ -878,7 +878,7 @@ export default function OperationsDashboard() {
           params.set('gigId', selectedGigId);
         }
         const url = `${dashboardBase}/leads/company/${companyId}/rep-coverage?${params.toString()}`;
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled || !json.success || !Array.isArray(json.reps)) return;
@@ -916,7 +916,7 @@ export default function OperationsDashboard() {
         }
         const qs = params.toString();
         const url = `${dashboardBase}/leads/company/${companyId}/stats${qs ? `?${qs}` : ''}`;
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) return;
         const json = await res.json();
         if (cancelled || !json.success) return;
@@ -1161,17 +1161,17 @@ export default function OperationsDashboard() {
     (async () => {
       try {
         const [ovPeriod, recent, outcomes, reps, cb] = await Promise.all([
-          fetch(
+          authFetch(
             `${base}/calls/company/${companyId}/analytics/overview?${gq}from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}`
           ),
-          fetch(`${base}/calls/company/${companyId}/analytics/recent?${gq}limit=2`),
-          fetch(
+          authFetch(`${base}/calls/company/${companyId}/analytics/recent?${gq}limit=2`),
+          authFetch(
             `${base}/calls/company/${companyId}/analytics/outcomes?${gq}from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}`
           ),
-          fetch(
+          authFetch(
             `${base}/calls/company/${companyId}/analytics/reps?${gq}from=${encodeURIComponent(period.from)}&to=${encodeURIComponent(period.to)}&limit=12`
           ),
-          fetch(
+          authFetch(
             `${base}/calls/company/${companyId}/analytics/callbacks${
               selectedGigId && selectedGigId !== 'all'
                 ? `?gigId=${encodeURIComponent(selectedGigId)}`

@@ -237,7 +237,7 @@ async function probeGigSetup(
   const [contactsDone, scriptDone, kbDone, repOnboardingDone, sessionsDone] = await Promise.all([
     safeBool(
       (async () => {
-        const r = await fetch(
+        const r = await authFetch(
           `${DASHBOARD_API()}/leads/company/${companyId}/has-leads?gigId=${gigId}`
         );
         if (!r.ok) return false;
@@ -378,7 +378,7 @@ const GigSetupChecklist: React.FC<Props> = ({ gigs: gigsProp }) => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${GIGS_API()}/gigs/company/${companyId}?populate=companyId`);
+        const res = await authFetch(`${GIGS_API()}/gigs/company/${companyId}?populate=companyId`);
         if (!res.ok) return;
         const json = await res.json();
         const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];

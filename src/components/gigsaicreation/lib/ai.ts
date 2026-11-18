@@ -8,6 +8,7 @@ import {
   getActivityById,
   getIndustryById,
 } from './activitiesIndustries';
+import { authFetch } from '../../../lib/authFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
 
@@ -127,7 +128,7 @@ export async function transcribeGigAudio(
     form.append('companyId', companyId);
   }
 
-  const response = await fetch(`${API_BASE_URL}/ai/transcribe-audio`, {
+  const response = await authFetch(`${API_BASE_URL}/ai/transcribe-audio`, {
     method: 'POST',
     body: form,
     signal: options?.signal,
@@ -171,7 +172,7 @@ export async function generateGigSuggestions(
 
   try {
     const companyId = getCompanyId();
-    const response = await fetch(`${API_BASE_URL}/ai/generate-gig-suggestions`, {
+    const response = await authFetch(`${API_BASE_URL}/ai/generate-gig-suggestions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

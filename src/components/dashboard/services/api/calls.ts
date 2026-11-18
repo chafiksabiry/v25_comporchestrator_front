@@ -4,6 +4,7 @@ import { Lead } from './leads';
 import { Agent } from './agents';
 import { getDashCallsApiOrigin } from '../../lib/callsApiBase';
 import { toCallAnalyzeFailure } from '../../lib/callAnalyzeErrors';
+import { getAuthToken, redirectOnExpiredSession } from '../../../../lib/authFetch';
 
 /**
  * Dedicated axios client for v25_dash_calls_backend (AI analyze + analytics).
@@ -17,10 +18,11 @@ const dashCallsApi = axios.create({
 
 // Company-facing routes (fraud review...) require the logged-in user's token.
 dashCallsApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getAuthToken();
   if (token) config.headers?.set('Authorization', `Bearer ${token}`);
   return config;
 });
+redirectOnExpiredSession(dashCallsApi);
 
 
 export interface Call {

@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getActiveAgentsForCompany } from '../../api/matching';
 import { useCompanyPermission } from '../../hooks/useCompanyPermission';
+import { authHeaders } from '../../lib/authFetch';
 
 const buildParticipantCountByGig = (activeAgents: any[]): Record<string, number> => {
   const counts: Record<string, number> = {};
@@ -204,7 +205,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
       }
 
       try {
-        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_API_URL_GIGS}/gigs/company/${companyId}?populate=companyId`);
+        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_API_URL_GIGS}/gigs/company/${companyId}?populate=companyId`, { headers: authHeaders() });
         setGigs(response.data.data);
       } catch (err) {
         setError(t('gigDetails.errors.fetchFailed'));
@@ -361,7 +362,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew, refreshKey = 0 }) => 
     e.stopPropagation();
 
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`, { headers: authHeaders() });
       setGigs((prev: any[]) => prev.filter(g => g._id !== gigId));
 
       const Toast = Swal.mixin({

@@ -22,6 +22,7 @@ import type { AvailablePhoneNumber } from '../services/api';
 import { requireSid, twilioComplianceErrorKey, TWILIO_COMPLIANCE_ERROR_KEY } from '../utils/twilioComplianceError';
 import { bundleRequest, customerNameFrom, endUserTypeFrom, hasAddressFields } from '../utils/twilioBundle';
 import { ONBOARDING_NEXT_STEP_GATE_EVENT } from './onboarding/OnboardingNextStepButton';
+import { authHeaders } from '../lib/authFetch';
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -775,7 +776,7 @@ const TelephonySetup = ({
       setIsLoadingGigs(true);
 
 
-      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, { headers: authHeaders() });
 
 
       const responseData = response.data as { data: Gig[] };

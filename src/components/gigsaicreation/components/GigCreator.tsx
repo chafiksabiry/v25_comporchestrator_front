@@ -23,6 +23,7 @@ import { AIDialog } from "./AIDialog";
 import Cookies from 'js-cookie';
 import { saveGigData } from '../lib/api';
 import axios from 'axios';
+import { authHeaders } from '../../../lib/authFetch';
 
 const sections = [
   { id: "basic", label: "Basic Info", icon: Briefcase },
@@ -447,7 +448,7 @@ export function GigCreator({ children }: GigCreatorProps) {
             })),
           ];
 
-          await axios.post(`${API_URL}/gig_skills`, { skills: skillsToInsert });
+          await axios.post(`${API_URL}/gig_skills`, { skills: skillsToInsert }, { headers: authHeaders() });
         }
 
         // Insert leads
@@ -460,7 +461,7 @@ export function GigCreator({ children }: GigCreatorProps) {
               description: lead.description,
               sources: gigData.leads.sources,
             })),
-          });
+          }, { headers: authHeaders() });
         }
 
         // Insert documentation
@@ -486,7 +487,7 @@ export function GigCreator({ children }: GigCreatorProps) {
         ];
 
         if (docsToInsert.length > 0) {
-          await axios.post(`${API_URL}/gig_documentation`, { docs: docsToInsert });
+          await axios.post(`${API_URL}/gig_documentation`, { docs: docsToInsert }, { headers: authHeaders() });
         }
 
         // Reset form

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test src/utils/numberSearchError.test.ts src/utils/twilioComplianceError.test.ts src/utils/twilioBundle.test.ts",
+    "test": "node --experimental-strip-types --test src/utils/numberSearchError.test.ts src/utils/twilioComplianceError.test.ts src/utils/twilioBundle.test.ts src/utils/jwtExpiry.test.ts",
     "preview": "vite preview",
     "server": "node server/index.js"
   },

@@ -9,6 +9,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Logo from './Logo';
 import type { ParsedGig } from '../lib/types';
+import { authHeaders } from '../../../lib/authFetch';
 
 interface GigFormProps {
   gig: ParsedGig;
@@ -458,7 +459,7 @@ export function GigForm() {
         }))
       ];
 
-      const skillsResponse = await axios.post(`${API_URL}/gig_skills`, skillsPromises);
+      const skillsResponse = await axios.post(`${API_URL}/gig_skills`, skillsPromises, { headers: authHeaders() });
       if (!skillsResponse.data) throw new Error('Failed to save skills');
 
       // Insert leads
@@ -470,7 +471,7 @@ export function GigForm() {
           description: lead.description,
           sources: data.leads.sources
         }))
-      });
+      }, { headers: authHeaders() });
       if (!leadsResponse.data) throw new Error('Failed to save leads');
 
 

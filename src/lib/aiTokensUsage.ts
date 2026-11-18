@@ -43,7 +43,7 @@ export async function isFirstGigForCompany(companyId?: string): Promise<boolean>
   const id = companyId || Cookies.get('companyId');
   if (!id) return true;
   try {
-    const res = await fetch(
+    const res = await authFetch(
       `${getGigsApiBase()}/gigs/company/${encodeURIComponent(id)}/has-gigs`
     );
     if (res.ok) {
@@ -57,7 +57,7 @@ export async function isFirstGigForCompany(companyId?: string): Promise<boolean>
       // hasGigs without count → resolve via list
     }
     // Fallback: list endpoint
-    const listRes = await fetch(
+    const listRes = await authFetch(
       `${getGigsApiBase()}/gigs/company/${encodeURIComponent(id)}`
     );
     if (!listRes.ok) return true;

@@ -20,6 +20,7 @@ import {
   formatVariablesForAiPrompt,
   type ScriptVariable,
 } from '../lib/scriptVariables';
+import { authFetch } from '../lib/authFetch';
 
 interface Gig {
   _id: string;
@@ -587,7 +588,7 @@ const ScriptGenerator: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         throw new Error('Gigs API URL not configured');
       }
 
-      const response = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
+      const response = await authFetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
       if (!response.ok) {
         throw new Error(`Failed to fetch gigs: ${response.statusText}`);
       }

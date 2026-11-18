@@ -1,3 +1,5 @@
+import { authFetch } from '../lib/authFetch';
+
 /**
  * gigSetupSync
  *
@@ -122,7 +124,7 @@ function normalizeGigStatus(status: string | undefined): string {
 /** Active gigs no longer need the setup funnel toast — they're already live. */
 async function isGigAlreadyActive(gigId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}`);
+    const res = await authFetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}`);
     if (!res.ok) return false;
     const payload = await res.json();
     const gig = payload?.data ?? payload;
@@ -144,7 +146,7 @@ export async function markGigStepDone(
 ): Promise<void> {
   if (!gigId) return;
   try {
-    await fetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}/setup-steps`, {
+    await authFetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}/setup-steps`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
@@ -192,7 +194,7 @@ export async function markGigSteps(
   if (Object.keys(clean).length === 0) return;
 
   try {
-    await fetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}/setup-steps`, {
+    await authFetch(`${GIGS_API()}/gigs/${encodeURIComponent(gigId)}/setup-steps`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(clean),
@@ -226,7 +228,7 @@ export async function markCompanyGigsStepDone(
 ): Promise<void> {
   if (!companyId) return;
   try {
-    const res = await fetch(
+    const res = await authFetch(
       `${GIGS_API()}/gigs/company/${encodeURIComponent(companyId)}`
     );
     if (!res.ok) return;

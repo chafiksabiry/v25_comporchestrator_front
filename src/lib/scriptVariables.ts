@@ -1,3 +1,5 @@
+import { authFetch } from './authFetch';
+
 export type ScriptVariableSource = 'harx' | 'custom' | 'system';
 
 export interface ScriptVariable {
@@ -212,7 +214,7 @@ export function formatVariablesForAiPrompt(variables: ScriptVariable[]): string 
 export async function fetchScriptVariables(gigId: string): Promise<ScriptVariable[]> {
   const base = String(import.meta.env.VITE_DASHBOARD_API || '').replace(/\/$/, '');
   if (!base || !gigId) return [];
-  const res = await fetch(`${base}/file-processing/script-variables/${gigId}`, {
+  const res = await authFetch(`${base}/file-processing/script-variables/${gigId}`, {
     headers: { Accept: 'application/json' },
   });
   if (!res.ok) return [];

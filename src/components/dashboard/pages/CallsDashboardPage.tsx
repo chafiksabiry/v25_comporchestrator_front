@@ -234,7 +234,7 @@ export default function CallsDashboardPage() {
         (import.meta as any).env?.VITE_GIGS_API ||
         (import.meta as any).env?.VITE_API_URL_GIGS ||
         'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
-      const res = await fetch(`${gigsApiUrl}/gigs/company/${companyId}`);
+      const res = await authFetch(`${gigsApiUrl}/gigs/company/${companyId}`);
       if (!res.ok) return;
       const json = await res.json();
       const list = Array.isArray(json.data) ? json.data : Array.isArray(json) ? json : [];

@@ -1,4 +1,5 @@
 import { getDashCallsApiBase } from './callsApiBase';
+import { authFetch } from '../../../lib/authFetch';
 
 export type VoiceAssistantConfig = {
   enabled: boolean;
@@ -17,7 +18,7 @@ function jsonOrEmpty(res: Response): Promise<Record<string, unknown>> {
 
 export async function fetchVoiceAssistant(gigId: string): Promise<VoiceAssistantConfig | null> {
   if (!gigId) return null;
-  const res = await fetch(`${getDashCallsApiBase()}/gigs/${gigId}/voice-assistant`);
+  const res = await authFetch(`${getDashCallsApiBase()}/gigs/${gigId}/voice-assistant`);
   const data = await jsonOrEmpty(res);
   const raw =
     (data.data as { voiceAssistant?: VoiceAssistantConfig } | undefined)?.voiceAssistant ??
@@ -31,7 +32,7 @@ export async function saveVoiceAssistant(params: {
   enabled: boolean;
   gigTitle?: string;
 }): Promise<void> {
-  const res = await fetch(`${getDashCallsApiBase()}/gigs/${params.gigId}/voice-assistant`, {
+  const res = await authFetch(`${getDashCallsApiBase()}/gigs/${params.gigId}/voice-assistant`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -55,7 +56,7 @@ export async function startAiOutboundCall(body: {
   gigId?: string;
   companyId?: string;
 }): Promise<AiOutboundSession> {
-  const res = await fetch(`${getDashCallsApiBase()}/calls/ai-outbound`, {
+  const res = await authFetch(`${getDashCallsApiBase()}/calls/ai-outbound`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -77,7 +78,7 @@ export async function startAiOutboundCall(body: {
 }
 
 export async function hangupAiOutboundCall(session: AiOutboundSession): Promise<void> {
-  const res = await fetch(`${getDashCallsApiBase()}/calls/ai-outbound/hangup`, {
+  const res = await authFetch(`${getDashCallsApiBase()}/calls/ai-outbound/hangup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

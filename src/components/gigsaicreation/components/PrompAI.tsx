@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { getPostCreateGigRoute, rememberCreatedGigId } from '../../../services/gigSetupSync';
 import { scrollPageToTop } from '../../../utils/scrollPageToTop';
 import { assertCompanyHasAiTokens } from '../../../lib/aiTokensUsage';
+import { authFetch } from '../../../lib/authFetch';
 
 interface PrompAIProps {
   onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
@@ -209,7 +210,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
     setIsLoadingGig(true);
     try {
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
+      const response = await authFetch(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
 
       if (!response.ok) {
         console.error('🔄 EDIT MODE - API Error:', response.status, response.statusText);

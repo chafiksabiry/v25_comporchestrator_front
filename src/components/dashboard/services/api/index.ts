@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { env } from '../../lib/env';
-import { getAuthToken } from '../../../../lib/authFetch';
+import { getAuthToken, redirectOnExpiredSession } from '../../../../lib/authFetch';
 
 const api = axios.create({
   baseURL: env.API_URL,
@@ -22,6 +22,7 @@ apiCall.interceptors.request.use((config) => {
   if (token) config.headers?.set('Authorization', `Bearer ${token}`);
   return config;
 });
+redirectOnExpiredSession(apiCall);
 
 // Request interceptor
 /* api.interceptors.request.use(
