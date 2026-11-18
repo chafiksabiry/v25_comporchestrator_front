@@ -4,6 +4,7 @@ import { Device, Call } from '@twilio/voice-sdk';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { AIAssistantAPI } from './GlobalAIAssistant';
+import { callsAuthHeaders } from '../lib/callsAuth';
 
 type CallStatus = 'idle' | 'initiating' | 'active' | 'ended';
 
@@ -155,7 +156,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
         }))
       };
 
-      const response = await axios.post<AiAssistResponse>(apiUrl, payload);
+      const response = await axios.post<AiAssistResponse>(apiUrl, payload, { headers: callsAuthHeaders() });
 
       const suggestion = response.data?.suggestion;
       if (suggestion) {
@@ -281,7 +282,8 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, onSavi
       try {
         // Existing Twilio implementation
         const response = await axios.get<TwilioTokenResponse>(
-          `${import.meta.env.VITE_API_URL_CALL}/api/calls/token`
+          `${import.meta.env.VITE_API_URL_CALL}/api/calls/token`,
+          { headers: callsAuthHeaders() }
         );
         const token = response.data.token;
 
