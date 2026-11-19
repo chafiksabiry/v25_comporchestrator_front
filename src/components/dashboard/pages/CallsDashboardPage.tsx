@@ -30,6 +30,7 @@ import {
 } from '../../../utils/callStatusDisplay';
 import { callsApi } from '../services/api/calls';
 import { getCallsApiBase } from '../lib/callsApiBase';
+import { authFetch } from '../../../lib/authFetch';
 import { fetchCompanyFraudStats, pickBilingual, type CompanyFraudStatsApi } from '../../../lib/fraudStatsApi';
 import { getCallAnalyzeErrorMessage } from '../lib/callAnalyzeErrors';
 import { refreshCompanyWalletAfterValidation } from '../../../lib/walletBalanceSync';
@@ -145,7 +146,7 @@ export default function CallsDashboardPage() {
     const callsBase = getCallsApiBase();
     if (!callsBase) return;
     try {
-      const res = await fetch(`${callsBase}/calls/${encodeURIComponent(normalizedId)}`);
+      const res = await authFetch(`${callsBase}/calls/${encodeURIComponent(normalizedId)}`);
       if (!res.ok) return;
       const json = await res.json();
       if (json?.data) openCallDetails(json.data, tab);
@@ -257,7 +258,7 @@ export default function CallsDashboardPage() {
         return;
       }
 
-      const response = await fetch(
+      const response = await authFetch(
         `${callsBase}/calls?companyId=${encodeURIComponent(companyId!)}&populate=lead&populate=agent`
       );
       if (response.ok) {
@@ -441,7 +442,7 @@ export default function CallsDashboardPage() {
       const callsBase = getCallsApiBase();
       if (!callsBase) return;
 
-      const response = await fetch(`${callsBase}/calls/${callId}`, {
+      const response = await authFetch(`${callsBase}/calls/${callId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -490,7 +491,7 @@ export default function CallsDashboardPage() {
       const dashboardBase = String(import.meta.env.VITE_DASHBOARD_API || '').replace(/\/$/, '');
       if (!dashboardBase || !leadId) return;
 
-      const response = await fetch(`${dashboardBase}/leads/${leadId}/disposition/confirm`, {
+      const response = await authFetch(`${dashboardBase}/leads/${leadId}/disposition/confirm`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId, approve }),

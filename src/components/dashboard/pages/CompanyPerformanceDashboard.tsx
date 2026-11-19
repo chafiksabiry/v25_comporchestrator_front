@@ -26,6 +26,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import { getActiveAgentsForCompany, getGigsByCompanyId } from '../matching';
 import { getCallsApiBase } from '../lib/callsApiBase';
+import { authFetch } from '../../../lib/authFetch';
 import { useTranslation } from 'react-i18next';
 
 ChartJS.register(
@@ -280,10 +281,10 @@ export function CompanyPerformanceDashboard() {
                 // down to a single record per gig => orders of magnitude faster
                 // and removes the timeout that was leaving "Total Leads" at 0.
                 //
-                // The `/leads/gig/:gigId` endpoint is protected and expects a
-                // bespoke header `Authorization: Bearer {gigId}:{userId}`.
+                // The `/leads/gig/:gigId` endpoint is protected: it gets the
+                // logged-in user's JWT (the old `Bearer {gigId}:{userId}` header
+                // was forgeable and is no longer accepted as an identity).
                 const dashboardBase: string = import.meta.env.VITE_DASHBOARD_API;
-                const userId = Cookies.get('userId') || '';
                 let totalLeads = 0;
                 try {
                     const targetGigs = selectedGig === 'all'
@@ -292,11 +293,7 @@ export function CompanyPerformanceDashboard() {
 
                     const totals = await Promise.all(targetGigs.map(async (gid: string) => {
                         try {
-                            const res = await fetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=1`, {
-                                headers: {
-                                    Authorization: `Bearer ${gid}:${userId}`
-                                }
-                            });
+                            const res = await authFetch(`${dashboardBase}/leads/gig/${gid}?page=1&limit=1`);
                             if (!res.ok) return 0;
                             const json = await res.json();
                             if (typeof json.total === 'number') return json.total;
@@ -325,7 +322,7 @@ export function CompanyPerformanceDashboard() {
                     callsUrl += `&gigId=${selectedGig}`;
                 }
 
-                const callsRes = await fetch(callsUrl);
+                const callsRes = await authFetch(callsUrl);
 
                 if (callsRes.ok) {
                     const callsDataRaw = await callsRes.json();

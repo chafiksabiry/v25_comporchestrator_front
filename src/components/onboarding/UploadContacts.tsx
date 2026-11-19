@@ -33,6 +33,7 @@ import {
 import LeadDetailModal from '../dashboard/components/LeadDetailModal';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
+import { authHeaders } from '../../lib/authFetch';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
@@ -2086,7 +2087,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
             {
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${currentGigId}:${currentUserId}`
+                ...authHeaders()
               },
               timeout: 120000
             }
@@ -2536,7 +2537,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     setIsLoadingQuickStats(true);
     try {
       const params = new URLSearchParams({ gigId });
-      const res = await fetch(`${dashboardBase}/leads/company/${companyId}/stats?${params.toString()}`);
+      const res = await fetch(`${dashboardBase}/leads/company/${companyId}/stats?${params.toString()}`, { headers: authHeaders() });
       if (!res.ok) return;
       const json = await res.json();
       if (!json.success || typeof json.total !== 'number') return;
@@ -2616,7 +2617,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${selectedGigId}:${Cookies.get('userId')}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         }
       });
@@ -2686,7 +2687,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     try {
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/archive`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           gigId: selectedGigId,
           ids: payload.ids,
@@ -2959,7 +2960,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
         headers: {
-          'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          ...authHeaders(),
           'Content-Type': 'application/json'
         }
       });
@@ -3105,7 +3106,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${gigId}:${userId}`,
+            ...authHeaders(),
           },
         }
       );

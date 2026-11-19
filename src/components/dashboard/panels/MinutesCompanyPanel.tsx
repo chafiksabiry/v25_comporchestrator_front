@@ -336,7 +336,7 @@ function MinutesCompanyPanelContent({ companyId }: { companyId: string }) {
       // 2. Fetch calls history (v25_dashboard_backend)
       const callsBase = getCallsApiBase();
       if (callsBase) {
-        const callsRes = await fetch(
+        const callsRes = await authFetch(
           `${callsBase}/calls?companyId=${encodeURIComponent(companyId)}&populate=lead&populate=agent`
         );
         if (callsRes.ok) {

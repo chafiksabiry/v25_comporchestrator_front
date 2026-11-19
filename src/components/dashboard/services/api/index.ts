@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { env } from '../../lib/env';
-import { callsAuthHeaders } from '../../lib/callsAuth';
+import { getAuthToken } from '../../../../lib/authFetch';
 
 const api = axios.create({
   baseURL: env.API_URL,
@@ -16,10 +16,10 @@ headers: {
 }
 });
 
-// Service des appels : jeton de connexion sur chaque requête (jetons Twilio, enregistrement des appels...).
+// Calls routes (VITE_API_URL_CALL) are scoped to the logged-in user's company: send their JWT.
 apiCall.interceptors.request.use((config) => {
-  const { Authorization } = callsAuthHeaders();
-  if (Authorization) config.headers?.set('Authorization', Authorization);
+  const token = getAuthToken();
+  if (token) config.headers?.set('Authorization', `Bearer ${token}`);
   return config;
 });
 

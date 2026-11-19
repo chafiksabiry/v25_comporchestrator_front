@@ -18,6 +18,10 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { getRegistrationBackendBase } from '../../../utils/registrationBackend';
+import { attachSessionToken } from '../../../api/sessionToken';
+
+// Routes de compte du service d'inscription : jeton du compte exigé.
+const registrationApi = attachSessionToken(axios.create({}));
 
 interface ApiUserResponse {
   success?: boolean;
@@ -91,7 +95,7 @@ function AccountSettingsPanel() {
     }
     setLoadingUser(true);
     try {
-      const { data } = await axios.get<ApiUserResponse>(
+      const { data } = await registrationApi.get<ApiUserResponse>(
         `${backendUrl}/api/users/${userId}`
       );
       const u = data?.data;
@@ -137,7 +141,7 @@ function AccountSettingsPanel() {
     }
     setSavingProfile(true);
     try {
-      const { data } = await axios.patch<ApiUserResponse>(
+      const { data } = await registrationApi.patch<ApiUserResponse>(
         `${backendUrl}/api/users/${userId}`,
         { fullName: trimmed }
       );
@@ -166,7 +170,7 @@ function AccountSettingsPanel() {
     }
     setEmailLoading(true);
     try {
-      await axios.post(
+      await registrationApi.post(
         `${backendUrl}/api/users/${userId}/email/request-change`,
         { newEmail: newEmail.trim() }
       );
@@ -188,7 +192,7 @@ function AccountSettingsPanel() {
     }
     setEmailLoading(true);
     try {
-      const { data } = await axios.post<ApiUserResponse>(
+      const { data } = await registrationApi.post<ApiUserResponse>(
         `${backendUrl}/api/users/${userId}/email/confirm-change`,
         { code: emailCode.trim() }
       );
@@ -212,7 +216,7 @@ function AccountSettingsPanel() {
     if (!userId) return;
     setPwdLoading(true);
     try {
-      await axios.post(`${backendUrl}/api/users/${userId}/password/request-change`);
+      await registrationApi.post(`${backendUrl}/api/users/${userId}/password/request-change`);
       setPwdRequestSent(true);
       toast.success(`Code envoyé à ${email}.`);
     } catch (err) {
@@ -239,7 +243,7 @@ function AccountSettingsPanel() {
     }
     setPwdLoading(true);
     try {
-      await axios.post(`${backendUrl}/api/users/${userId}/password/confirm-change`, {
+      await registrationApi.post(`${backendUrl}/api/users/${userId}/password/confirm-change`, {
         currentPassword: pwdCurrent,
         newPassword: pwdNew,
         code: pwdCode.trim(),
@@ -267,7 +271,7 @@ function AccountSettingsPanel() {
     }
     setPhoneLoading(true);
     try {
-      await axios.post(`${backendUrl}/api/users/${userId}/phone/request-change`, {
+      await registrationApi.post(`${backendUrl}/api/users/${userId}/phone/request-change`, {
         newPhone: newPhone.trim(),
       });
       setPhoneRequestSent(true);
@@ -288,7 +292,7 @@ function AccountSettingsPanel() {
     }
     setPhoneLoading(true);
     try {
-      const { data } = await axios.post<ApiUserResponse>(
+      const { data } = await registrationApi.post<ApiUserResponse>(
         `${backendUrl}/api/users/${userId}/phone/confirm-change`,
         { otp: phoneOtp.trim() }
       );
