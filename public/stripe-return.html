@@ -170,6 +170,12 @@
             : '/subscriptions/checkout/confirm';
         }
 
+        // Fenêtre ouverte par l'application (window.opener présent) : c'est l'application, connectée, qui confirme
+        // ensuite le paiement auprès du serveur (qui interroge Stripe). Certaines confirmations exigent la connexion
+        // (achat de ligne : /phone-numbers/checkout/confirm) et cette page n'a pas le jeton ; un refus 401/403 ne doit
+        // donc pas bloquer l'achat : on prévient l'application, qui reprend la main.
+        var hasOpener = !!(window.opener && !window.opener.closed);
+
         fetch(apiBase + confirmPath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -182,6 +188,10 @@
                 data = txt ? JSON.parse(txt) : {};
               } catch (e) {
                 data = {};
+              }
+              if ((res.status === 401 || res.status === 403) && hasOpener) {
+                succeed();
+                return;
               }
               if (!res.ok || !data.success) {
                 throw new Error(
