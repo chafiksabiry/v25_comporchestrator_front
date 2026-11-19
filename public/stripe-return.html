@@ -111,7 +111,7 @@
           errEl.hidden = false;
         }
 
-        function succeed() {
+        function succeed(handBack) {
           notifyOpener({
             type: 'HARX_STRIPE_RETURN',
             flow: flow,
@@ -125,8 +125,10 @@
           // orchestrator MF host), which destroys their session and shows up
           // as "déconnect from page". Just notify, update the UI, and close.
           if (window.opener && !window.opener.closed) {
-            titleEl.textContent = 'Paiement confirmé';
-            msgEl.textContent = 'Vous pouvez fermer cette fenêtre.';
+            titleEl.textContent = handBack ? "Retour à l'application…" : 'Paiement confirmé';
+            msgEl.textContent = handBack
+              ? "L'application HARX finalise l'achat. Vous pouvez fermer cette fenêtre."
+              : 'Vous pouvez fermer cette fenêtre.';
             loaderEl.hidden = true;
             // Give the opener ~600ms to receive the postMessage and react,
             // then close ourselves. If window.close() is blocked (e.g. the
@@ -170,6 +172,12 @@
             : '/subscriptions/checkout/confirm';
         }
 
+        // Fenêtre ouverte par l'application (window.opener présent) : c'est l'application, connectée, qui confirme
+        // ensuite le paiement auprès du serveur (qui interroge Stripe). Certaines confirmations exigent la connexion
+        // (achat de ligne : /phone-numbers/checkout/confirm) et cette page n'a pas le jeton ; un refus 401/403 ne doit
+        // donc pas bloquer l'achat : on prévient l'application, qui reprend la main.
+        var hasOpener = !!(window.opener && !window.opener.closed);
+
         fetch(apiBase + confirmPath, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -182,6 +190,10 @@
                 data = txt ? JSON.parse(txt) : {};
               } catch (e) {
                 data = {};
+              }
+              if ((res.status === 401 || res.status === 403) && hasOpener) {
+                succeed(true);
+                return;
               }
               if (!res.ok || !data.success) {
                 throw new Error(
