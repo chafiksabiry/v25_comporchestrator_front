@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare } from 'lucide-react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
+import { callsAuthHeaders } from '../lib/callsAuth';
 import { useAuth } from '../contexts/AuthContext';
 
 // Types
@@ -67,7 +68,7 @@ const globalState = {
       const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/call-details`, {
         callSid: globalState.currentCallSid,
         userId: "6807abfc2c1ca099fe2b13c5"
-      });
+      }, { headers: callsAuthHeaders() });
       const call = result.data.data;
       
       
@@ -78,7 +79,7 @@ const globalState = {
         cloudinaryRecord = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/fetch-recording`, {
           recordingUrl: call.recordingUrl,
           userId: "6807abfc2c1ca099fe2b13c5"
-        });
+        }, { headers: callsAuthHeaders() });
       }
       
       const callInDB = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/store-call`, {
@@ -88,7 +89,7 @@ const globalState = {
         call,
         cloudinaryrecord: cloudinaryRecord.data.url,
         userId: "6807abfc2c1ca099fe2b13c5"
-      });
+      }, { headers: callsAuthHeaders() });
       
       
 

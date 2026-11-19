@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { env } from '../../lib/env';
+import { callsAuthHeaders } from '../../lib/callsAuth';
 
 const api = axios.create({
   baseURL: env.API_URL,
@@ -15,7 +16,12 @@ headers: {
 }
 });
 
-
+// Service des appels : jeton de connexion sur chaque requête (jetons Twilio, enregistrement des appels...).
+apiCall.interceptors.request.use((config) => {
+  const { Authorization } = callsAuthHeaders();
+  if (Authorization) config.headers?.set('Authorization', Authorization);
+  return config;
+});
 
 // Request interceptor
 /* api.interceptors.request.use(
