@@ -7,8 +7,12 @@ import './index.css';
 import './i18n';
 import { initVisitorTrackingScripts } from '@/lib/tracking/initVisitorTrackingScripts';
 import { syncVisitorTracking } from '@/lib/tracking/visitorTracking';
+import axios from 'axios';
+import { redirectOnExpiredSession } from './lib/authFetch';
 
 initVisitorTrackingScripts();
+// Session expirée (401 sur un appel qui portait le jeton) : retour à la connexion.
+redirectOnExpiredSession(axios);
 
 let root: ReturnType<typeof createRoot> | null = null;
 

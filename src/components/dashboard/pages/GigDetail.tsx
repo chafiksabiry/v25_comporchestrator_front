@@ -14,6 +14,7 @@ import {
   X
 } from "lucide-react";
 import Swal from 'sweetalert2';
+import { authFetch } from '../../../lib/authFetch';
 
 interface Gig {
   _id: string;
@@ -58,7 +59,7 @@ function GigDetail() {
         }
 
         setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL_GIGS}/gigs/${id}`);
+        const response = await authFetch(`${import.meta.env.VITE_BACKEND_URL_GIGS}/gigs/${id}`);
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -137,7 +138,7 @@ function GigDetail() {
         status: gig.status
       };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL_GIGS}/gigs/${gig._id}`, {
+      const response = await authFetch(`${import.meta.env.VITE_BACKEND_URL_GIGS}/gigs/${gig._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

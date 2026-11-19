@@ -43,7 +43,7 @@ export async function fetchCompanyFraudStats(companyId: string): Promise<Company
   const base = getDashCallsApiBase();
   if (!base || !companyId) return null;
   try {
-    const res = await fetch(`${base}/calls/company/${encodeURIComponent(companyId)}/fraud-stats`);
+    const res = await authFetch(`${base}/calls/company/${encodeURIComponent(companyId)}/fraud-stats`);
     if (!res.ok) return null;
     const json = await res.json();
     return json?.data ?? null;
@@ -56,7 +56,7 @@ export async function fetchAgentFraudStats(agentId: string): Promise<AgentFraudS
   const base = getDashCallsApiBase();
   if (!base || !agentId) return null;
   try {
-    const res = await fetch(`${base}/calls/agent/${encodeURIComponent(agentId)}/fraud-stats`);
+    const res = await authFetch(`${base}/calls/agent/${encodeURIComponent(agentId)}/fraud-stats`);
     if (!res.ok) return null;
     const json = await res.json();
     return json?.data ?? null;

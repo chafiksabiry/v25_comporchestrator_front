@@ -30,6 +30,7 @@ import Cookies from 'js-cookie';
 import { PlanningMatrix } from './PlanningMatrix';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { authHeaders } from '../../lib/authFetch';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -269,7 +270,7 @@ export default function SessionPlanning({ hideHeader = false }: { hideHeader?: b
 
       try {
         const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
-        const response = await axios.get(`${apiUrl}/gigs/company/${companyId}?populate=companyId`);
+        const response = await axios.get(`${apiUrl}/gigs/company/${companyId}?populate=companyId`, { headers: authHeaders() });
 
         const gigData = (response.data as any).data || response.data;
         if (Array.isArray(gigData)) {

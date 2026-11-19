@@ -757,7 +757,8 @@ const CompanyOnboarding = () => {
 
     try {
       const response = await axios.get<GigResponse>(
-        `${gigsApiBase}/gigs/company/${companyId}?populate=companyId`
+        `${gigsApiBase}/gigs/company/${companyId}?populate=companyId`,
+        { headers: authHeaders() }
       );
       if (response.data?.data) {
         const exists = response.data.data.length > 0;
@@ -770,7 +771,8 @@ const CompanyOnboarding = () => {
 
     try {
       const response = await axios.get<HasGigsResponse>(
-        `${gigsApiBase}/gigs/company/${companyId}/has-gigs`
+        `${gigsApiBase}/gigs/company/${companyId}/has-gigs`,
+        { headers: authHeaders() }
       );
       const exists = response.data.data.hasGigs;
       setHasGigs(exists);
@@ -812,12 +814,14 @@ const CompanyOnboarding = () => {
     try {
       if (!companyId) return;
       const response = await axios.get<HasLeadsResponse>(
-        `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
+        `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`,
+        { headers: authHeaders() }
       );
       if (response.data.hasLeads) {
         await axios.put(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
-          { status: "completed" }
+          { status: "completed" },
+          { headers: authHeaders() }
         );
         setCompletedSteps((prev: number[]) => prev.includes(5) ? prev : [...prev, 5]);
       }
@@ -830,7 +834,8 @@ const CompanyOnboarding = () => {
     try {
       if (!companyId) return;
       const response = await axios.get<GigResponse>(
-        `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`
+        `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`,
+        { headers: authHeaders() }
       );
       if (response.data && response.data.data) {
         const gigs = response.data.data;
@@ -841,7 +846,8 @@ const CompanyOnboarding = () => {
           try {
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
-              { status: "completed" }
+              { status: "completed" },
+              { headers: authHeaders() }
             );
             setCompletedSteps((prev) => prev.includes(3) ? prev : [...prev, 3]);
           } catch (e) { console.error(e); }
@@ -850,7 +856,8 @@ const CompanyOnboarding = () => {
           try {
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
-              { status: "completed" }
+              { status: "completed" },
+              { headers: authHeaders() }
             );
             setCompletedSteps((prev: any) => prev.includes(12) ? prev : [...prev, 12]);
           } catch (e) { console.error(e); }
@@ -858,7 +865,8 @@ const CompanyOnboarding = () => {
           try {
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
-              { status: "in_progress" }
+              { status: "in_progress" },
+              { headers: authHeaders() }
             );
             setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 12));
           } catch (e) { console.error(e); }
@@ -896,7 +904,8 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${effectiveCompanyId}/onboarding`,
+        { headers: authHeaders() }
       );
       
       const progress = response.data;
@@ -918,7 +927,8 @@ const CompanyOnboarding = () => {
           if (ok && (st === "active" || st === "trialing") && !completedStepsState.includes(11)) {
             await axios.put(
               `${apiUrl}/onboarding/companies/${effectiveCompanyId}/onboarding/phases/4/steps/11`,
-              { status: "completed" }
+              { status: "completed" },
+              { headers: authHeaders() }
             );
             completedStepsState = [...completedStepsState, 11];
             // Patch the in-memory progress so stepStatuses reflects the PUT immediately
@@ -1580,7 +1590,8 @@ const CompanyOnboarding = () => {
       try {
         await axios.put(
           `${apiUrl}/onboarding/companies/${newCompanyId}/onboarding/current-phase`,
-          { phase: 2 }
+          { phase: 2 },
+          { headers: authHeaders() }
         );
       } catch (err) {
         console.error("Failed to set onboarding phase 2:", err);

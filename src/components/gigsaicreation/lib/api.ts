@@ -2,6 +2,7 @@ import type { Gig, GigHistory } from './types';
 import { GigData, type Sector } from '../types';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { authHeaders, authFetch } from '../../../lib/authFetch';
 
 const OBJECT_ID_RE = /^[a-f0-9]{24}$/i;
 
@@ -152,7 +153,7 @@ export async function getGigHistory(gigId: string) {
 // Countries API functions
 export async function fetchAllCountries(): Promise<Country[]> {
   try {
-    const response = await fetch(`${API_URL}/countries`);
+    const response = await authFetch(`${API_URL}/countries`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch countries: ${response.status} ${response.statusText}`);
@@ -173,7 +174,7 @@ export async function fetchAllCountries(): Promise<Country[]> {
 
 export async function fetchCountryById(countryId: string): Promise<Country> {
   try {
-    const response = await fetch(`${API_URL}/countries/${countryId}`);
+    const response = await authFetch(`${API_URL}/countries/${countryId}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch country: ${response.status} ${response.statusText}`);
@@ -519,7 +520,7 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
     
     
 
-    const response = await fetch(`${API_URL}/gigs/${gigId}`, {
+    const response = await authFetch(`${API_URL}/gigs/${gigId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -707,7 +708,7 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
       ...(safeCommission && { commission: safeCommission })
     };
 
-    const response = await fetch(`${API_URL}/gigs`, {
+    const response = await authFetch(`${API_URL}/gigs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -744,11 +745,11 @@ export async function getGig(gigId: string | null) {
   try {
     if (!gigId) {
       // If no gigId is provided, fetch all gigs
-      const { data } = await axios.get(`${API_URL}/gigs`);
+      const { data } = await axios.get(`${API_URL}/gigs`, { headers: authHeaders() });
       return { data, error: null };
     } else {
       // If gigId is provided, fetch a specific gig
-      const { data } = await axios.get(`${API_URL}/gigs/${gigId}`);
+      const { data } = await axios.get(`${API_URL}/gigs/${gigId}`, { headers: authHeaders() });
       return { data: [data], error: null };
     }
   } catch (error) {
@@ -1098,7 +1099,7 @@ export async function fetchIndustries(): Promise<{ data: Industry[]; error?: Err
 
 export async function fetchSectors(): Promise<{ data: Sector[]; error?: Error }> {
   try {
-    const response = await fetch(`${API_URL}/sectors`);
+    const response = await authFetch(`${API_URL}/sectors`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -1136,7 +1137,7 @@ export async function fetchAllCurrencies(): Promise<Currency[]> {
   try {
     
     const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
-    const response = await fetch(`${apiUrl}/currencies`);
+    const response = await authFetch(`${apiUrl}/currencies`);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -1160,7 +1161,7 @@ export async function fetchCurrencyById(currencyId: string): Promise<Currency | 
   try {
     
     const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
-    const response = await fetch(`${apiUrl}/currencies/id/${currencyId}`);
+    const response = await authFetch(`${apiUrl}/currencies/id/${currencyId}`);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

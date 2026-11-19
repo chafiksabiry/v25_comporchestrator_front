@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import axios from 'axios';
 import { authHeaders } from '../../../lib/authFetch';
 import { useAuth } from '../contexts/AuthContext';
+import { resolveSessionUserId } from '../../../lib/sessionUserId';
 
 // Types
 export interface AIAssistantMessage {
@@ -63,11 +64,14 @@ const globalState = {
 
       // Get the current messages
       const currentMessages = [...globalState.messages];
+      // Logged-in user (AuthContext, falling back to the session cookie / storage / JWT).
+      const userId = globalState.currentUser?.id || resolveSessionUserId();
+      if (!userId) throw new Error('No logged-in user to attach the call to');
       
 
       const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/call-details`, {
         callSid: globalState.currentCallSid,
-        userId: "6807abfc2c1ca099fe2b13c5"
+        userId
       }, { headers: authHeaders() });
       const call = result.data.data;
       
@@ -78,7 +82,7 @@ const globalState = {
       if (call.recordingUrl) {
         cloudinaryRecord = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/fetch-recording`, {
           recordingUrl: call.recordingUrl,
-          userId: "6807abfc2c1ca099fe2b13c5"
+          userId
         }, { headers: authHeaders() });
       }
       
@@ -88,7 +92,7 @@ const globalState = {
         leadId: globalState.currentAgentId,
         call,
         cloudinaryrecord: cloudinaryRecord.data.url,
-        userId: "6807abfc2c1ca099fe2b13c5"
+        userId
       }, { headers: authHeaders() });
       
       

@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import { slotApi } from '../../services/slotService';
 import axios from 'axios';
+import { authHeaders } from '../../lib/authFetch';
 
 interface SlotGeneratorProps {
     gigId: string | null | undefined;
@@ -35,7 +36,7 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                 setIsAvailableToday(false);
                 setAvailableHours([]);
                 const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api';
-                const response = await axios.get(`${apiUrl}/gigs/${gigId}?populate=companyId`);
+                const response = await axios.get(`${apiUrl}/gigs/${gigId}?populate=companyId`, { headers: authHeaders() });
 
                 // Direct handle response data or data.data
                 const gig = (response.data as any).data || response.data;

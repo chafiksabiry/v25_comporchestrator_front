@@ -2,6 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { IndustryApiResponse, GigApiResponse, GigFromApi } from '../../types';
 import React from 'react';
+import { authHeaders } from '../../../../lib/authFetch';
 const REPS_WIZARD_API_URL = 'https://v25repscreationwizardbackend-recette.up.railway.app';
 const INDUSTRIES_API_URL = `${REPS_WIZARD_API_URL}/api/industries`;
 const GIGS_API_URL = 'https://v25gigsmanualcreationbackend-recette.up.railway.app/api/gigs/company';
@@ -41,7 +42,7 @@ export const OnboardingService = {
         throw new Error('No company ID provided or found in cookies');
       }
 
-      const response = await axios.get<GigApiResponse>(`${GIGS_API_URL}/${effectiveCompanyId}`);
+      const response = await axios.get<GigApiResponse>(`${GIGS_API_URL}/${effectiveCompanyId}`, { headers: authHeaders() });
       return response.data;
     } catch (error) {
       console.error(`Error fetching gigs for company:`, error);

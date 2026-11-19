@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { fetchAllCountries, type Country } from '../gigsaicreation/lib/api';
+import { authHeaders, authFetch } from '../../lib/authFetch';
 
 type CallCenterCreateProjectProps = {
   onBack: () => void;
@@ -107,7 +108,7 @@ export default function CallCenterCreateProject({
     }
     setListLoading(true);
     try {
-      const { data } = await axios.get(`${gigsApiBase()}/gigs/company/${companyId}?populate=companyId`);
+      const { data } = await axios.get(`${gigsApiBase()}/gigs/company/${companyId}?populate=companyId`, { headers: authHeaders() });
       const rows = Array.isArray(data?.data) ? data.data : [];
       setProjects(rows);
     } catch (err) {
@@ -283,7 +284,7 @@ export default function CallCenterCreateProject({
 
       let response: Response;
       if (mode === 'edit' && activeProject?._id) {
-        response = await fetch(`${gigsApiBase()}/gigs/${activeProject._id}`, {
+        response = await authFetch(`${gigsApiBase()}/gigs/${activeProject._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -294,7 +295,7 @@ export default function CallCenterCreateProject({
           }),
         });
       } else {
-        response = await fetch(`${gigsApiBase()}/gigs`, {
+        response = await authFetch(`${gigsApiBase()}/gigs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -355,7 +356,7 @@ export default function CallCenterCreateProject({
     if (!ok) return;
 
     try {
-      const response = await fetch(`${gigsApiBase()}/gigs/${project._id}`, {
+      const response = await authFetch(`${gigsApiBase()}/gigs/${project._id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {

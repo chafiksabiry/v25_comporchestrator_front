@@ -1,4 +1,5 @@
 import { Rep, Gig, Match, MatchResponse, MatchingWeights, GigAgentRequest } from '../types/matching';
+import { authFetch } from '../lib/authFetch';
 
 // URLs des APIs - utilise les mêmes que le projet matching
 const MATCHING_API_URL = import.meta.env.VITE_MATCHING_API_URL || 'https://v25matchingbackend-recette.up.railway.app/api';
@@ -81,7 +82,7 @@ export const getGigs = async (): Promise<Gig[]> => {
 export const getGigsByCompanyId = async (companyId: string): Promise<Gig[]> => {
     
     try {
-        const response = await fetch(`${GIGS_API_URL}/gigs/company/${companyId}?populate=companyId`);
+        const response = await authFetch(`${GIGS_API_URL}/gigs/company/${companyId}?populate=companyId`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch gigs by company');
